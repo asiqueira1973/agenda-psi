@@ -1,0 +1,405 @@
+// =====================================================================
+// Agenda Psi — modelo de dados
+// Gerado a partir da seção 7 do spec.md (versão 1.0, 13/09/2026)
+// Cole em https://dbdiagram.io
+//
+// Convenção: banco em português, snake_case.
+// `usuario_id` é a chave de tenancy de todas as tabelas do psicólogo
+// e corresponde a auth.users.id do Supabase. Toda query nova filtra
+// por ele — nunca por profissional_id (ver spec 7.6, item 4).
+// =====================================================================
+
+// ---------------------------------------------------------------------
+// ENUMS
+// No banco real estes campos são `text` com CHECK ou sem constraint.
+// Modelados como enum aqui para documentar os valores literais aceitos
+// (spec, regra 11.4). Os literais são gravados exatamente assim —
+// sem normalizar acento e sem traduzir.
+// ---------------------------------------------------------------------
+
+enum status_paciente {
+  ativo
+  inativo
+}
+
+enum modalidade_sessao {
+  presencial
+  remota
+}
+
+enum pagamento_sessao {
+  pagou
+  "nao pagou"        // sem acento — literal do banco
+  "pagamento mensal"
+}
+
+enum tipo_pagamento {
+  mensal
+  "por sessão"       // com acento e espaço — literal do banco
+}
+
+enum status_lancamento {
+  pendente           // default do banco
+  pago               // o app sempre grava 'pago'
+}
+
+enum tipo_local_atendimento {
+  consultorio
+  coworking
+  clinica
+}
+
+enum status_moderacao {
+  pendente
+  aprovado
+  rejeitado
+}
+
+enum plano_assinatura {
+  free
+  pro
+}
+
+enum status_assinatura {
+  ativo
+  em_atraso
+  cancelado
+  expirado
+}
+
+enum loja_assinatura {
+  app_store
+  play_store
+  cortesia
+}
+
+// =====================================================================
+// TABELAS EXISTENTES — não alterar (spec 7.2)
+// =====================================================================
+
+// Tabela do Supabase Auth. Modelada aqui porque TODAS as FKs de
+// usuario_id apontam para ela — não para profissionais (spec 7.6).
+Table auth_users {
+  id    uuid [pk, note: 'schema auth, tabela users']
+  email text
+
+  Note: 'auth.users do Supabase. 365 contas; 362 com registro em profissionais (3 órfãs — defeito 11.9.10).'
+}
+
+Table profissionais {
+  id               uuid        [pk, default: `gen_random_uuid()`]
+  usuario_id       uuid        [not null, unique, note: 'auth.users.id']
+  nome             text        [not null]
+  email            text        [not null, note: 'NOT NULL — o insert de cadastro obrigatoriamente inclui o e-mail (spec 6.2)']
+  telefone         text
+  linkedin         text
+  instagram        text
+  criado_em        timestamptz [not null, default: `now()`]
+  ativo            boolean     [default: true, note: 'NULLABLE. false = conta desativada e bloqueia o login; NULL significa ativo — as views fazem COALESCE(ativo, true) (spec 6.3)']
+  fcm_token        text        [note: 'nulo — push não implementado (spec 28.2)']
+  usuario_fundador boolean     [not null, default: false, note: '195 marcados; concede Pro vitalício (regra 11.6)']
+
+  Note: 'O registro do psicólogo. Um por conta de auth.users.'
+}
+
+// Exclusão: HARD DELETE com cascata para sessoes, pagamentos,
+// precos_paciente e agenda_semana_padrao. Única entidade do app
+// com exclusão definitiva (spec 7.2).
+Table pacientes {
+  id                uuid            [pk, default: `gen_random_uuid()`]
+  usuario_id        uuid            [not null]
+  profissional_id   uuid            [note: 'preenchido por trg_pacientes_sync_ids; 2 nulos em 1.065 — e esses 2 quebram o texto do SMS (spec 7.2)']
+  nome_completo     text            [not null]
+  telefone          text
+  email             text
+  status            status_paciente [not null, default: 'ativo']
+  observacoes       text
+  primeira_consulta date            [note: 'nulo quando nunca foi informado']
+  receber_sms       boolean         [not null, default: false, note: 'liga o lembrete por SMS deste paciente']
+  criado_em         timestamptz     [not null, default: `now()`]
+
+  Note: 'Paciente do psicólogo. O paciente nunca tem conta no app.'
+}
+
+// Histórico APPEND-ONLY de preço. Nunca se faz UPDATE — cria-se
+// uma linha nova. O preço vigente é derivado pelas views, jamais
+// calculado no app (princípio P2, regra 11.2).
+Table precos_paciente {
+  id              uuid        [pk, default: `gen_random_uuid()`]
+  usuario_id      uuid        [not null]
+  profissional_id uuid        [note: 'preenchido por trg_precos_sync_ids; 0 nulos em 773']
+  paciente_id     uuid        [not null]
+  preco           integer     [not null, note: 'reais INTEIROS, sem centavos (200 = R$ 200,00). CHECK preco >= 0']
+  vigencia_desde  date        [not null, default: `CURRENT_DATE`, note: 'sempre hoje — não há preço futuro nem retroativo']
+  observacoes     text
+  criado_em       timestamptz [not null, default: `now()`]
+
+  Note: 'Histórico de preço por paciente. Append-only.'
+}
+
+Table sessoes {
+  id              uuid              [pk, default: `gen_random_uuid()`]
+  usuario_id      uuid              [not null]
+  profissional_id uuid              [note: 'SEMPRE nulo (1.178 de 1.178) — esta tabela não tem trigger de sync']
+  paciente_id     uuid              [not null]
+  ocorreu_em      timestamptz       [not null, default: `now()`, note: 'NUNCA escrito pelo app']
+  ocorreu_em_dia  date              [not null, default: `CURRENT_DATE`, note: 'a data que a interface usa']
+  status          text              [not null, default: 'realizada', note: 'nunca escrito pelo app']
+  modalidade      modalidade_sessao [note: 'nulo em sessão antiga, antes do campo existir']
+  duracao_minutos integer           [note: 'nulo quando não informado']
+  pagamento       pagamento_sessao  [note: 'como a sessão foi/será quitada']
+  devesercobrada  boolean           [default: true, note: 'false = cortesia ou falta não cobrada. Sem snake_case — literal do banco (spec 7.6)']
+  observacoes     text
+  criado_em       timestamptz       [not null, default: `now()`]
+
+  Note: 'Sessão realizada. Registrar sessão NÃO cria pagamento automaticamente.'
+}
+
+Table pagamentos {
+  id               uuid              [pk, default: `gen_random_uuid()`]
+  usuario_id       uuid              [not null]
+  profissional_id  uuid              [note: 'SEMPRE nulo (451 de 451) — esta tabela não tem trigger de sync']
+  paciente_id      uuid              [not null]
+  valor_pagamento  integer           [not null, note: 'reais INTEIROS, sem centavos. CHECK valor_pagamento >= 0']
+  data_competencia date              [default: `CURRENT_DATE`, note: 'o mês a que o pagamento pertence — é o que a interface mostra']
+  pago_em          timestamptz       [note: 'o instante do registro no app, NÃO a data escolhida']
+  vencimento_em    date              [note: 'nunca usado pelo app']
+  status           status_lancamento [not null, default: 'pendente', note: 'o app sempre grava pago']
+  metodo           text              [note: 'nunca usado pelo app — ver pergunta aberta 25.2']
+  tipo             tipo_pagamento    [note: 'nulo em pagamento antigo']
+  observacoes      text
+  criado_em        timestamptz       [not null, default: `now()`]
+
+  Note: 'Pagamento recebido de um paciente.'
+}
+
+Table tipos_despesa {
+  id        uuid        [pk, default: `gen_random_uuid()`]
+  nome      text        [not null]
+  ativo     boolean     [not null, default: true, note: 'filtro aplicado pela policy tipos_despesa_select, não pelo app']
+  criado_em timestamptz [not null, default: `now()`]
+
+  Note: 'Catálogo global. 13 linhas, todas ativas. A policy tipos_despesa_select já filtra ativo = true — o app não filtra (P2).'
+}
+
+Table despesas {
+  id               uuid              [pk, default: `gen_random_uuid()`]
+  usuario_id       uuid              [not null]
+  tipo_despesa_id  uuid              [not null]
+  descricao        text              [note: 'nulo em despesa antiga; a lista deve cair para o nome do tipo']
+  valor_despesa    integer           [not null, note: 'reais INTEIROS, sem centavos. CHECK valor_despesa >= 0']
+  data_competencia date              [default: `CURRENT_DATE`]
+  pago_em          timestamptz       [note: 'instante do registro no app']
+  status           status_lancamento [not null, default: 'pendente', note: 'o app sempre grava pago']
+  metodo           text              [note: 'nunca usado pelo app']
+  observacoes      text
+  criado_em        timestamptz       [not null, default: `now()`]
+
+  Note: 'Despesa do consultório. Feature de menor adesão do funil (spec 8.7).'
+}
+
+Table agenda_semana_padrao {
+  id          uuid        [pk, default: `gen_random_uuid()`]
+  usuario_id  uuid        [not null]
+  paciente_id uuid        [not null]
+  dia_semana  smallint    [not null, note: '1 = segunda ... 7 = domingo']
+  hora_inicio time        [not null]
+  hora_fim    time        [not null]
+  observacoes text
+  criado_em   timestamptz [not null, default: `now()`]
+
+  Note: 'Horário FIXO semanal recorrente. Não é agenda de datas. É o que dispara o lembrete por SMS.'
+}
+
+// Não tem usuario_id: o profissional é derivado pelo join com
+// agenda_semana_padrao. Isso importa para o paywall (regra 11.5).
+// Índice necessário: idx_sms_lembretes_agenda (agenda_id).
+Table sms_lembretes_enviados {
+  id                  uuid        [pk, default: `gen_random_uuid()`]
+  agenda_id           uuid        [not null]
+  ocorrencia_inicio   timestamptz [not null]
+  ocorrencia_data     date        [not null]
+  enviado_em          timestamptz [not null, default: `now()`, note: 'base da contagem mensal do paywall']
+  provider_message_id text        [note: 'nulo se o provedor não devolveu id']
+
+  indexes {
+    (agenda_id, ocorrencia_data) [unique, name: 'sms_lembretes_enviados_un']
+  }
+
+  Note: 'Log de SMS enviado. Uma linha = 1 SMS na contagem do plano. O unique garante 1 SMS por agendamento por dia e já indexa a FK — não criar índice novo sobre agenda_id. O Bird cobra ~17% a mais (regra 11.5).'
+}
+
+// Diretório comunitário — sem tenancy por usuário.
+// FORA DO MVP: cortado do escopo na v1.1 do spec, preservado em 28.8.
+// A tabela continua no banco e sua RLS é corrigida na migration 0004.
+Table locais_atendimento {
+  id                    uuid                   [pk, default: `gen_random_uuid()`]
+  nome                  text                   [not null]
+  cidade                text                   [not null]
+  bairro                text                   [note: 'NULLABLE — causa do defeito 11.9.8: filtro ILIKE incondicional escondia estes locais']
+  estado                text                   [not null, note: 'UF, 2 letras maiúsculas']
+  tipo_local            tipo_local_atendimento [not null]
+  url_contato           text                   [note: 'nulo quando o local não tem site']
+  origem                text                   [not null, note: 'o app grava sempre comunidade']
+  status                status_moderacao       [not null, default: 'pendente', note: 'o app só lê aprovado']
+  criado_por_usuario_id uuid                   [note: 'nulo em local cadastrado pelo administrador']
+  criado_em             timestamptz            [not null, default: `now()`]
+
+  Note: 'FORA DO MVP (spec seção 3) — nenhuma tela da v1 lê ou escreve esta tabela. 12 linhas. A RLS dela é corrigida na migration 0004 mesmo assim. Volta com 28.8.'
+}
+
+Table comentarios_locais_atendimento {
+  id                    uuid             [pk, default: `gen_random_uuid()`]
+  local_atendimento_id  uuid             [not null]
+  comentario            text             [not null, note: 'até 2000 caracteres, validado no app']
+  contexto_uso          text             [note: 'nunca usado pelo app']
+  status                status_moderacao [not null, default: 'pendente', note: 'o app grava aprovado explicitamente — ver pergunta 25.3']
+  criado_por_usuario_id uuid             [not null]
+  criado_em             timestamptz      [not null, default: `now()`]
+
+  Note: 'FORA DO MVP (spec seção 3) — 0 linhas. RLS a corrigir mesmo sem tela: update/delete só do próprio autor (spec 6.5). Volta com 28.8.'
+}
+
+// Colunas em inglês — inconsistência herdada, documentada em 7.6.
+Table feedback {
+  id         bigint      [pk, increment]
+  created_at timestamptz [not null, default: `now()`]
+  email      text        [note: 'e-mail do usuário logado']
+  mensagem   text
+  handle_at  timestamp   [note: 'nulo enquanto o administrador não tratou']
+  app_name   text        [default: 'agenda_psi']
+
+  Note: 'Feedback do usuário sobre o app. Notifica o administrador por e-mail via n8n.'
+}
+
+Table notifications {
+  id                   bigint      [pk, increment]
+  created_at           timestamptz [not null, default: `now()`]
+  title                text        [not null]
+  body                 text        [not null]
+  recipient_usuario_id uuid        [not null]
+  is_read              boolean     [not null, default: false]
+
+  Note: '0 linhas. Push não implementado (spec 28.2). O trigger desta tabela contém service_role em texto puro — corrigir (risco 23.2).'
+}
+
+// Fonte da verdade do custo real de SMS, vinda da fatura do Bird.
+Table custos_sms_mensal {
+  mes             date        [pk, note: 'sempre o dia 1 do mês de competência']
+  valor_eur       numeric     [not null, note: 'CHECK valor_eur >= 0']
+  cambio_eur_brl  numeric     [not null, note: 'CHECK cambio_eur_brl > 0']
+  mensagens_bird  integer     [note: 'nulo quando a fatura não detalha a contagem']
+  fatura_numero   text        [note: 'nulo em mês aberto ou estimado']
+  fechado         boolean     [not null, default: true, note: 'false = mês ainda aberto, valor estimado']
+  observacao      text
+  atualizado_em   timestamptz [not null, default: `now()`]
+
+  Note: 'Custo real de SMS por mês. Inserir uma linha quando a fatura fechar.'
+}
+
+Table config_app {
+  chave text [pk]
+  valor uuid
+
+  Note: 'Configuração chave/valor do app.'
+}
+
+// =====================================================================
+// TABELAS NOVAS — paywall (spec 7.3)
+// =====================================================================
+
+// Plano vigente de cada profissional.
+// Fonte da verdade: webhook do RevenueCat (Edge Function rc-webhook).
+// O APP NUNCA ESCREVE AQUI (regra 11.6).
+// Constraints: plano in (free,pro); status in (ativo,em_atraso,cancelado,expirado);
+//              store is null or in (app_store,play_store,cortesia).
+// Índice: idx_assinaturas_rc_customer (rc_customer_id).
+Table assinaturas {
+  profissional_id uuid              [pk, note: 'FK on delete cascade']
+  plano           plano_assinatura  [not null, default: 'free']
+  status          status_assinatura [not null, default: 'ativo']
+  store           loja_assinatura   [note: 'nulo em assinatura de cortesia manual']
+  rc_customer_id  text              [note: 'nulo em cortesia ou antes da primeira compra']
+  rc_entitlement  text              [note: 'entitlement do RevenueCat que concedeu o acesso']
+  inicio_em       timestamptz       [not null, default: `now()`]
+  expira_em       timestamptz       [note: 'nulo = sem expiração (plano free ou cortesia vitalícia)']
+  atualizado_em   timestamptz       [not null, default: `now()`]
+
+  Note: 'Plano do profissional. Escrita exclusiva da Edge Function rc-webhook com service_role.'
+}
+
+// Consumo do mês por profissional.
+// Alimentado pelo trigger fn_uso_mensal_incrementa sobre
+// sms_lembretes_enviados — nunca pelo app.
+// Reconstruível por recontar_uso_mensal(p_mes date).
+// Índice: idx_uso_mensal_mes (mes).
+Table uso_mensal {
+  profissional_id uuid        [not null, note: 'FK on delete cascade']
+  mes             date        [not null, note: 'sempre o dia 1; derivado de enviado_em no fuso America/Sao_Paulo']
+  sms_enviados    integer     [not null, default: 0]
+  atualizado_em   timestamptz [not null, default: `now()`]
+
+  indexes {
+    (profissional_id, mes) [pk]
+  }
+
+  Note: 'Contador materializado de SMS do mês. Trade-off declarado em 7.3: duplica o log para não fazer count com join a cada disparo.'
+}
+
+// =====================================================================
+// RELACIONAMENTOS
+//
+// ATENÇÃO: no banco real, TODAS as FKs de usuario_id apontam para
+// auth.users(id) — não para profissionais. As FKs de profissional_id
+// é que apontam para profissionais(id), com ON DELETE CASCADE.
+// =====================================================================
+
+// Uma conta de auth tem no máximo um registro de profissional.
+Ref: auth_users.id - profissionais.usuario_id
+
+// Tenancy: cada registro do psicólogo referencia a conta de auth.
+Ref: auth_users.id < pacientes.usuario_id
+Ref: auth_users.id < precos_paciente.usuario_id
+Ref: auth_users.id < sessoes.usuario_id
+Ref: auth_users.id < pagamentos.usuario_id
+Ref: auth_users.id < despesas.usuario_id
+Ref: auth_users.id < agenda_semana_padrao.usuario_id
+Ref: auth_users.id < notifications.recipient_usuario_id
+
+// FKs de profissional_id → profissionais(id), ON DELETE CASCADE.
+// Preenchidas por trigger em pacientes e precos_paciente;
+// sempre nulas em sessoes e pagamentos.
+Ref: profissionais.id < pacientes.profissional_id
+Ref: profissionais.id < precos_paciente.profissional_id
+Ref: profissionais.id < sessoes.profissional_id
+Ref: profissionais.id < pagamentos.profissional_id
+
+// Um paciente tem muitos preços ao longo do tempo (histórico de vigência).
+Ref: pacientes.id < precos_paciente.paciente_id
+
+// Um paciente tem muitas sessões.
+Ref: pacientes.id < sessoes.paciente_id
+
+// Um paciente tem muitos pagamentos.
+Ref: pacientes.id < pagamentos.paciente_id
+
+// Uma despesa tem exatamente um tipo; um tipo classifica muitas despesas.
+Ref: tipos_despesa.id < despesas.tipo_despesa_id
+
+// Um paciente pode ter vários horários fixos na semana.
+Ref: pacientes.id < agenda_semana_padrao.paciente_id
+
+// Cada SMS enviado refere-se a um horário fixo. É por este join que o
+// profissional é derivado na contagem do paywall — em DOIS saltos:
+// agenda_semana_padrao.usuario_id → profissionais.usuario_id → profissionais.id
+// (regra 11.5).
+Ref: agenda_semana_padrao.id < sms_lembretes_enviados.agenda_id
+
+// Um local tem muitos comentários.
+Ref: locais_atendimento.id < comentarios_locais_atendimento.local_atendimento_id
+
+// Um psicólogo tem no máximo uma assinatura.
+Ref: profissionais.id - assinaturas.profissional_id
+
+// Um psicólogo tem uma linha de consumo por mês.
+Ref: profissionais.id < uso_mensal.profissional_id

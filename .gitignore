@@ -1,0 +1,39 @@
+# macOS
+.DS_Store
+
+# Versão antiga em FlutterFlow — referência de leitura, fora do repositório.
+# São 215 arquivos de outro projeto (Dart) e contêm as URLs dos três webhooks
+# n8n abertos e a x-api-key do Visão do Produto (spec 23.1 e 23.3).
+Versao em FlutterFlow/
+
+# Node / Expo
+node_modules/
+.expo/
+dist/
+web-build/
+*.tsbuildinfo
+
+# Nativo gerado pelo prebuild
+/app/ios/
+/app/android/
+
+# Ambiente — nenhum segredo versionado (spec 18, P4)
+.env
+.env.*
+!.env.example
+
+# Supabase CLI
+supabase/.branches/
+supabase/.temp/
+.supabase/
+
+# Logs e cobertura
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+coverage/
+
+# Arquivos de trabalho do Claude Design na raiz — o canônico é docs/spec.md
+/spec.md
+/prompt-design-agenda-psi.md
