@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Alert, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Screen, Icon, Text } from '@/components/ui';
+import { Screen, Icon, TextLink, Text } from '@/components/ui';
 import { useColors, spacing, screenMargin, typography } from '@/theme';
 import { copyAuth } from '@/features/auth/copy';
 import { supabase } from '@/lib/supabase/client';
@@ -56,15 +56,16 @@ export default function ConfirmeEmailScreen() {
         </Text>
       </View>
 
-      <View style={{ alignItems: 'center', gap: spacing.lg, marginTop: spacing.xxxl }}>
-        <Pressable onPress={aoReenviar} disabled={reenviando} accessibilityRole="link">
-          <Text style={{ color: colors.accent, opacity: reenviando ? 0.4 : 1 }}>
-            {copyAuth.confirmeEmail.reenviar}
-          </Text>
-        </Pressable>
-        <Pressable onPress={() => router.replace('/(auth)/login')} accessibilityRole="link">
-          <Text style={{ color: colors.accent }}>{copyAuth.confirmeEmail.voltar}</Text>
-        </Pressable>
+      <View style={{ alignItems: 'center', gap: spacing.sm, marginTop: spacing.xxl }}>
+        <TextLink
+          label={copyAuth.confirmeEmail.reenviar}
+          onPress={aoReenviar}
+          disabled={reenviando}
+        />
+        <TextLink
+          label={copyAuth.confirmeEmail.voltar}
+          onPress={() => router.replace('/(auth)/login')}
+        />
       </View>
     </Screen>
   );

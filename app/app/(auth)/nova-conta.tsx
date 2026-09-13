@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -8,6 +8,7 @@ import {
   RowSeparator,
   FormRow,
   FilledButton,
+  TextLink,
   Text,
 } from '@/components/ui';
 import { useColors, spacing, screenMargin } from '@/theme';
@@ -19,6 +20,10 @@ import { track, eventos, telas } from '@/lib/analytics';
 
 /**
  * Tela 2 — Nova conta.
+ *
+ * Nota de layout: a coluna de rótulo aqui é de 116pt, e não os 76 a 96pt que o
+ * handoff indica. "Confirmação" em 17pt não cabe em 96 e quebra em duas linhas,
+ * desalinhando o grupo inteiro. Verificado no simulador em 13/09/2026.
  *
  * Serve a dois casos, e é importante que sirva aos dois:
  *
@@ -136,6 +141,7 @@ export default function NovaContaScreen() {
             autoCapitalize="words"
             autoComplete="name"
             editable={!salvando}
+            labelWidth={116}
           />
           <RowSeparator />
           <FormRow
@@ -146,6 +152,7 @@ export default function NovaContaScreen() {
             autoComplete="email"
             keyboardType="email-address"
             editable={!salvando && !completandoCadastro}
+            labelWidth={116}
           />
           {completandoCadastro ? null : (
             <>
@@ -158,6 +165,7 @@ export default function NovaContaScreen() {
                 autoCapitalize="none"
                 autoComplete="new-password"
                 editable={!salvando}
+                labelWidth={116}
               />
               <RowSeparator />
               <FormRow
@@ -169,6 +177,7 @@ export default function NovaContaScreen() {
                 autoComplete="new-password"
                 editable={!salvando}
                 hasError={senhasDiferem}
+                labelWidth={116}
               />
             </>
           )}
@@ -185,10 +194,8 @@ export default function NovaContaScreen() {
         </View>
 
         {completandoCadastro ? null : (
-          <View style={{ alignItems: 'center', marginTop: spacing.xxl }}>
-            <Pressable onPress={() => router.back()} accessibilityRole="link">
-              <Text style={{ color: colors.accent }}>{copyAuth.novaConta.jaTemConta}</Text>
-            </Pressable>
+          <View style={{ alignItems: 'center', marginTop: spacing.lg }}>
+            <TextLink label={copyAuth.novaConta.jaTemConta} onPress={() => router.back()} />
           </View>
         )}
       </Screen>

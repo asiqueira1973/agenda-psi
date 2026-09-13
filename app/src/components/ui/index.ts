@@ -7,6 +7,7 @@
 export { Text, type TextVariant } from './text';
 export { Icon, type IconName } from './icon';
 export { IconButton } from './icon-button';
+export { TextLink } from './text-link';
 export { ListGroup, RowSeparator } from './list-group';
 export { ActionRow, NavigationRow, ValueRow, FormRow, ToggleRow } from './rows';
 export { FilledButton } from './filled-button';

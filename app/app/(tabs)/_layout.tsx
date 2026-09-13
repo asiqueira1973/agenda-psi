@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Icon } from '@/components/ui';
-import { useColors, typography } from '@/theme';
+import { useColors, tabBarLabel } from '@/theme';
 
 /**
  * As cinco abas: Início, Agenda, Pacientes, Despesas, Configurações.
@@ -24,7 +24,7 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.accent as string,
         tabBarInactiveTintColor: colors.systemGray as string,
-        tabBarLabelStyle: typography.caption,
+        tabBarLabelStyle: tabBarLabel,
       }}
     >
       <Tabs.Screen

@@ -51,7 +51,7 @@ export const typography = {
     fontSize: 13,
     fontWeight: '400',
   },
-  /** Rótulo de aba e aviso legal do paywall. */
+  /** Aviso legal do paywall e textos de ajuda. */
   caption: {
     fontSize: 12,
     fontWeight: '400',
@@ -85,3 +85,19 @@ export const listBody: TextStyle = Platform.select({
   ios: typography.body,
   default: { fontSize: 16, fontWeight: '400' },
 });
+
+/**
+ * Rótulo de barra de abas.
+ *
+ * O handoff indica 12pt, mas em 12pt "Configurações" não cabe na quinta aba e
+ * sai truncado como "Configura...". Verificado no simulador em 13/09/2026.
+ * 10pt é o tamanho nativo do rótulo de aba do iOS — o mesmo do Ajustes, do
+ * Saúde e do Lembretes —, cabe, e deixa a barra mais parecida com as do
+ * sistema, que é o critério da regra de ouro do handoff.
+ *
+ * Caso de "o handoff é orientação, não lei" (decisão de 13/09/2026).
+ */
+export const tabBarLabel: TextStyle = {
+  fontSize: 10,
+  fontWeight: '500',
+};

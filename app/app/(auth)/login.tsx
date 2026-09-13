@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, View } from 'react-native';
 import { router } from 'expo-router';
 import {
   Screen,
@@ -9,6 +9,7 @@ import {
   FormRow,
   FilledButton,
   IconButton,
+  TextLink,
   Text,
 } from '@/components/ui';
 import { useColors, spacing, screenMargin, typography } from '@/theme';
@@ -130,29 +131,22 @@ export default function LoginScreen() {
           />
         </View>
 
-        <View style={{ alignItems: 'center', gap: spacing.lg, marginTop: spacing.xxl }}>
-          <Pressable onPress={aoEsquecerSenha} accessibilityRole="link">
-            <Text style={{ color: colors.accent }}>{copyAuth.login.esqueciSenha}</Text>
-          </Pressable>
-          <Pressable
+        <View style={{ alignItems: 'center', gap: spacing.sm, marginTop: spacing.lg }}>
+          <TextLink label={copyAuth.login.esqueciSenha} onPress={aoEsquecerSenha} />
+          <TextLink
+            label={copyAuth.login.criarConta}
             onPress={() => router.push('/(auth)/nova-conta')}
-            accessibilityRole="link"
-          >
-            <Text style={{ color: colors.accent }}>{copyAuth.login.criarConta}</Text>
-          </Pressable>
+          />
         </View>
       </Screen>
 
       <ScreenFooter>
-        <View style={{ alignItems: 'center', gap: spacing.xs }}>
-          <Pressable
+        <View style={{ alignItems: 'center' }}>
+          <TextLink
+            label={copyAuth.login.politica}
+            variant="footnote"
             onPress={() => router.push('/politica-de-privacidade')}
-            accessibilityRole="link"
-          >
-            <Text variant="footnote" style={{ color: colors.accent }}>
-              {copyAuth.login.politica}
-            </Text>
-          </Pressable>
+          />
           <Text variant="footnote" color="secondaryLabel">
             {copyAuth.login.assinatura}
           </Text>

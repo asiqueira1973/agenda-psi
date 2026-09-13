@@ -212,3 +212,45 @@ pessoa investigar CocoaPods — e não é CocoaPods.
 **`agenda-psi`**, no padrão dos outros apps. Nada dentro dependia do caminho
 absoluto: o git carrega o histórico, e os vínculos com Supabase e EAS são por
 identificador remoto.
+
+
+---
+
+## 10. Verificação em aparelho — 13/09/2026
+
+Primeira rodada com o app rodando no simulador, com conta de verdade contra o
+banco de produção. Conta de teste criada e depois desativada:
+`alexandre.silva.siqueira+psiteste@gmail.com`.
+
+**Critérios de aceite verificados**
+
+| Épico | Critério | Resultado |
+|---|---|---|
+| 8.1 | Login com conta real entra no app | passou |
+| 8.1 | Componentes base nos modos claro e escuro | passou |
+| 8.2 | Criar conta resulta em **exatamente uma** linha em `profissionais` | passou |
+| 8.2 | Autenticado sem ficha vai para completar o cadastro (6.3, passo 5) | passou |
+| 8.2 | `ativo = false` mostra a mensagem, desloga e fica no Login | passou |
+| 8.2 | "Esqueci minha senha" dispara o e-mail e mostra o texto da 15.2 | passou |
+| 8.2 | Nenhum erro do Supabase em inglês | passou — `E-mail ou senha incorretos.` e `Digite um e-mail válido` |
+| 8.3 | Cinco abas, todas com rótulo, sem aba de Locais | passou |
+| 8.3 | Estado vazio no lugar de 13 cartões zerados | passou |
+
+**Quatro defeitos que só o aparelho mostrou**, nenhum deles pegável por teste
+unitário ou por `tsc`:
+
+| # | Defeito | Correção |
+|---|---|---|
+| 1 | O large title subia por baixo da barra de status | `Screen` respeitava a área segura de baixo e não a de cima |
+| 2 | Rodapé com fundo claro no modo escuro, sumindo com o texto dentro dele | `ScreenFooter` fica fora do `Screen` e caía no branco padrão da raiz |
+| 3 | Links de texto não respondiam ao toque | Texto azul dentro de `Pressable` sem preenchimento tem área de toque da altura da LETRA. Criado o `TextLink`, com 44×44pt como o requisito 17.4 exige. **Este é o mais grave**: no mouse do simulador ele quase não aparece; no dedo, o link simplesmente não funciona |
+| 4 | "Configurações" truncado para "Configura..." na quinta aba | Rótulo de aba de 12pt para 10pt, que é o tamanho nativo do iOS |
+
+E um ajuste de layout: a coluna de rótulo do formulário de cadastro foi de 96pt
+para 116pt, porque "Confirmação" em 17pt não cabe em 96 e quebrava em duas
+linhas. O handoff indica 76 a 96pt.
+
+**Nota sobre a ferramenta de teste, não sobre o app:** a digitação do simulador
+perde caracteres em texto longo — `alexandre.silva.siqueira` virou
+`alexandre.silva.siq`. Isso produziu dois falsos negativos antes de ser
+percebido. Digitar em pedaços de seis caracteres resolve.
