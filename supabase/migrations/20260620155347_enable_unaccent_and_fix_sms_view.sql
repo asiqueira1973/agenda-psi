@@ -1,0 +1,17 @@
+-- =============================================================================
+-- Migration 20260620155347 — enable_unaccent_and_fix_sms_view
+--
+-- ARQUIVO INTENCIONALMENTE SEM SQL.
+--
+-- Esta migration foi aplicada no projeto antes deste repositório existir, pelo
+-- painel do Supabase e por MCP — exatamente a prática que a decisão D2 do spec
+-- veio encerrar. O histórico do banco a registra como aplicada.
+--
+-- Todo o efeito dela já está dentro de 20260913220000_0001_baseline.sql, que é
+-- o dump do schema como ele está hoje, depois dela. Repetir o SQL aqui criaria
+-- duas fontes para o mesmo objeto e faria o banco reconstruído do zero executar
+-- a mesma coisa duas vezes.
+--
+-- O arquivo existe para que o histórico local e o remoto batam. Sem ele o
+-- supabase db push se recusa a rodar, e está certo em se recusar.
+-- =============================================================================
