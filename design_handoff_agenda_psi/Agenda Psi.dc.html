@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#DCDCE3; }
+  a { color:#007AFF; text-decoration:none; }
+  a:hover { color:#0062CC; }
+  .t-light {
+    --brand:#007AFF; --onbrand:#FFFFFF; --bg:#FFFFFF; --grouped:#F2F2F7; --surface:#FFFFFF;
+    --text:#000000; --text2:rgba(60,60,67,.6); --text3:rgba(60,60,67,.3); --gray:#8E8E93;
+    --sep:#C6C6C8; --pos:#34C759; --warn:#FF9500; --neg:#FF3B30;
+    --fill:#E9E9EB; --board:#E8E8EE; --scrim:rgba(0,0,0,.4);
+    --posbg:#F2F2F7; --warnbg:#F2F2F7; --negbg:#F2F2F7; --brandbg:#F2F2F7;
+    --f:-apple-system,"SF Pro Text","SF Pro Display","Helvetica Neue",Helvetica,sans-serif;
+  }
+  .t-dark {
+    --brand:#0A84FF; --onbrand:#FFFFFF; --bg:#000000; --grouped:#000000; --surface:#1C1C1E;
+    --text:#FFFFFF; --text2:rgba(235,235,245,.6); --text3:rgba(235,235,245,.3); --gray:#8E8E93;
+    --sep:#38383A; --pos:#30D158; --warn:#FF9F0A; --neg:#FF453A;
+    --fill:#2C2C2E; --board:#141416; --scrim:rgba(0,0,0,.6);
+    --posbg:#1C1C1E; --warnbg:#1C1C1E; --negbg:#1C1C1E; --brandbg:#1C1C1E;
+    --f:-apple-system,"SF Pro Text","SF Pro Display","Helvetica Neue",Helvetica,sans-serif;
+  }
+  .android { --f:"Roboto",system-ui,sans-serif; }
+</style>
+</helmet>
+
+<div style="font-family:-apple-system,'SF Pro Text',Helvetica,sans-serif;color:#111113;padding:48px 40px 96px;display:flex;flex-direction:column;gap:56px;background:#DCDCE3">
+
+  <header style="display:flex;flex-direction:column;gap:12px;max-width:900px">
+    <div style="font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#6B6B70">Dab Lab · React Native / Expo</div>
+    <h1 style="margin:0;font-size:44px;font-weight:700;letter-spacing:-.02em">Agenda Psi</h1>
+    <p style="margin:0;font-size:17px;line-height:1.5;color:#3C3C43;max-width:640px;text-wrap:pretty">Telas do app de gestão de consultório. Cada seção aparece duas vezes: modo claro em cima, modo escuro embaixo. Paleta semântica do iOS, sem cor de marca: o azul do sistema é o único destaque, verde só em valor positivo do dashboard, laranja só no aviso de limite de SMS, vermelho só em ação destrutiva, despesa e erro. Listas agrupadas em toda parte. Telas 5, 9 e 11 também em versão Android, na última seção.</p>
+    <div style="display:grid;grid-template-columns:20px 1fr 96px 96px;gap:8px 14px;align-items:center;margin-top:12px;max-width:520px;font-size:13px">
+      <span></span><span style="color:#6B6B70">Token</span><span style="color:#6B6B70">Claro</span><span style="color:#6B6B70">Escuro</span>
+      <span style="width:16px;height:16px;border-radius:4px;background:#007AFF"></span><span>systemBlue</span><span style="font-variant-numeric:tabular-nums;color:#3C3C43">#007AFF</span><span style="font-variant-numeric:tabular-nums;color:#3C3C43">#0A84FF</span>
+      <span style="width:16px;height:16px;border-radius:4px;background:#34C759"></span><span>systemGreen</span><span style="font-variant-numeric:tabular-nums;color:#3C3C43">#34C759</span><span style="font-variant-numeric:tabular-nums;color:#3C3C43">#30D158</span>
+      <span style="width:16px;height:16px;border-radius:4px;background:#FF9500"></span><span>systemOrange</span><span style="font-variant-numeric:tabular-nums;color:#3C3C43">#FF9500</span><span style="font-variant-numeric:tabular-nums;color:#3C3C43">#FF9F0A</span>
+      <span style="width:16px;height:16px;border-radius:4px;background:#FF3B30"></span><span>systemRed</span><span style="font-variant-numeric:tabular-nums;color:#3C3C43">#FF3B30</span><span style="font-variant-numeric:tabular-nums;color:#3C3C43">#FF453A</span>
+      <span style="width:16px;height:16px;border-radius:4px;background:#8E8E93"></span><span>systemGray</span><span style="font-variant-numeric:tabular-nums;color:#3C3C43">#8E8E93</span><span style="font-variant-numeric:tabular-nums;color:#3C3C43">#8E8E93</span>
+      <span style="width:16px;height:16px;border-radius:4px;background:#C6C6C8"></span><span>opaqueSeparator</span><span style="font-variant-numeric:tabular-nums;color:#3C3C43">#C6C6C8</span><span style="font-variant-numeric:tabular-nums;color:#3C3C43">#38383A</span>
+    </div>
+  </header>
+
+  <section style="display:flex;flex-direction:column;gap:16px">
+    <h2 style="margin:0;font-size:26px;font-weight:700;letter-spacing:-.01em">1 · Autenticação</h2>
+    <div class="t-light" style="background:var(--board);border-radius:16px"><dc-import name="Auth" hint-size="3600px,1000px"></dc-import></div>
+    <div class="t-dark" style="background:var(--board);border-radius:16px"><dc-import name="Auth" hint-size="3600px,1000px"></dc-import></div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:16px">
+    <h2 style="margin:0;font-size:26px;font-weight:700;letter-spacing:-.01em">2 · Início</h2>
+    <div class="t-light" style="background:var(--board);border-radius:16px"><dc-import name="Inicio" hint-size="3600px,1000px"></dc-import></div>
+    <div class="t-dark" style="background:var(--board);border-radius:16px"><dc-import name="Inicio" hint-size="3600px,1000px"></dc-import></div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:16px">
+    <h2 style="margin:0;font-size:26px;font-weight:700;letter-spacing:-.01em">3 · Agenda</h2>
+    <div class="t-light" style="background:var(--board);border-radius:16px"><dc-import name="Agenda" hint-size="3000px,1000px"></dc-import></div>
+    <div class="t-dark" style="background:var(--board);border-radius:16px"><dc-import name="Agenda" hint-size="3000px,1000px"></dc-import></div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:16px">
+    <h2 style="margin:0;font-size:26px;font-weight:700;letter-spacing:-.01em">4 · Pacientes</h2>
+    <div class="t-light" style="background:var(--board);border-radius:16px"><dc-import name="Pacientes" hint-size="4000px,1000px"></dc-import></div>
+    <div class="t-dark" style="background:var(--board);border-radius:16px"><dc-import name="Pacientes" hint-size="4000px,1000px"></dc-import></div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:16px">
+    <h2 style="margin:0;font-size:26px;font-weight:700;letter-spacing:-.01em">5 · Detalhe do paciente, sessões e pagamentos</h2>
+    <div class="t-light" style="background:var(--board);border-radius:16px"><dc-import name="PacienteDetalhe" hint-size="3600px,1000px"></dc-import></div>
+    <div class="t-dark" style="background:var(--board);border-radius:16px"><dc-import name="PacienteDetalhe" hint-size="3600px,1000px"></dc-import></div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:16px">
+    <h2 style="margin:0;font-size:26px;font-weight:700;letter-spacing:-.01em">6 · Despesas</h2>
+    <div class="t-light" style="background:var(--board);border-radius:16px"><dc-import name="Despesas" hint-size="2600px,1000px"></dc-import></div>
+    <div class="t-dark" style="background:var(--board);border-radius:16px"><dc-import name="Despesas" hint-size="2600px,1000px"></dc-import></div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:16px">
+    <h2 style="margin:0;font-size:26px;font-weight:700;letter-spacing:-.01em">7 · Agente Psi</h2>
+    <div class="t-light" style="background:var(--board);border-radius:16px"><dc-import name="Agente" hint-size="2000px,1000px"></dc-import></div>
+    <div class="t-dark" style="background:var(--board);border-radius:16px"><dc-import name="Agente" hint-size="2000px,1000px"></dc-import></div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:16px">
+    <h2 style="margin:0;font-size:26px;font-weight:700;letter-spacing:-.01em">8 · Configurações, plano e paywall</h2>
+    <div class="t-light" style="background:var(--board);border-radius:16px"><dc-import name="Config" hint-size="5600px,1000px"></dc-import></div>
+    <div class="t-dark" style="background:var(--board);border-radius:16px"><dc-import name="Config" hint-size="5600px,1000px"></dc-import></div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:16px">
+    <h2 style="margin:0;font-size:26px;font-weight:700;letter-spacing:-.01em">9 · Android — telas 5, 9 e 11</h2>
+    <p style="margin:0;font-size:15px;color:#3C3C43;max-width:640px">Mesma paleta e mesma hierarquia. Muda a tipografia (Roboto), os ícones (Material Symbols), o cabeçalho (top app bar no lugar do large title), a lista (largura total, sem container arredondado), a barra de navegação com indicador em pílula e o FAB no lugar do <code>+</code> na barra.</p>
+    <div class="t-light android" style="background:var(--board);border-radius:16px"><dc-import name="Android" hint-size="1400px,1000px"></dc-import></div>
+    <div class="t-dark android" style="background:var(--board);border-radius:16px"><dc-import name="Android" hint-size="1400px,1000px"></dc-import></div>
+  </section>
+
+
+</div>
+</x-dc>
+</body>
+</html>

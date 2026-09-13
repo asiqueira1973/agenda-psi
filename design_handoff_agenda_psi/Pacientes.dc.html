@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="display:flex;gap:28px;padding:28px;font-family:var(--f,-apple-system,sans-serif);color:var(--text,#000);align-items:flex-start">
+
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div style="font-size:13px;font-weight:600;color:var(--text2,#6B6B70)">9a · Pacientes — carregando</div>
+    <div style="width:390px;height:844px;background:var(--grouped,#F2F2F7);border-radius:14px;overflow:hidden;display:flex;flex-direction:column">
+      <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:15px;font-weight:600;flex:none"><span>9:41</span><span style="font-size:12px;color:var(--text2)">▮▮▮ 100%</span></div>
+      <div style="padding:4px 16px 8px;display:flex;align-items:flex-end;justify-content:space-between;flex:none">
+        <div style="font-size:34px;font-weight:700;letter-spacing:-.02em">Pacientes</div>
+        <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;margin-right:-10px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--brand,#007AFF)" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></div>
+      </div>
+      <div style="padding:0 16px 12px;flex:none"><div style="height:36px;border-radius:10px;background:var(--fill,#E9E9EB);display:flex;align-items:center;gap:6px;padding:0 10px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4.5 4.5"></path></svg><span style="font-size:17px;color:var(--text2)">Buscar</span></div></div>
+      <div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+        <div style="flex:none;margin:0 16px;background:var(--surface,#fff);border-radius:10px;overflow:hidden">
+          <div style="height:64px;display:flex;flex-direction:column;justify-content:center;gap:8px;padding:0 16px"><div style="width:150px;height:14px;border-radius:6px;background:var(--fill,#E9E9EB)"></div><div style="width:230px;height:12px;border-radius:6px;background:var(--fill,#E9E9EB)"></div></div>
+          <div style="height:.5px;background:var(--sep,#C6C6C8);margin-left:16px"></div>
+          <div style="height:64px;display:flex;flex-direction:column;justify-content:center;gap:8px;padding:0 16px"><div style="width:120px;height:14px;border-radius:6px;background:var(--fill,#E9E9EB)"></div><div style="width:210px;height:12px;border-radius:6px;background:var(--fill,#E9E9EB)"></div></div>
+          <div style="height:.5px;background:var(--sep,#C6C6C8);margin-left:16px"></div>
+          <div style="height:64px;display:flex;flex-direction:column;justify-content:center;gap:8px;padding:0 16px"><div style="width:138px;height:14px;border-radius:6px;background:var(--fill,#E9E9EB)"></div><div style="width:196px;height:12px;border-radius:6px;background:var(--fill,#E9E9EB)"></div></div>
+          <div style="height:.5px;background:var(--sep,#C6C6C8);margin-left:16px"></div>
+          <div style="height:64px;display:flex;flex-direction:column;justify-content:center;gap:8px;padding:0 16px"><div style="width:126px;height:14px;border-radius:6px;background:var(--fill,#E9E9EB)"></div><div style="width:220px;height:12px;border-radius:6px;background:var(--fill,#E9E9EB)"></div></div>
+          <div style="height:.5px;background:var(--sep,#C6C6C8);margin-left:16px"></div>
+          <div style="height:64px;display:flex;flex-direction:column;justify-content:center;gap:8px;padding:0 16px"><div style="width:144px;height:14px;border-radius:6px;background:var(--fill,#E9E9EB)"></div><div style="width:204px;height:12px;border-radius:6px;background:var(--fill,#E9E9EB)"></div></div>
+        </div>
+      </div>
+      <dc-import name="TabBar" active="pacientes" hint-size="390px,83px"></dc-import>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div style="font-size:13px;font-weight:600;color:var(--text2,#6B6B70)">9b · Pacientes — vazio</div>
+    <div style="width:390px;height:844px;background:var(--grouped,#F2F2F7);border-radius:14px;overflow:hidden;display:flex;flex-direction:column">
+      <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:15px;font-weight:600;flex:none"><span>9:41</span><span style="font-size:12px;color:var(--text2)">▮▮▮ 100%</span></div>
+      <div style="padding:4px 16px 8px;display:flex;align-items:flex-end;justify-content:space-between;flex:none">
+        <div style="font-size:34px;font-weight:700;letter-spacing:-.02em">Pacientes</div>
+        <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;margin-right:-10px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--brand,#007AFF)" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 40px;gap:12px;text-align:center">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--gray,#8E8E93)" stroke-width="1.2"><circle cx="9" cy="8" r="3.6"></circle><path d="M2.5 20c0-3.4 2.9-5.8 6.5-5.8s6.5 2.4 6.5 5.8M18 6.5v6M21 9.5h-6"></path></svg>
+        <div style="font-size:17px;font-weight:600;line-height:1.3">Você ainda não tem pacientes cadastrados.</div>
+        <div style="font-size:15px;line-height:1.4;color:var(--text2)">Cadastre um paciente para começar a registrar sessões e pagamentos.</div>
+      </div>
+      <div style="flex:none;padding:0 16px 16px"><div style="height:50px;border-radius:10px;background:var(--brand,#007AFF);color:var(--onbrand,#fff);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:600">Cadastrar paciente</div></div>
+      <dc-import name="TabBar" active="pacientes" hint-size="390px,83px"></dc-import>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div style="font-size:13px;font-weight:600;color:var(--text2,#6B6B70)">9c · Pacientes — lista</div>
+    <div style="width:390px;height:844px;background:var(--grouped,#F2F2F7);border-radius:14px;overflow:hidden;display:flex;flex-direction:column">
+      <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:15px;font-weight:600;flex:none"><span>9:41</span><span style="font-size:12px;color:var(--text2)">▮▮▮ 100%</span></div>
+      <div style="padding:4px 16px 8px;display:flex;align-items:flex-end;justify-content:space-between;flex:none">
+        <div style="font-size:34px;font-weight:700;letter-spacing:-.02em">Pacientes</div>
+        <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;margin-right:-10px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--brand,#007AFF)" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></div>
+      </div>
+      <div style="padding:0 16px 12px;flex:none"><div style="height:36px;border-radius:10px;background:var(--fill,#E9E9EB);display:flex;align-items:center;gap:6px;padding:0 10px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4.5 4.5"></path></svg><span style="font-size:17px;color:var(--text2)">Buscar</span></div></div>
+      <div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+        <div style="flex:none;padding:0 16px 6px"><span style="font-size:13px;color:var(--text2);font-variant-numeric:tabular-nums">18 PACIENTES ATIVOS</span></div>
+        <div style="flex:none;margin:0 16px;background:var(--surface,#fff);border-radius:10px;overflow:hidden">
+
+          <div style="min-height:64px;display:flex;align-items:center;gap:10px;padding:10px 16px">
+            <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+              <span style="font-size:17px;font-weight:600">Fernanda Souza</span>
+              <span style="font-size:15px;color:var(--text2);font-variant-numeric:tabular-nums">R$ 200 · 12 sessões · última 05/03/2026</span>
+              <span style="font-size:15px;color:var(--text2);font-variant-numeric:tabular-nums">2 sessões não pagas</span>
+            </div>
+            <svg width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="var(--text3,#C6C6C8)" stroke-width="2" stroke-linecap="round" style="flex:none"><path d="m1.5 1.5 6 6-6 6"></path></svg>
+          </div>
+          <div style="height:.5px;background:var(--sep,#C6C6C8);margin-left:16px"></div>
+
+          <div style="min-height:64px;display:flex;align-items:center;gap:10px;padding:10px 16px">
+            <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+              <span style="font-size:17px;font-weight:600">João Martins</span>
+              <span style="font-size:15px;color:var(--text2);font-variant-numeric:tabular-nums">R$ 250 · 34 sessões · última 04/03/2026</span>
+            </div>
+            <svg width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="var(--text3,#C6C6C8)" stroke-width="2" stroke-linecap="round" style="flex:none"><path d="m1.5 1.5 6 6-6 6"></path></svg>
+          </div>
+          <div style="height:.5px;background:var(--sep,#C6C6C8);margin-left:16px"></div>
+
+          <div style="min-height:64px;display:flex;align-items:center;gap:10px;padding:10px 16px">
+            <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+              <span style="font-size:17px;font-weight:600">Carla Nunes</span>
+              <span style="font-size:15px;color:var(--text2);font-variant-numeric:tabular-nums">R$ 180 · nenhuma sessão ainda</span>
+            </div>
+            <svg width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="var(--text3,#C6C6C8)" stroke-width="2" stroke-linecap="round" style="flex:none"><path d="m1.5 1.5 6 6-6 6"></path></svg>
+          </div>
+          <div style="height:.5px;background:var(--sep,#C6C6C8);margin-left:16px"></div>
+
+          <div style="min-height:64px;display:flex;align-items:center;gap:10px;padding:10px 16px">
+            <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+              <span style="font-size:17px;font-weight:600">Marcos Ribeiro</span>
+              <span style="font-size:15px;color:var(--text2);font-variant-numeric:tabular-nums">R$ 220 · 8 sessões · última 02/03/2026</span>
+              <span style="font-size:15px;color:var(--text2);font-variant-numeric:tabular-nums">1 sessão não paga</span>
+            </div>
+            <svg width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="var(--text3,#C6C6C8)" stroke-width="2" stroke-linecap="round" style="flex:none"><path d="m1.5 1.5 6 6-6 6"></path></svg>
+          </div>
+          <div style="height:.5px;background:var(--sep,#C6C6C8);margin-left:16px"></div>
+
+          <div style="min-height:64px;display:flex;align-items:center;gap:10px;padding:10px 16px">
+            <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+              <span style="font-size:17px;font-weight:600">Beatriz Lopes</span>
+              <span style="font-size:15px;color:var(--text2);font-variant-numeric:tabular-nums">R$ 200 · 21 sessões · última 03/03/2026</span>
+            </div>
+            <svg width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="var(--text3,#C6C6C8)" stroke-width="2" stroke-linecap="round" style="flex:none"><path d="m1.5 1.5 6 6-6 6"></path></svg>
+          </div>
+        </div>
+
+        <div style="flex:none;padding:24px 16px 6px"><span style="font-size:13px;color:var(--text2)">INATIVOS</span></div>
+        <div style="flex:none;margin:0 16px;background:var(--surface,#fff);border-radius:10px;overflow:hidden">
+          <div style="min-height:64px;display:flex;align-items:center;gap:10px;padding:10px 16px">
+            <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+              <span style="font-size:17px;font-weight:600">Ana Prado</span>
+              <span style="font-size:15px;color:var(--text2);font-variant-numeric:tabular-nums">R$ 180 · 9 sessões · última 22/12/2025</span>
+            </div>
+            <span style="font-size:17px;color:var(--text2);flex:none">Inativo</span>
+            <svg width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="var(--text3,#C6C6C8)" stroke-width="2" stroke-linecap="round" style="flex:none"><path d="m1.5 1.5 6 6-6 6"></path></svg>
+          </div>
+        </div>
+      </div>
+      <dc-import name="TabBar" active="pacientes" hint-size="390px,83px"></dc-import>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div style="font-size:13px;font-weight:600;color:var(--text2,#6B6B70)">9d · Busca sem resultado</div>
+    <div style="width:390px;height:844px;background:var(--grouped,#F2F2F7);border-radius:14px;overflow:hidden;display:flex;flex-direction:column">
+      <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:15px;font-weight:600;flex:none"><span>9:41</span><span style="font-size:12px;color:var(--text2)">▮▮▮ 100%</span></div>
+      <div style="height:44px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 16px;flex:none">
+        <div style="flex:1;height:36px;border-radius:10px;background:var(--fill,#E9E9EB);display:flex;align-items:center;gap:6px;padding:0 10px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4.5 4.5"></path></svg><span style="font-size:17px">ana</span></div>
+        <span style="font-size:17px;color:var(--brand,#007AFF)">Cancelar</span>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 40px;gap:12px;text-align:center">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--gray,#8E8E93)" stroke-width="1.2"><circle cx="11" cy="11" r="7"></circle><path d="m16.5 16.5 5 5"></path></svg>
+        <div style="font-size:17px;font-weight:600;line-height:1.3">Nenhum paciente encontrado para "ana".</div>
+        <div style="font-size:15px;line-height:1.4;color:var(--text2)">Tente outro nome ou cadastre um paciente novo.</div>
+      </div>
+      <div style="flex:none;padding:0 16px 16px"><div style="height:50px;border-radius:10px;background:var(--brand,#007AFF);color:var(--onbrand,#fff);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:600">Cadastrar paciente</div></div>
+      <dc-import name="TabBar" active="pacientes" hint-size="390px,83px"></dc-import>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div style="font-size:13px;font-weight:600;color:var(--text2,#6B6B70)">9e · Deslize para excluir</div>
+    <div style="width:390px;height:844px;background:var(--grouped,#F2F2F7);border-radius:14px;overflow:hidden;display:flex;flex-direction:column">
+      <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:15px;font-weight:600;flex:none"><span>9:41</span><span style="font-size:12px;color:var(--text2)">▮▮▮ 100%</span></div>
+      <div style="padding:4px 16px 8px;flex:none"><div style="font-size:34px;font-weight:700;letter-spacing:-.02em">Pacientes</div></div>
+      <div style="padding:0 16px 12px;flex:none"><div style="height:36px;border-radius:10px;background:var(--fill,#E9E9EB);display:flex;align-items:center;gap:6px;padding:0 10px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4.5 4.5"></path></svg><span style="font-size:17px;color:var(--text2)">Buscar</span></div></div>
+      <div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+        <div style="flex:none;margin:0 16px;background:var(--surface,#fff);border-radius:10px;overflow:hidden">
+          <div style="min-height:64px;display:flex;align-items:stretch">
+            <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:10px 16px;margin-left:-88px">
+              <span style="font-size:17px;font-weight:600">Fernanda Souza</span>
+              <span style="font-size:15px;color:var(--text2);font-variant-numeric:tabular-nums">R$ 200 · 12 sessões · última 05/03/2026</span>
+            </div>
+            <div style="width:88px;background:var(--neg,#FF3B30);color:#fff;display:flex;align-items:center;justify-content:center;flex:none"><span style="font-size:15px">Excluir</span></div>
+          </div>
+          <div style="height:.5px;background:var(--sep,#C6C6C8);margin-left:16px"></div>
+          <div style="min-height:64px;display:flex;align-items:center;gap:10px;padding:10px 16px">
+            <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+              <span style="font-size:17px;font-weight:600">João Martins</span>
+              <span style="font-size:15px;color:var(--text2);font-variant-numeric:tabular-nums">R$ 250 · 34 sessões · última 04/03/2026</span>
+            </div>
+            <svg width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="var(--text3,#C6C6C8)" stroke-width="2" stroke-linecap="round" style="flex:none"><path d="m1.5 1.5 6 6-6 6"></path></svg>
+          </div>
+          <div style="height:.5px;background:var(--sep,#C6C6C8);margin-left:16px"></div>
+          <div style="min-height:64px;display:flex;align-items:center;gap:10px;padding:10px 16px">
+            <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+              <span style="font-size:17px;font-weight:600">Carla Nunes</span>
+              <span style="font-size:15px;color:var(--text2);font-variant-numeric:tabular-nums">R$ 180 · nenhuma sessão ainda</span>
+            </div>
+            <svg width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="var(--text3,#C6C6C8)" stroke-width="2" stroke-linecap="round" style="flex:none"><path d="m1.5 1.5 6 6-6 6"></path></svg>
+          </div>
+        </div>
+      </div>
+      <dc-import name="TabBar" active="pacientes" hint-size="390px,83px"></dc-import>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div style="font-size:13px;font-weight:600;color:var(--text2,#6B6B70)">9f · Alerta — excluir paciente</div>
+    <div style="width:390px;height:844px;background:var(--grouped,#F2F2F7);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;position:relative">
+      <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:15px;font-weight:600;flex:none"><span>9:41</span><span style="font-size:12px;color:var(--text2)">▮▮▮ 100%</span></div>
+      <div style="padding:4px 16px 8px;flex:none"><div style="font-size:34px;font-weight:700;letter-spacing:-.02em">Pacientes</div></div>
+      <div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+        <div style="flex:none;margin:0 16px;background:var(--surface,#fff);border-radius:10px;overflow:hidden">
+          <div style="height:64px;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:0 16px"><span style="font-size:17px;font-weight:600">Fernanda Souza</span><span style="font-size:15px;color:var(--text2);font-variant-numeric:tabular-nums">R$ 200 · 12 sessões</span></div>
+          <div style="height:.5px;background:var(--sep,#C6C6C8);margin-left:16px"></div>
+          <div style="height:64px;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:0 16px"><span style="font-size:17px;font-weight:600">João Martins</span><span style="font-size:15px;color:var(--text2);font-variant-numeric:tabular-nums">R$ 250 · 34 sessões</span></div>
+        </div>
+      </div>
+      <dc-import name="TabBar" active="pacientes" hint-size="390px,83px"></dc-import>
+      <div style="position:absolute;inset:0;background:var(--scrim,rgba(0,0,0,.4));display:flex;align-items:center;justify-content:center;padding:0 48px">
+        <div style="width:100%;border-radius:14px;background:var(--surface,#fff);overflow:hidden">
+          <div style="padding:19px 16px;display:flex;flex-direction:column;gap:4px;text-align:center">
+            <div style="font-size:17px;font-weight:600">Excluir Fernanda Souza?</div>
+            <div style="font-size:13px;line-height:1.35;color:var(--text2);text-wrap:pretty">Isso apaga também todas as sessões, pagamentos, preços e horários desse paciente. Não dá para desfazer. Se você só quer parar de atender, mude o status para Inativo.</div>
+          </div>
+          <div style="height:.5px;background:var(--sep,#C6C6C8)"></div>
+          <div style="display:flex">
+            <div style="flex:1;height:44px;display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--brand,#007AFF)">Cancelar</div>
+            <div style="width:.5px;background:var(--sep,#C6C6C8)"></div>
+            <div style="flex:1;height:44px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:600;color:var(--neg,#FF3B30)">Excluir</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div style="font-size:13px;font-weight:600;color:var(--text2,#6B6B70)">10 · Novo paciente</div>
+    <div style="width:390px;height:844px;background:var(--grouped,#F2F2F7);border-radius:14px;overflow:hidden;display:flex;flex-direction:column">
+      <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:15px;font-weight:600;flex:none"><span>9:41</span><span style="font-size:12px;color:var(--text2)">▮▮▮ 100%</span></div>
+      <div style="height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex:none">
+        <span style="font-size:17px;color:var(--brand,#007AFF)">Cancelar</span>
+        <span style="font-size:17px;font-weight:600">Novo paciente</span>
+        <span style="font-size:17px;font-weight:600;color:var(--brand,#007AFF)">Salvar</span>
+      </div>
+      <div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+        <div style="flex:none;margin:8px 16px 0;background:var(--surface,#fff);border-radius:10px;overflow:hidden">
+          <div style="height:44px;display:flex;align-items:center;gap:16px;padding:0 16px"><span style="font-size:17px;width:88px;flex:none">Nome</span><span style="font-size:17px">Fernanda Souza</span></div>
+          <div style="height:.5px;background:var(--sep,#C6C6C8);margin-left:16px"></div>
+          <div style="height:44px;display:flex;align-items:center;gap:16px;padding:0 16px"><span style="font-size:17px;width:88px;flex:none">Telefone</span><span style="font-size:17px;font-variant-numeric:tabular-nums">+55 21 99999-9999</span></div>
+          <div style="height:.5px;background:var(--sep,#C6C6C8);margin-left:16px"></div>
+          <div style="height:44px;display:flex;align-items:center;gap:16px;padding:0 16px"><span style="font-size:17px;width:88px;flex:none">E-mail</span><span style="font-size:17px">fernanda.souza@email.com</span></div>
+          <div style="height:.5px;background:var(--sep,#C6C6C8);margin-left:16px"></div>
+          <div style="height:44px;display:flex;align-items:center;gap:16px;padding:0 16px"><span style="font-size:17px;width:88px;flex:none">Preço</span><span style="font-size:17px;font-variant-numeric:tabular-nums">200</span></div>
+        </div>
+        <div style="flex:none;padding:6px 16px 0"><span style="font-size:13px;color:var(--text2)">Valor inteiro, sem centavos.</span></div>
+
+        <div style="flex:none;padding:24px 16px 0">
+          <div style="background:var(--surface,#fff);border-radius:10px;min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px 16px">
+            <span style="font-size:17px;line-height:1.3">Enviar SMS minutos antes da sessão</span>
+            <div style="width:51px;height:31px;border-radius:16px;background:var(--pos,#34C759);display:flex;align-items:center;justify-content:flex-end;padding:2px;flex:none"><div style="width:27px;height:27px;border-radius:14px;background:#fff"></div></div>
+          </div>
+        </div>
+
+        <div style="flex:none;padding:24px 16px 6px"><span style="font-size:13px;color:var(--text2)">OBSERVAÇÕES</span></div>
+        <div style="flex:none;padding:0 16px"><div style="background:var(--surface,#fff);border-radius:10px;min-height:88px;padding:12px 16px;font-size:17px">Indicação da Dra. Helena</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div style="font-size:13px;font-weight:600;color:var(--text2,#6B6B70)">10a · Novo paciente — erros</div>
+    <div style="width:390px;height:844px;background:var(--grouped,#F2F2F7);border-radius:14px;overflow:hidden;display:flex;flex-direction:column">
+      <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:15px;font-weight:600;flex:none"><span>9:41</span><span style="font-size:12px;color:var(--text2)">▮▮▮ 100%</span></div>
+      <div style="height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex:none">
+        <span style="font-size:17px;color:var(--brand,#007AFF)">Cancelar</span>
+        <span style="font-size:17px;font-weight:600">Novo paciente</span>
+        <span style="font-size:17px;font-weight:600;color:var(--brand,#007AFF)">Salvar</span>
+      </div>
+      <div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+        <div style="flex:none;margin:8px 16px 0;background:var(--surface,#fff);border-radius:10px;overflow:hidden">
+          <div style="height:44px;display:flex;align-items:center;gap:16px;padding:0 16px"><span style="font-size:17px;width:88px;flex:none">Nome</span><span style="font-size:17px;color:var(--text3,#C6C6C8)">Nome completo</span></div>
+          <div style="height:.5px;background:var(--sep,#C6C6C8);margin-left:16px"></div>
+          <div style="height:44px;display:flex;align-items:center;gap:16px;padding:0 16px"><span style="font-size:17px;width:88px;flex:none">Telefone</span><span style="font-size:17px;color:var(--text3,#C6C6C8);font-variant-numeric:tabular-nums">+55 21 99999-9999</span></div>
+          <div style="height:.5px;background:var(--sep,#C6C6C8);margin-left:16px"></div>
+          <div style="height:44px;display:flex;align-items:center;gap:16px;padding:0 16px"><span style="font-size:17px;width:88px;flex:none">E-mail</span><span style="font-size:17px;color:var(--text3,#C6C6C8)">nome@email.com</span></div>
+          <div style="height:.5px;background:var(--sep,#C6C6C8);margin-left:16px"></div>
+          <div style="height:44px;display:flex;align-items:center;gap:16px;padding:0 16px"><span style="font-size:17px;width:88px;flex:none">Preço</span><span style="font-size:17px;font-variant-numeric:tabular-nums">200,50</span></div>
+        </div>
+        <div style="flex:none;padding:6px 16px 0;display:flex;flex-direction:column;gap:3px">
+          <span style="font-size:13px;color:var(--neg,#FF3B30)">O nome é obrigatório</span>
+          <span style="font-size:13px;color:var(--neg,#FF3B30)">O telefone é obrigatório</span>
+          <span style="font-size:13px;color:var(--neg,#FF3B30)">Informe um valor inteiro, sem centavos. Ex: 200</span>
+        </div>
+        <div style="flex:none;padding:24px 16px 0">
+          <div style="background:var(--surface,#fff);border-radius:10px;min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px 16px">
+            <span style="font-size:17px;line-height:1.3">Enviar SMS minutos antes da sessão</span>
+            <div style="width:51px;height:31px;border-radius:16px;background:var(--pos,#34C759);display:flex;align-items:center;justify-content:flex-end;padding:2px;flex:none"><div style="width:27px;height:27px;border-radius:14px;background:#fff"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div style="font-size:13px;font-weight:600;color:var(--text2,#6B6B70)">12 · Editar paciente</div>
+    <div style="width:390px;height:844px;background:var(--grouped,#F2F2F7);border-radius:14px;overflow:hidden;display:flex;flex-direction:column">
+      <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:15px;font-weight:600;flex:none"><span>9:41</span><span style="font-size:12px;color:var(--text2)">▮▮▮ 100%</span></div>
+      <div style="height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex:none">
+        <span style="font-size:17px;color:var(--brand,#007AFF)">Cancelar</span>
+        <span style="font-size:17px;font-weight:600">Editar paciente</span>
+        <span style="font-size:17px;font-weight:600;color:var(--brand,#007AFF)">Salvar</span>
+      </div>
+      <div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+        <div style="flex:none;margin:8px 16px 0;background:var(--surface,#fff);border-radius:10px;overflow:hidden">
+          <div style="height:44px;display:flex;align-items:center;gap:16px;padding:0 16px"><span style="font-size:17px;width:88px;flex:none">Nome</span><span style="font-size:17px">Fernanda Souza</span></div>
+          <div style="height:.5px;background:var(--sep,#C6C6C8);margin-left:16px"></div>
+          <div style="height:44px;display:flex;align-items:center;gap:16px;padding:0 16px"><span style="font-size:17px;width:88px;flex:none">Telefone</span><span style="font-size:17px;font-variant-numeric:tabular-nums">+55 21 99999-9999</span></div>
+          <div style="height:.5px;background:var(--sep,#C6C6C8);margin-left:16px"></div>
+          <div style="height:44px;display:flex;align-items:center;gap:16px;padding:0 16px"><span style="font-size:17px;width:88px;flex:none">E-mail</span><span style="font-size:17px">fernanda.souza@email.com</span></div>
+        </div>
+
+        <div style="flex:none;padding:24px 16px 6px"><span style="font-size:13px;color:var(--text2)">STATUS</span></div>
+        <div style="flex:none;padding:0 16px"><div style="display:flex;background:var(--fill,#E9E9EB);border-radius:9px;padding:2px;gap:2px"><div style="flex:1;height:32px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;background:var(--surface,#fff);border-radius:7px">Ativo</div><div style="flex:1;height:32px;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--text2)">Inativo</div></div></div>
+
+        <div style="flex:none;padding:24px 16px 0">
+          <div style="background:var(--surface,#fff);border-radius:10px;min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px 16px">
+            <span style="font-size:17px;line-height:1.3">Enviar SMS minutos antes da sessão</span>
+            <div style="width:51px;height:31px;border-radius:16px;background:var(--pos,#34C759);display:flex;align-items:center;justify-content:flex-end;padding:2px;flex:none"><div style="width:27px;height:27px;border-radius:14px;background:#fff"></div></div>
+          </div>
+        </div>
+
+        <div style="flex:none;padding:24px 16px 6px"><span style="font-size:13px;color:var(--text2)">OBSERVAÇÕES</span></div>
+        <div style="flex:none;padding:0 16px"><div style="background:var(--surface,#fff);border-radius:10px;min-height:88px;padding:12px 16px;font-size:17px">Indicação da Dra. Helena</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

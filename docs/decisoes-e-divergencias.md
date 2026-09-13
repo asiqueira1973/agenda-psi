@@ -61,6 +61,11 @@ Descobertos em 13/09/2026, durante a Fase 1. **Precisam ser incorporados ao spec
 | 4.2 | **O app é pago na App Store**: R$ 49,90 no Brasil, receita de R$ 40,93. Na Play está sem preço | Nada. O spec trata o app como gratuito e descreve o paywall como "a infraestrutura de cobrança que o produto ainda não tem" | A copy de 15.7 chama o usuário de "plano gratuito" — para quem pagou R$ 49,90, isso soa errado |
 | 4.3 | **Decisão: tirar o preço da Apple na release nova.** O app fica gratuito nas duas lojas e a cobrança passa a ser só o paywall de SMS | — | Resolve a tensão de 4.2: "plano gratuito" volta a ser verdade. Faz da assinatura Pro a **única** fonte de receita, o que aumenta o peso da pergunta 25.1. Quem já pagou continua com o app |
 | 4.4 | A Play Console avisa: exigência de *target API level*, prazo **1º de novembro de 2026** | Nada | Entra como restrição de configuração do build Android no 8.12 |
+| 4.5 | **A atualização desloga 100% da base, por construção.** O app atual é `supabase_flutter` 2.9.0, que persiste a sessão em `SharedPreferences` (NSUserDefaults no iOS). O app Expo persiste em `expo-secure-store` (Keychain). São lugares diferentes: o app novo não encontra a sessão do antigo | Critério de aceite de 8.12: "instala por cima do app FlutterFlow no iOS como atualização, **mantendo a sessão**". Risco 23.8 trata o deslogamento em massa como possibilidade de baixa probabilidade | O critério de 8.12 é **impossível** como escrito, e o risco 23.8 deixa de ser risco e vira evento certo. As 362 contas fazem login de uma vez, e quem esqueceu a senha depende de um fluxo de recuperação que **não existe no app atual** (spec 6.4) e nunca rodou em produção. Levantado por Alexandre em 13/09/2026 |
+| 4.6 | Expo SDK 57 exige iOS **16.4**, não 16.0 | Requisito 17.6: "iOS 16+" | `deploymentTarget` fica em 16.4. Aparelhos entre 16.0 e 16.3 ficam de fora |
+| 4.7 | O app atual está na versão **4.0.0+17** | O rodapé de Configurações no handoff diz `Agenda Psi 1.0 · Dab Lab` | O `app.json` foi para `5.0.0`, `versionCode` 18. O rodapé precisa mostrar a versão real, não 1.0 |
+| 4.8 | A chave do Visão do Produto é de ingestão, só escrita — pública como a do PostHog | Tabela de variáveis da 18 classifica `VISAODEPRODUTO_API_KEY` como "só Edge Functions"; risco 23.3 a trata como chave de terceiro indevidamente no bundle | Decidido por Alexandre em 13/09/2026: vai no bundle como `EXPO_PUBLIC_VISAODEPRODUTO_KEY`, sem Edge Function no meio. A chave atual está exposta no app publicado e precisa ser rotacionada no lançamento |
+| 4.9 | Analytics deixa de ser PostHog e passa a ser **Visão do Produto** | Seção 4.1 (stack), 20.4, 21 e risco 23.9 falam de PostHog | Decidido por Alexandre em 13/09/2026. Os nomes `psi_*` são mantidos (21) e a regra de 20.4 continua valendo: nenhum evento carrega nome de paciente, valor, observação ou texto digitado. O argumento da série histórica (risco 23.9) perde o sentido, já que a série do PostHog fica para trás de qualquer jeito |
 
 ---
 
@@ -72,3 +77,37 @@ Descobertos em 13/09/2026, durante a Fase 1. **Precisam ser incorporados ao spec
 | 5.2 | Guardar a `service_role` atual no Vault (passo 1 do runbook no cabeçalho da 0005) | A **0005** e, com ela, o risco 23.2 |
 | 5.3 | Responder a **25.1** — preço, periodicidade e teste gratuito do Pro | O 8.11 e a criação dos produtos nas duas lojas, que é ação sua e leva dias |
 | 5.4 | Conta EAS, chaves do RevenueCat, `EXPO_PUBLIC_POSTHOG_KEY` | O épico 8.1 |
+
+
+---
+
+## 6. O deslogamento em massa — o que precisa ser decidido
+
+Detalhe do fato 4.5, porque é o item de maior impacto sobre usuário real que
+apareceu até agora.
+
+**O que acontece hoje, sem fazer nada:** a pessoa atualiza o app, abre, e está
+na tela de login. Ela não lembra a senha, porque entrou uma vez há um ano e o
+app nunca mais pediu. O caminho dela passa a ser: "Esqueci minha senha" → e-mail
+→ link → deep link abrindo o app na tela de nova senha. São quatro passos novos,
+nenhum deles jamais executado em produção, e todos acontecendo no mesmo dia para
+as 362 contas.
+
+**Os caminhos possíveis:**
+
+1. **Importar a sessão antiga na primeira abertura.** Ler a chave
+   `flutter.supabase.auth.token` de `NSUserDefaults` (iOS) e de
+   `FlutterSharedPreferences` (Android), extrair o `refresh_token` e chamar
+   `supabase.auth.setSession`. Ninguém é deslogado. Custo: um módulo nativo
+   pequeno, que o Expo não traz pronto, mais o teste em aparelho com o app
+   antigo instalado por cima. É a única opção que salva o critério de 8.12.
+2. **Aceitar o deslogamento e blindar a recuperação.** Nada de nativo. Em troca,
+   o fluxo de senha precisa estar acima de qualquer suspeita: deep link testado
+   nas duas lojas, e-mail chegando, e um texto na tela de login explicando por
+   que ela está ali. Mais uma nota de versão que avise antes, não depois.
+3. **Os dois.** Tenta importar; se não houver sessão para importar, cai no
+   caminho 2. É o mais caro e o mais seguro.
+
+**O que isso muda no plano se a escolha for 1 ou 3:** entra um épico entre 8.2 e
+8.3, ou um trecho dentro de 8.2. Não é um ajuste de tela — é código nativo nas
+duas plataformas.
