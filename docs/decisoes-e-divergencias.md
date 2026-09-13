@@ -161,3 +161,54 @@ hora, e a tela "Confirme seu e-mail" é caminho de contingência, não o padrão
 | 8.2 | O fluxo de "Esqueci minha senha" continua sendo construído com cuidado | Ele é obrigatório pela 6.4 e é o único caminho de quem não lembra a senha — só deixa de ser o gargalo por onde 362 pessoas passariam no mesmo dia |
 | 8.3 | **O handoff de design é orientação, não lei** | Onde não for factível em React Native, eu adapto e registro aqui. A copy da seção 15 do spec continua literal |
 | 8.4 | Copy: caso a caso entre spec e handoff | Conta desativada vence o **spec** (tem o e-mail de contato). Excluir horário vence o **handoff** (avisa que o SMS deixa de sair). Pagamento vence o **handoff** (`Mensal` no segmented; o banco continua gravando `pagamento mensal`) |
+
+
+---
+
+## 9. Ambiente de build
+
+Dois problemas independentes, os dois descobertos em 13/09/2026 ao tentar o
+primeiro build de iOS. Nenhum deles é código do Agenda Psi.
+
+### 9.1 O SDK 57 não compila nesta máquina — descemos para o 55
+
+A assunção **24.1** do spec escolhe o Expo SDK 57 (RN 0.86, React 19.2) e já
+trazia a saída escrita: *"pinar outra versão é uma linha no `package.json`"*.
+
+O SDK 57 não atravessa o Swift 6.2.1 do Xcode 26.1.1, e o erro é dentro do
+`expo-modules-jsi` 57.1.0, em três camadas: `weak let` que o Swift 6.2 rejeita;
+depois, propriedade mutável em classe `Sendable`; depois, sete erros de
+concorrência estrita. Consertar uma camada revelava a seguinte.
+
+Os outros apps do Alexandre não têm esse problema porque estão em SDKs
+anteriores — `hora-do-remedio` no 54, `manda-em-pdf` e `Samambaia` no 55. O
+Samambaia compilou nesta mesma máquina, com este mesmo Xcode, um dia antes.
+
+**Decisão:** Agenda Psi no **SDK 55** (RN 0.83.10, React 19.2.0), o mesmo do
+Samambaia. Efeito colateral bom: o 55 aceita `deploymentTarget` **iOS 16.0**,
+enquanto o 57 exigia 16.4 — some a divergência com o requisito 17.6, que pede
+"iOS 16+". O remendo que havia sido criado em `patches/` foi apagado junto.
+
+### 9.2 Pasta com espaço no nome derruba o build
+
+Com o SDK 55, o `pod install` passou a falhar assim:
+
+```
+[ReactNativeDependencies] Failed to download release tarball:
+bad component(expected absolute path component):
+/Users/alexandresiqueira/Agenda Psi/app/ios/Pods/...
+[!] The `ReactNativeDependencies` pod failed to validate due to 1 error:
+    - ERROR | attributes: Missing required attribute `source`.
+```
+
+O script do RN 0.83 que baixa as dependências pré-compiladas não trata caminho
+com espaço. Comprovado com o mesmo código e o mesmo SDK: em
+`/Users/alexandresiqueira/Agenda Psi/app` falha; em `/tmp/psi-sem-espaco` passa.
+
+O erro que aparece primeiro é o de `source` faltando no podspec, que manda a
+pessoa investigar CocoaPods — e não é CocoaPods.
+
+**Decisão:** a pasta do projeto foi renomeada de `Agenda Psi` para
+**`agenda-psi`**, no padrão dos outros apps. Nada dentro dependia do caminho
+absoluto: o git carrega o histórico, e os vínculos com Supabase e EAS são por
+identificador remoto.
