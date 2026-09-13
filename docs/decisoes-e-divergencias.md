@@ -111,3 +111,53 @@ as 362 contas.
 **O que isso muda no plano se a escolha for 1 ou 3:** entra um épico entre 8.2 e
 8.3, ou um trecho dentro de 8.2. Não é um ajuste de tela — é código nativo nas
 duas plataformas.
+
+
+---
+
+## 7. A base instalada é menor do que o spec diz
+
+Descoberto em 13/09/2026, ao validar a premissa de confirmação de e-mail da 6.2.
+
+**82 das 362 fichas de `profissionais` são fantasmas**: pertencem a contas
+anônimas do Supabase Auth, ou têm `nome` e `email` em branco, e não têm um único
+paciente, sessão, pagamento, despesa ou horário. Nasceram em lotes de 3 e 4 no
+mesmo dia, cada uma com um login só, no dia da criação — padrão de aparelho de
+revisão de loja, não de pessoa. O login anônimo que as produziu já foi
+desabilitado por Alexandre; a última nasceu em 22/08/2026.
+
+| Número | Spec | Real |
+|---|---|---|
+| Profissionais | 362 | **280** |
+| Fundadores | 195 | **148** |
+| Com ao menos um paciente | 168 | 167 |
+| Contas em `auth.users` | 365 | 365, sendo 282 por e-mail, 2 por Apple e **81 anônimas** |
+
+Isso respingou no seed da 0006, que seguiu a regra 11.6 ao pé da letra e deu
+cortesia Pro vitalícia a 47 fantasmas. A **migration 0010** corrigiu: tirou as 47
+cortesias e desativou as 82 fichas, sem apagar nada. `assinaturas` foi de 195
+para **148 linhas**, todas de fundador real.
+
+**As 3 contas órfãs de 3.1 não são três casos iguais**, e o plano da 6.2 — criar
+a ficha que faltou no primeiro login — só resolve uma delas:
+
+| Conta | Provider | O que fazer |
+|---|---|---|
+| `gustavomarquesportes@hotmail.com` | e-mail | Resolve pela 6.2 no primeiro login. É a dona dos 2 pacientes com `profissional_id` nulo |
+| `f6hjftpstn@privaterelay.appleid.com` | **apple** | O spec diz que login Apple está desligado (`if (false)`) e é v2, mas há 2 contas Apple no banco. Sem login Apple no MVP, esta conta não tem como entrar |
+| sem e-mail | **anônima** | Não tem e-mail para satisfazer o `NOT NULL` de `profissionais.email`. Desativada pela 0010 |
+
+**Premissa da 6.2 validada:** o "Confirm email" está **desligado** no projeto —
+nenhuma das 365 contas tem `confirmation_sent_at`. O `signUp` volta com sessão na
+hora, e a tela "Confirme seu e-mail" é caminho de contingência, não o padrão.
+
+---
+
+## 8. Decisões de 13/09/2026 sobre a virada
+
+| # | Decisão | Consequência |
+|---|---|---|
+| 8.1 | **Não construir a importação de sessão.** A atualização desloga todo mundo | Com 14 pessoas ativas de fato (painel do Visão do Produto), um módulo nativo em duas plataformas não se paga. Alexandre avisa as 14 por e-mail antes de publicar. O critério de aceite do 8.12 sobre manter a sessão **não será cumprido**, e o motivo está aqui |
+| 8.2 | O fluxo de "Esqueci minha senha" continua sendo construído com cuidado | Ele é obrigatório pela 6.4 e é o único caminho de quem não lembra a senha — só deixa de ser o gargalo por onde 362 pessoas passariam no mesmo dia |
+| 8.3 | **O handoff de design é orientação, não lei** | Onde não for factível em React Native, eu adapto e registro aqui. A copy da seção 15 do spec continua literal |
+| 8.4 | Copy: caso a caso entre spec e handoff | Conta desativada vence o **spec** (tem o e-mail de contato). Excluir horário vence o **handoff** (avisa que o SMS deixa de sair). Pagamento vence o **handoff** (`Mensal` no segmented; o banco continua gravando `pagamento mensal`) |
