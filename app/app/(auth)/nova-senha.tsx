@@ -9,7 +9,7 @@ import {
   FilledButton,
   Text,
 } from '@/components/ui';
-import { spacing, screenMargin } from '@/theme';
+import { useColors, spacing, screenMargin } from '@/theme';
 import { copyAuth } from '@/features/auth/copy';
 import { definirNovaSenha } from '@/features/auth/auth-service';
 import { track, eventos, telas } from '@/lib/analytics';
@@ -29,6 +29,7 @@ import { useSession } from '@/features/auth/session-provider';
  * Implementa: 6.4, 8.2, inventário 10.4 e a copy de 15.2.
  */
 export default function NovaSenhaScreen() {
+  const colors = useColors();
   const { session } = useSession();
   const [senha, setSenha] = useState('');
   const [confirmacao, setConfirmacao] = useState('');
@@ -67,7 +68,7 @@ export default function NovaSenhaScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: colors.groupedBackground }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <Screen>

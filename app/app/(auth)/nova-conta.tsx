@@ -110,7 +110,7 @@ export default function NovaContaScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: colors.groupedBackground }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <Screen>

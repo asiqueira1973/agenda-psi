@@ -14,3 +14,4 @@ export { EmptyState } from './empty-state';
 export { ErrorState } from './error-state';
 export { SkeletonBar, SkeletonRow, SkeletonGroup, skeletonGap } from './skeleton';
 export { Screen, ScreenFooter } from './screen';
+export { StatCard } from './stat-card';

@@ -32,10 +32,18 @@ export function Screen({
   const paddingBottom =
     insets.bottom + spacing.xxl + (footerSpace ? size.filledButton + spacing.lg : 0);
 
+  // A área segura do topo é do conteúdo, não do ScrollView: pôr no estilo do
+  // container faria a barra de status ficar com fundo diferente ao rolar. Sem
+  // isto, o large title sobe por baixo do relógio.
+  const paddingTop = insets.top + spacing.lg;
+
   if (!scroll) {
     return (
       <View
-        style={[{ flex: 1, backgroundColor: colors.groupedBackground }, style]}
+        style={[
+          { flex: 1, paddingTop: insets.top, backgroundColor: colors.groupedBackground },
+          style,
+        ]}
         {...rest}
       >
         {children}
@@ -46,7 +54,7 @@ export function Screen({
   return (
     <ScrollView
       style={[{ flex: 1, backgroundColor: colors.groupedBackground }, style]}
-      contentContainerStyle={{ paddingTop: spacing.lg, paddingBottom }}
+      contentContainerStyle={{ paddingTop, paddingBottom }}
       keyboardShouldPersistTaps="handled"
       // A lista de indicadores e os históricos passam da altura da tela; o
       // indicador some ao parar de rolar, como nas telas nativas.
@@ -64,8 +72,19 @@ export function Screen({
  */
 export function ScreenFooter({ children }: { children: React.ReactNode }) {
   const insets = useSafeAreaInsets();
+  const colors = useColors();
+
   return (
-    <View style={{ paddingTop: spacing.lg, paddingBottom: insets.bottom + spacing.lg }}>
+    <View
+      style={{
+        // O fundo precisa ser declarado: o rodapé fica FORA do Screen, e sem
+        // isto ele cai no branco padrão da raiz — no modo escuro vira uma faixa
+        // clara no pé da tela, com o texto secundário sumindo dentro dela.
+        backgroundColor: colors.groupedBackground,
+        paddingTop: spacing.lg,
+        paddingBottom: insets.bottom + spacing.lg,
+      }}
+    >
       {children}
     </View>
   );
