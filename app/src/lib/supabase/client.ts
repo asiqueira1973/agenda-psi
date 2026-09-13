@@ -28,9 +28,14 @@ export const supabase = createClient<Database>(
       // Mantém o usuário logado entre aberturas (critério de aceite de 8.1).
       persistSession: true,
       autoRefreshToken: true,
-      // Não há navegador nem URL de retorno no app: o deep link da recuperação
-      // de senha é tratado à mão pela rota de nova senha (spec 6.4).
+      // Não há navegador embutido: o deep link da recuperação de senha é
+      // tratado à mão em features/auth/use-deep-link-recovery (spec 6.4).
       detectSessionInUrl: false,
+      // PKCE é o fluxo certo para app nativo. O link do e-mail volta com um
+      // `code` de uso único, trocado por sessão dentro do app — em vez de
+      // trazer o token na própria URL, onde ele fica no histórico do navegador
+      // e nos logs de quem estiver no caminho.
+      flowType: 'pkce',
     },
     global: {
       headers: {

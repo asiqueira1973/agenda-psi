@@ -187,12 +187,15 @@ export function FormRow({
   label,
   hasError = false,
   labelWidth = 96,
+  accessory,
   ...inputProps
 }: TextInputProps & {
   label: string;
   hasError?: boolean;
   /** 76 a 96pt, alinhado dentro do grupo (handoff). */
   labelWidth?: number;
+  /** Controle à direita do campo — o olho da senha, por exemplo. */
+  accessory?: React.ReactNode;
 }) {
   const colors = useColors();
 
@@ -213,6 +216,7 @@ export function FormRow({
         placeholderTextColor={colors.tertiaryLabel}
         accessibilityLabel={label}
       />
+      {accessory}
     </RowContainer>
   );
 }

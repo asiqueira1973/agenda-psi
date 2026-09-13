@@ -2,6 +2,7 @@
   "expo": {
     "name": "Agenda Psi",
     "slug": "agenda-psi",
+    "owner": "alexsiq",
     "version": "5.0.0",
     "orientation": "portrait",
     "scheme": "agendapsi",
@@ -60,6 +61,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "83c064a5-ac93-4136-ae56-23ac93ea636c"
+      }
     }
   }
 }
