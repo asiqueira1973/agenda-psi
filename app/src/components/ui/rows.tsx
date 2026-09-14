@@ -250,3 +250,32 @@ export function ToggleRow({
     </RowContainer>
   );
 }
+
+/**
+ * Campo de texto de várias linhas, para observações.
+ *
+ * Ocupa o grupo inteiro, sem rótulo à esquerda: o rótulo vira o título do
+ * grupo, como o handoff desenha em "OBSERVAÇÕES". Altura mínima de 88pt para
+ * caber três linhas sem o usuário precisar rolar dentro do campo.
+ */
+export function MultilineRow({
+  minHeight = 88,
+  ...inputProps
+}: TextInputProps & { minHeight?: number }) {
+  const colors = useColors();
+
+  return (
+    <View style={{ paddingHorizontal: screenMargin, paddingVertical: spacing.md }}>
+      <TextInput
+        {...inputProps}
+        multiline
+        textAlignVertical="top"
+        style={[
+          typography.body,
+          { minHeight, color: colors.label as string },
+        ]}
+        placeholderTextColor={colors.tertiaryLabel}
+      />
+    </View>
+  );
+}
