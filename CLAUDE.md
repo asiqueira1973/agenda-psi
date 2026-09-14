@@ -17,9 +17,15 @@ para cada uma em "Como conferir".
 
 ### 1. O app NUNCA escreve em `assinaturas`
 
-Quem grava plano é a Edge Function `rc-webhook`, com `service_role`. A tabela
-não tem policy de escrita para ninguém, e isso é proposital: é o que impede um
-cliente comprometido de se conceder Pro a partir da resposta local do StoreKit.
+Quem grava plano são as Edge Functions `apple-notificacoes` e
+`play-notificacoes`, com `service_role`. A tabela não tem policy de escrita para
+ninguém, e isso é proposital: é o que impede um cliente comprometido de se
+conceder Pro a partir da resposta local do StoreKit.
+
+Corolário do mesmo princípio: **toda compra precisa ser carimbada com o
+`usuario_id`** — `appAccountToken` no iOS, `obfuscatedAccountId` no Android.
+Sem o carimbo, a notificação da loja chega sem dizer de quem é a compra: o
+dinheiro entra e o Pro não. Nenhum teste pega isso; só comprar no sandbox pega.
 
 A máquina de estado 12.1 lista isso como transição proibida. Se aparecer um
 `.from('assinaturas').insert(` ou `.update(` no app, é defeito de segurança, não
@@ -49,8 +55,8 @@ Só `EXPO_PUBLIC_*` vive no app, e só porque são públicas por design: a
 publicável do Supabase (inútil sem passar pela RLS), as de cliente do RevenueCat
 e a de ingestão do Visão do Produto (só escrita).
 
-`service_role`, `N8N_WEBHOOK_SECRET` e `RC_WEBHOOK_SECRET` existem **apenas** nos
-secrets das Edge Functions. Se precisar de credencial para chamar alguém, a
+`service_role`, `N8N_WEBHOOK_SECRET`, `PLAY_PUSH_TOKEN` e a chave privada da
+conta de serviço do Google existem **apenas** nos secrets das Edge Functions. Se precisar de credencial para chamar alguém, a
 chamada vira Edge Function.
 
 ### 5. Os nomes de evento de analytics não mudam
@@ -145,7 +151,8 @@ app/                          # projeto Expo
 supabase/
   migrations/                 # aplicadas, em ordem de timestamp
   migrations-pendentes/       # escritas e retidas, com o porquê no README
-  functions/                  # agente-psi, analise-financeira, notifica-admin, rc-webhook
+  functions/                  # agente-psi, analise-financeira, notifica-admin,
+                              # apple-notificacoes, play-notificacoes
   tests/                      # pgTAP
 docs/
   spec.md  schema.md  decisoes-e-divergencias.md
@@ -209,7 +216,7 @@ grep -rn "from('assinaturas')" app/src app/app
 grep -rn "usuario_id" app/src/features/agent | grep -vE "^\S+:[0-9]+: *(\*|//)"
 
 # 4. Segredo de verdade no bundle?
-grep -rnE "SUPABASE_SERVICE_ROLE|N8N_WEBHOOK_SECRET|RC_WEBHOOK_SECRET" app/src
+grep -rnE "SUPABASE_SERVICE_ROLE|N8N_WEBHOOK_SECRET|PLAY_PUSH_TOKEN" app/src
 
 # Corte de Locais limpo?  database.types.ts é GERADO do banco inteiro e cita as
 #    tabelas por definição — por isso fica de fora da conta.
@@ -238,5 +245,6 @@ A seção 29 do spec define o procedimento. O essencial: **liste os arquivos que
 vai alterar antes de escrever código**, espere aprovação, e atualize o
 `DOCUMENTACAO-TECNICA.md` no mesmo commit.
 
-E **pergunte, não assuma**, ao cruzar com qualquer item da seção 25. Continuam
-abertas: 25.1 (preço do Pro), 25.4, 25.6, 25.7 e 25.8.
+E **pergunte, não assuma**, ao cruzar com qualquer item da seção 25. A 25.1 foi
+respondida em 14/09/2026 — R$ 9,90 por mês, só mensal, sem teste gratuito.
+Continuam abertas: 25.4, 25.6, 25.7 e 25.8.

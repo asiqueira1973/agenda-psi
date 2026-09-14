@@ -5,8 +5,11 @@
  * o de que os lembretes perdidos NÃO são reenviados depois de assinar. Sem essa
  * frase na tela, a assinatura vira reclamação no dia seguinte (fluxo 9.3).
  *
- * Os preços estão marcados como placeholder porque a pergunta aberta 25.1 —
- * preço, periodicidade e teste gratuito — ainda não foi respondida.
+ * A pergunta aberta 25.1 foi respondida em 14/09/2026: **R$ 9,90 por mês, só
+ * mensal, sem teste gratuito**. O preço exibido, porém, NÃO vem daqui — vem da
+ * própria loja, já formatado na moeda e no locale da conta de quem está
+ * comprando. Preço de assinatura escrito à mão no app fica errado no dia em que
+ * a loja reajusta ou em que alguém abre o app com conta de outro país.
  */
 export const copyPlano = {
   titulo: 'Meu plano',
@@ -60,12 +63,8 @@ export const copyPlano = {
   },
 
   paywall: {
-    grupoEscolha: 'Escolha o plano',
+    grupoEscolha: 'O plano',
     mensal: 'Mensal',
-    anual: 'Anual',
-    /** A 25.1 ainda não foi respondida: preço e periodicidade estão em aberto. */
-    precoMensalPlaceholder: '[placeholder: preço mensal]',
-    precoAnualPlaceholder: '[placeholder: preço anual]',
     assinar: 'Assinar o Pro',
     /** Literal da 15.7. */
     restaurar: 'Restaurar compras',
@@ -80,9 +79,15 @@ export const copyPlano = {
     /** Literal da 15.7. */
     nadaARestaurar: (loja: string) =>
       `Não encontramos nenhuma assinatura ativa nesta conta da ${loja}.`,
-    /** A compra ainda não está configurada. Aparece enquanto faltar a 25.1. */
+    /** Aparece quando a loja não responde — produto não cadastrado, sem rede. */
     indisponivel:
-      'A assinatura ainda não está disponível. Estamos terminando de configurar na loja.',
+      'A assinatura não está disponível agora. Tente de novo em alguns instantes.',
+    /**
+     * Comportamento de 12.3 quando a notificação da loja demora: em vez de
+     * spinner eterno, orienta a usar Restaurar compras.
+     */
+    demorou:
+      'A loja confirmou a compra, mas ainda não recebemos o aviso dela. Toque em Restaurar compras em alguns minutos — nada foi perdido.',
   },
 } as const;
 

@@ -40,7 +40,7 @@ gerados mantêm os nomes em português: não há camada de tradução.
 
 ### `assinaturas`
 
-> Plano vigente de cada profissional. Fonte da verdade do paywall (spec 11.6). Escrita somente pela Edge Function rc-webhook com service_role; o app nunca grava aqui (spec 5 e 12.1).
+> Plano vigente de cada profissional. Fonte da verdade do paywall (spec 11.6). Escrita somente pelas Edge Functions apple-notificacoes e play-notificacoes, com service_role; o app nunca grava aqui (spec 5 e 12.1).
 
 | Coluna | Tipo | Nulo | Padrão |
 |---|---|---|---|

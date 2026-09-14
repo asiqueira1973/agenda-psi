@@ -59,10 +59,11 @@ legíveis por quem abrir o IPA ou o APK**. São públicas por design.
 | `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | chave publicável, inútil sem passar pela RLS | sim |
 | `EXPO_PUBLIC_VISAODEPRODUTO_URL` | endpoint de ingestão de eventos | não |
 | `EXPO_PUBLIC_VISAODEPRODUTO_KEY` | chave de ingestão, só escrita. Sem ela o app roda e não emite evento | não |
-| `EXPO_PUBLIC_RC_IOS_KEY` / `EXPO_PUBLIC_RC_ANDROID_KEY` | chaves de cliente do RevenueCat | só no épico 8.11 |
+(Não há chave de compra: a assinatura é direto nas lojas, pelo `expo-iap`, e
+quem autentica é a conta da loja no aparelho.)
 
-**Nenhum segredo de verdade vive aqui.** `service_role`, `N8N_WEBHOOK_SECRET` e
-`RC_WEBHOOK_SECRET` existem apenas nos secrets das Edge Functions.
+**Nenhum segredo de verdade vive aqui.** `service_role`, os segredos do n8n e os
+das lojas existem apenas nos secrets das Edge Functions.
 
 Para os builds do EAS, as mesmas variáveis estão cadastradas no projeto
 (`eas env:list`), nos três ambientes.
@@ -101,22 +102,36 @@ a condição de entrada de cada uma.
 
 ## Edge Functions
 
-Quatro, em `supabase/functions`. As três primeiras substituem webhooks que hoje
-rodam **sem autenticação nenhuma**.
+Cinco, em `supabase/functions`. As três primeiras substituem webhooks que hoje
+rodam **sem autenticação nenhuma**; as duas últimas recebem os avisos de
+assinatura de cada loja.
 
 ```bash
 supabase functions deploy agente-psi
 supabase functions deploy analise-financeira
 supabase functions deploy notifica-admin
-supabase functions deploy rc-webhook
+supabase functions deploy apple-notificacoes
+supabase functions deploy play-notificacoes
 ```
 
 Secrets necessários:
 
 ```bash
 supabase secrets set N8N_AGENTE_URL=... N8N_ANALISE_URL=... N8N_MEAVISA_URL=... \
-                     N8N_WEBHOOK_SECRET=... RC_WEBHOOK_SECRET=...
+                     N8N_WEBHOOK_SECRET=... APPLE_BUNDLE_ID=com.dablab.agendapsi \
+                     PLAY_PUSH_TOKEN=... PLAY_PACKAGE_NAME=com.dablab.agendapsi \
+                     PLAY_SERVICE_ACCOUNT_EMAIL=... PLAY_SERVICE_ACCOUNT_PRIVATE_KEY=...
 ```
+
+Depois do deploy, cadastre as URLs:
+
+- **Apple:** App Store Connect → App Information → App Store Server
+  Notifications V2, produção **e** sandbox, apontando para
+  `.../functions/v1/apple-notificacoes`;
+- **Google:** Play Console → Monetization setup → tópico Pub/Sub, com push para
+  `.../functions/v1/play-notificacoes?token=<PLAY_PUSH_TOKEN>`.
+
+Para verificar tipos das functions sem fazer deploy: `deno check supabase/functions/*/index.ts`.
 
 ---
 

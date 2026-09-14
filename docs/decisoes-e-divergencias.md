@@ -254,3 +254,91 @@ linhas. O handoff indica 76 a 96pt.
 perde caracteres em texto longo — `alexandre.silva.siqueira` virou
 `alexandre.silva.siq`. Isso produziu dois falsos negativos antes de ser
 percebido. Digitar em pedaços de seis caracteres resolve.
+
+
+---
+
+## 11. Sai o RevenueCat, entram as lojas direto — 14/09/2026
+
+### 11.1 O preço, respondendo a 25.1
+
+**R$ 9,90 por mês, só mensal, sem teste gratuito.**
+
+O paywall passa a ter uma linha só. O handoff desenha duas, mensal e anual; com
+plano único, a segunda viraria escolha falsa.
+
+**A conta, registrada para quando houver volume.** Com 15% de comissão, R$ 9,90
+viram R$ 8,42 líquidos. O SMS custou R$ 0,16 a R$ 0,17 nos dois últimos meses da
+fatura do Bird. Logo a mensalidade cobre cerca de **49 SMS por mês**, e um
+paciente com horário fixo semanal consome ~4,3 — ou seja, **o Pro para de se
+pagar por volta de 12 pacientes com SMS ligado**.
+
+| Assinante com | Custo de SMS | Resultado |
+|---|---|---|
+| 5 pacientes | R$ 3,66 | sobra R$ 4,76 |
+| 12 pacientes | R$ 8,42 | empata |
+| 25 pacientes | R$ 18,28 | perde R$ 9,86/mês |
+
+Hoje é teórico: o maior usuário do app manda 32 SMS por mês. Decisão de
+Alexandre em 14/09/2026: **manter R$ 9,90**, porque com meta de 5 assinantes
+(seção 21) o que importa é converter, não a margem por assinante.
+
+### 11.2 A arquitetura da compra muda
+
+O spec escolheu RevenueCat em 4.1 justamente para ter **um** webhook consolidando
+as duas lojas (13.3). Sem ele, cada loja avisa do seu jeito, e são dois
+mecanismos diferentes — não dois iguais:
+
+| | Apple | Google |
+|---|---|---|
+| Como avisa | App Store Server Notifications V2 | Real-time Developer Notifications, via Pub/Sub |
+| O que o aviso traz | **o estado inteiro**, num JWS assinado | só "o token de compra X mudou" |
+| Como se confia | validando a cadeia de certificados até a raiz da Apple | perguntando à API do Play, autenticado por conta de serviço |
+| Quem liga à conta | `appAccountToken` | `obfuscatedExternalAccountId` |
+
+O spec previu o custo disso ao descartar o `expo-iap` em 4.1: *"mais simples,
+mas sem servidor de assinaturas nem webhook; o estado da assinatura teria que
+ser reconstruído à mão."* É exatamente o que passou a ser feito.
+
+**O que NÃO mudou, e é o que importa:** o app continua sem conceder Pro. Uma
+compra bem-sucedida no StoreKit não libera nada; o que libera é `assinaturas`
+virar `pro`, e quem escreve lá continua sendo o servidor. A tabela segue sem
+policy de escrita para ninguém.
+
+### 11.3 O que foi feito
+
+| Item | Estado |
+|---|---|
+| `react-native-purchases` e `react-native-purchases-ui` | **removidos** |
+| `expo-iap` 5.6.0 | instalado, com config plugin |
+| `src/features/purchases/` | módulo de compra, restauração e espera pela confirmação do servidor |
+| Edge Function `rc-webhook` | **apagada** |
+| Edge Functions `apple-notificacoes` e `play-notificacoes` | escritas, com `verify_jwt = false` |
+| `_shared/assinatura.ts` | o único caminho de escrita em `assinaturas`, compartilhado pelas duas |
+| `_shared/apple-root-ca.ts` | raízes G3 e G2 da Apple, baixadas e conferidas com `openssl` |
+| Migration **0011** | corrige os comentários do banco que citavam o RevenueCat |
+| Paywall | uma linha, preço vindo da loja, estados de 12.3 |
+
+As cinco Edge Functions passam em `deno check`. **Nenhuma das duas novas foi
+testada contra a loja de verdade** — só dá para exercitar depois que o produto
+de assinatura existir no App Store Connect e no Play Console. É código revisado,
+não código verificado, e está assim escrito no cabeçalho de cada uma.
+
+### 11.4 O ponto mais frágil de todo o fluxo
+
+Sem RevenueCat, **o carimbo do usuário na compra é responsabilidade do app**. Se
+o `appAccountToken` (iOS) ou o `obfuscatedAccountId` (Android) não for enviado no
+momento da compra, a notificação chega ao servidor sem dizer de quem é: o
+dinheiro entra e o Pro não.
+
+Não há como detectar isso em teste de unidade nem em revisão de código — só
+comprando de verdade no sandbox e conferindo se `assinaturas` mudou. É o
+primeiro teste a fazer quando os produtos estiverem cadastrados.
+
+### 11.5 O que Alexandre precisa gerar
+
+| Para quê | O que é |
+|---|---|
+| Apple | produto de assinatura `com.dablab.agendapsi.pro.mensal` a R$ 9,90; URL da `apple-notificacoes` cadastrada em App Store Server Notifications V2 (produção e sandbox) |
+| Google | assinatura `agendapsi_pro_mensal`; tópico Pub/Sub com push para a `play-notificacoes` com `?token=`; conta de serviço com acesso à Play Developer API |
+| Secrets | `APPLE_BUNDLE_ID`, `PLAY_PUSH_TOKEN`, `PLAY_SERVICE_ACCOUNT_EMAIL`, `PLAY_SERVICE_ACCOUNT_PRIVATE_KEY`, `PLAY_PACKAGE_NAME` |

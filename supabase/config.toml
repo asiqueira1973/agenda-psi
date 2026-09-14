@@ -420,9 +420,13 @@ enabled = true
 # As três primeiras exigem JWT do usuário: é delas que vem a correção da decisão
 # D3, em que o usuario_id passa a ser derivado do token e nunca do corpo.
 #
-# rc-webhook é a exceção, e é proposital: quem chama é o RevenueCat, não uma
-# pessoa. A autenticação dela é o segredo combinado no painel deles, conferido
-# dentro da função (spec 13.3).
+# As duas últimas são a exceção, e é proposital: quem chama é a loja, não uma
+# pessoa. A da Apple se autentica pela cadeia de certificados do JWS, validada
+# contra a raiz da Apple; a do Google, por um segredo na URL do push mais uma
+# consulta nossa à API do Play, que é de onde vem a verdade.
+#
+# Substituem a rc-webhook do spec 13.3: sem RevenueCat (decisão de 14/09/2026),
+# cada loja avisa do seu jeito.
 # -----------------------------------------------------------------------------
 [functions.agente-psi]
 verify_jwt = true
@@ -433,5 +437,8 @@ verify_jwt = true
 [functions.notifica-admin]
 verify_jwt = true
 
-[functions.rc-webhook]
+[functions.apple-notificacoes]
+verify_jwt = false
+
+[functions.play-notificacoes]
 verify_jwt = false

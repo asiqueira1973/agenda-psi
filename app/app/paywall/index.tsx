@@ -1,17 +1,18 @@
-import { useState } from 'react';
-import { Alert, Platform, View } from 'react-native';
+import { useEffect } from 'react';
+import { Alert, View } from 'react-native';
 import { router } from 'expo-router';
 import {
   Screen,
   ListGroup,
-  RowSeparator,
+  ValueRow,
   FilledButton,
   TextLink,
   Icon,
   Text,
 } from '@/components/ui';
-import { useColors, screenMargin, size, spacing, typography } from '@/theme';
-import { copyPlano, nomeDaLoja } from '@/features/settings/copy-plano';
+import { useColors, screenMargin, spacing } from '@/theme';
+import { copyPlano } from '@/features/settings/copy-plano';
+import { usePurchases, LOJA } from '@/features/purchases/use-purchases';
 import { track, eventos, telas } from '@/lib/analytics';
 import { useSession } from '@/features/auth/session-provider';
 import { useMeuPlano } from '@/features/home/use-dashboard';
@@ -19,27 +20,18 @@ import { useMeuPlano } from '@/features/home/use-dashboard';
 /**
  * Tela 25 — Paywall.
  *
- * ⚠️ ESTADO DESTA TELA: a interface está pronta, a compra NÃO está ligada.
+ * Uma opção só: R$ 9,90 por mês, sem teste gratuito (resposta da 25.1, em
+ * 14/09/2026). O handoff desenha duas linhas, mensal e anual; com plano único, a
+ * segunda linha viraria uma escolha falsa.
  *
- * Faltam duas coisas, e nenhuma delas é código:
+ * O preço exibido vem da LOJA, não deste código. É ela que sabe a moeda, o
+ * locale e o valor vigente da conta de quem está comprando.
  *
- * 1. a resposta da pergunta aberta 25.1 — preço, periodicidade e se há teste
- *    gratuito. Sem ela não há produto para criar no App Store Connect nem no
- *    Play Console, e por isso os preços aqui são o placeholder que o próprio
- *    handoff especifica;
- * 2. as chaves de cliente do RevenueCat (`EXPO_PUBLIC_RC_IOS_KEY` e
- *    `EXPO_PUBLIC_RC_ANDROID_KEY`) e o projeto configurado lá.
- *
- * Enquanto faltarem, o botão de assinar avisa que a assinatura ainda não está
- * disponível, em vez de abrir um fluxo quebrado.
- *
- * O que JÁ está garantido, e é o que mais importa: o app não concede Pro
- * sozinho em hipótese nenhuma. Quem grava plano é a Edge Function `rc-webhook`,
- * e `assinaturas` não tem policy de escrita para ninguém (migration 0002 e
- * máquina 12.1). Um cliente comprometido não vira Pro.
- *
- * O corte de SMS depende ainda da migration 0008, retida até este épico ficar
- * pronto — ver supabase/migrations-pendentes/README.md.
+ * **O app não concede Pro.** Comprar no StoreKit não libera nada: o que libera é
+ * `assinaturas` virar `pro`, e quem escreve lá é o servidor, depois de validar a
+ * assinatura da notificação da loja. Enquanto isso, a tela mostra "Estamos
+ * confirmando sua assinatura" — e, se demorar demais, orienta a restaurar em vez
+ * de deixar um spinner girando (spec 12.3).
  *
  * Implementa: 8.11, inventário 10.25 e a copy de 15.7.
  */
@@ -47,12 +39,9 @@ export default function PaywallScreen() {
   const colors = useColors();
   const { session } = useSession();
   const plano = useMeuPlano();
-  const loja = nomeDaLoja(Platform.OS);
+  const compra = usePurchases();
 
-  const [periodicidade, setPeriodicidade] = useState<'mensal' | 'anual'>('mensal');
-
-  // Evento de 21: só propriedades não sensíveis.
-  useState(() => {
+  useEffect(() => {
     track({
       nome: eventos.paywallVisto,
       distinctId: session?.user.email ?? null,
@@ -64,52 +53,124 @@ export default function PaywallScreen() {
         sms_usados: plano.data?.sms_usados ?? 0,
       },
     });
-    return null;
-  });
+    // Uma vez por abertura da tela.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (compra.estado.tipo === 'confirmada') {
+      track({
+        nome: eventos.paywallComprou,
+        distinctId: session?.user.email ?? null,
+        tela: telas.paywall,
+        descricao: 'assinatura confirmada pelo servidor',
+        propriedades: { plano: 'pro' },
+      });
+    }
+  }, [compra.estado.tipo, session]);
 
   function aoAssinar() {
-    // Sem produto criado na loja e sem chave do RevenueCat, não há o que abrir.
-    Alert.alert(copyPlano.paywall.indisponivel);
+    if (!compra.conectado) {
+      Alert.alert(copyPlano.paywall.indisponivel);
+      return;
+    }
+    track({
+      nome: eventos.paywallIniciouCompra,
+      distinctId: session?.user.email ?? null,
+      tela: telas.paywall,
+      descricao: 'iniciou a compra',
+      propriedades: { plano: 'free' },
+    });
+    void compra.comprar();
   }
 
-  function aoRestaurar() {
-    Alert.alert(copyPlano.paywall.nadaARestaurar(loja));
+  async function aoRestaurar() {
+    track({
+      nome: eventos.paywallRestaurou,
+      distinctId: session?.user.email ?? null,
+      tela: telas.paywall,
+      descricao: 'tentou restaurar compras',
+    });
+    const resultado = await compra.restaurar();
+    if (resultado === 'nada') Alert.alert(copyPlano.paywall.nadaARestaurar(LOJA));
   }
+
+  // Confirmada: a tela vira só a confirmação, com o check verde do handoff.
+  if (compra.estado.tipo === 'confirmada') {
+    return (
+      <Screen scroll={false}>
+        <View
+          style={{
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingHorizontal: screenMargin * 2,
+            gap: spacing.xl,
+          }}
+        >
+          <Icon name="check" color={colors.positive} size={52} />
+          <Text variant="title2" style={{ textAlign: 'center' }}>
+            {copyPlano.paywall.confirmado}
+          </Text>
+          <FilledButton
+            label={copyPlano.paywall.continuar}
+            onPress={() => router.dismissAll()}
+          />
+        </View>
+      </Screen>
+    );
+  }
+
+  const emAndamento =
+    compra.estado.tipo === 'comprando' || compra.estado.tipo === 'confirmando';
+
+  const rodape = (() => {
+    if (compra.estado.tipo === 'erro') return compra.estado.mensagem;
+    if (compra.estado.tipo === 'demorou') return copyPlano.paywall.demorou;
+    if (compra.estado.tipo === 'confirmando') return copyPlano.paywall.processando;
+    return undefined;
+  })();
 
   return (
-    <Screen footerSpace>
+    <Screen>
       <View style={{ paddingHorizontal: screenMargin, marginBottom: spacing.xl }}>
         <TextLink label="‹ Voltar" align="start" onPress={() => router.back()} />
         <Text variant="largeTitle" style={{ marginTop: spacing.sm }}>
           {copyPlano.proTitulo}
         </Text>
         <Text color="secondaryLabel" style={{ marginTop: spacing.sm }}>
-          {copyPlano.proCorpo(loja)}
+          {copyPlano.proCorpo(LOJA)}
         </Text>
       </View>
 
-      <ListGroup first title={copyPlano.paywall.grupoEscolha}>
-        <LinhaDePlano
-          rotulo={copyPlano.paywall.mensal}
-          preco={copyPlano.paywall.precoMensalPlaceholder}
-          selecionado={periodicidade === 'mensal'}
-          onPress={() => setPeriodicidade('mensal')}
-        />
-        <RowSeparator />
-        <LinhaDePlano
-          rotulo={copyPlano.paywall.anual}
-          preco={copyPlano.paywall.precoAnualPlaceholder}
-          selecionado={periodicidade === 'anual'}
-          onPress={() => setPeriodicidade('anual')}
+      <ListGroup
+        first
+        title={copyPlano.paywall.grupoEscolha}
+        footer={rodape}
+        footerIsError={compra.estado.tipo === 'erro'}
+      >
+        <ValueRow
+          label={copyPlano.paywall.mensal}
+          value={compra.precoExibido}
+          valueColor="label"
         />
       </ListGroup>
 
       <View style={{ marginTop: spacing.xxl }}>
-        <FilledButton label={copyPlano.paywall.assinar} onPress={aoAssinar} />
+        <FilledButton
+          label={copyPlano.paywall.assinar}
+          loadingLabel={copyPlano.paywall.processando}
+          loading={emAndamento}
+          onPress={aoAssinar}
+        />
       </View>
 
       <View style={{ alignItems: 'center', marginTop: spacing.md }}>
-        <TextLink label={copyPlano.paywall.restaurar} onPress={aoRestaurar} />
+        <TextLink
+          label={copyPlano.paywall.restaurar}
+          disabled={emAndamento}
+          onPress={() => void aoRestaurar()}
+        />
       </View>
 
       {/* O aviso que evita a reclamação do dia seguinte (fluxo 9.3). */}
@@ -125,43 +186,5 @@ export default function PaywallScreen() {
         {copyPlano.paywall.aviso}
       </Text>
     </Screen>
-  );
-}
-
-/** Linha de 56pt com o preço à direita e o check azul na selecionada. */
-function LinhaDePlano({
-  rotulo,
-  preco,
-  selecionado,
-  onPress,
-}: {
-  rotulo: string;
-  preco: string;
-  selecionado: boolean;
-  onPress: () => void;
-}) {
-  const colors = useColors();
-
-  return (
-    <View
-      onTouchEnd={onPress}
-      accessibilityRole="radio"
-      accessibilityState={{ selected: selecionado }}
-      accessibilityLabel={`${rotulo}, ${preco}`}
-      style={{
-        minHeight: size.listRowTwoLines,
-        paddingHorizontal: screenMargin,
-        paddingVertical: spacing.md,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.md,
-      }}
-    >
-      <Text style={[typography.body, { flex: 1 }]}>{rotulo}</Text>
-      <Text color="secondaryLabel" tabular>
-        {preco}
-      </Text>
-      {selecionado ? <Icon name="check" color={colors.accent} size={20} /> : null}
-    </View>
   );
 }

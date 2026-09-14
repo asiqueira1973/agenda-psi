@@ -6,7 +6,7 @@ seguem a seção 19 do `docs/spec.md`.
 | | |
 |---|---|
 | **Versão do app** | 5.0.0 (a anterior, em FlutterFlow, é a 4.0.0+17) |
-| **Stack** | Expo SDK 55 · React Native 0.83.10 · React 19.2.0 · expo-router · TanStack Query v5 · Supabase |
+| **Stack** | Expo SDK 55 · React Native 0.83.10 · React 19.2.0 · expo-router · TanStack Query v5 · Supabase · expo-iap |
 | **Banco** | Supabase `tocytpjtupbbxwgamtxq`, região `sa-east-1` |
 | **Última atualização** | 14/09/2026 |
 
@@ -123,8 +123,15 @@ garante **um SMS por agendamento por dia**, e é a base da contagem do paywall.
 
 ### `assinaturas` — o plano vigente (NOVA)
 
-Uma linha por profissional. **Escrita somente pela Edge Function `rc-webhook`**,
-com `service_role`. Não existe policy de escrita para ninguém.
+Uma linha por profissional. **Escrita somente pelas Edge Functions
+`apple-notificacoes` e `play-notificacoes`**, com `service_role`. Não existe
+policy de escrita para ninguém.
+
+As colunas `rc_customer_id` e `rc_entitlement` mantêm o nome herdado da época em
+que o RevenueCat estava no projeto. Hoje guardam, respectivamente, o
+`usuario_id` carimbado na compra e o identificador do produto na loja. Renomear
+coluna em produção só para melhorar o nome é risco sem retorno; a migration 0011
+explica isso no próprio catálogo.
 
 | Coluna | Valores e o que significam |
 |---|---|
@@ -248,7 +255,7 @@ As exceções que importam:
 | Tabela | Leitura | Escrita |
 |---|---|---|
 | `tipos_despesa` | qualquer autenticado | ninguém |
-| `assinaturas` | só a própria, via `current_profissional_id()` | **ninguém** — só a Edge Function com `service_role` |
+| `assinaturas` | só a própria, via `current_profissional_id()` | **ninguém** — só as Edge Functions das lojas, com `service_role` |
 | `uso_mensal` | só o próprio | **ninguém** — só o trigger |
 | `locais_atendimento` | qualquer autenticado | só o autor (corrigido na 0004) |
 | `comentarios_locais_atendimento` | só o que está aprovado | só o autor (corrigido na 0004) |
@@ -293,7 +300,7 @@ por qual policy passa. Onde a coluna de policy diz "própria", leia
 | 22 | Meu perfil | `v_profissional_atual` | `profissionais` | `profissionais_update_own` |
 | 23 | Trocar senha | sessão (e-mail) | — | — |
 | 24 | Meu plano | `v_meu_plano` | — | idem 21 |
-| 25 | Paywall | RevenueCat (ainda não ligado) | — | — |
+| 25 | Paywall | a loja (StoreKit / Play Billing), via `expo-iap` | — | a escrita em `assinaturas` é do servidor |
 | 26 | Feedback | — | `feedback` + Edge Function `notifica-admin` | `feedback_insert_public` |
 | 27 | Apagar minha conta | — | `profissionais` (`ativo = false`) | `profissionais_update_own` |
 | 28 | Política de privacidade | — | — | — |
@@ -447,7 +454,8 @@ diferente e por quê.
 | 0004 corrige os 2 pacientes com `profissional_id` nulo | O `UPDATE` é idempotente e **hoje não muda nada** | Os 2 pertencem a um `usuario_id` **sem ficha em `profissionais`** — não existe para onde apontar. A correção real virou a proteção da mensagem do SMS |
 
 **Migrations aplicadas em produção:** 0001, 0002, 0003, 0004, 0006, 0007, 0009 e
-0010.
+0010. A **0011** — que só corrige comentários do catálogo — está escrita e
+validada localmente.
 **Retidas, com motivo escrito:** 0005 (Vault) e 0008 (corte do paywall).
 
 ### 6.2 Números que o spec dá e o banco desmente
@@ -482,7 +490,23 @@ projeto. Nenhuma das 365 contas tem `confirmation_sent_at`.
 | Requisito 17.6: iOS 16+ | **iOS 16.0**, literal. No SDK 57 seria obrigatoriamente 16.4 |
 | — | A pasta do projeto foi renomeada para `agenda-psi`: o script do RN 0.83 que baixa dependências pré-compiladas **não trata caminho com espaço**, e falha com uma mensagem sobre podspec que manda investigar o lugar errado |
 
-### 6.4 Analytics
+### 6.4 Sai o RevenueCat
+
+Decisão de 14/09/2026: a compra passa a ser direto nas lojas, com `expo-iap` no
+app e uma Edge Function por loja no servidor. O spec escolheu RevenueCat em 4.1
+para ter um webhook só (13.3); sem ele, são dois mecanismos diferentes — a Apple
+manda o estado inteiro num JWS assinado, e o Google manda só um aviso de que
+algo mudou, obrigando a perguntar à API do Play.
+
+A regra de ouro não mudou: o app não concede Pro, e `assinaturas` segue sem
+policy de escrita para ninguém.
+
+**Preço, respondendo a 25.1: R$ 9,90 por mês, só mensal, sem teste gratuito.** O
+paywall passa a ter uma linha, e não as duas do handoff. O detalhe da conta — o
+Pro para de se pagar por volta de 12 pacientes com SMS ligado — está em
+`docs/decisoes-e-divergencias.md`, seção 11.
+
+### 6.5 Analytics
 
 Sai o PostHog, entra o **Visão do Produto** (decisão de 13/09/2026). Consequências:
 
@@ -500,7 +524,7 @@ Sai o PostHog, entra o **Visão do Produto** (decisão de 13/09/2026). Consequê
   valor, observação ou texto digitado. O tipo das propriedades é fechado
   justamente para não haver onde colocar.
 
-### 6.5 Design
+### 6.6 Design
 
 O handoff é **orientação, não lei** (decisão de 13/09/2026). Onde não foi
 factível, adaptei:
@@ -516,7 +540,7 @@ factível, adaptei:
 | Rodapé `Agenda Psi 1.0` | Versão lida do `app.json` | O app publicado está na 4.0.0; número fixo envelheceria na primeira release |
 | Rótulo da quinta aba `Configurações` | **`Ajustes`** | Não cabe em 80pt de aba, nem em 10pt: truncava para "Configuraçõ...". É como o próprio iOS chama esse app em português, e o título da tela continua "Configurações" — rótulo de aba mais curto que o título é padrão do sistema |
 
-### 6.6 Quatro defeitos que só o aparelho mostrou
+### 6.7 Quatro defeitos que só o aparelho mostrou
 
 Nenhum pegável por `tsc` nem por teste unitário:
 
@@ -532,21 +556,22 @@ Nenhum pegável por `tsc` nem por teste unitário:
    declarado, o React Navigation usa o tema claro dele, e o app ficava com uma
    faixa branca no pé.
 
-### 6.7 O que NÃO está pronto
+### 6.8 O que NÃO está pronto
 
 | Item | O que falta | De quem depende |
 |---|---|---|
-| **Compra no paywall** | Resposta da pergunta 25.1 (preço, periodicidade, teste gratuito) e as chaves do RevenueCat | Alexandre |
+| **Compra no paywall** | Produtos cadastrados nas duas lojas e os secrets das notificações. A 25.1 foi respondida: R$ 9,90/mês, só mensal, sem teste | Alexandre |
 | **Migration 0008** | Entra junto com o 8.11, quando a tela souber avisar e vender | consequência do item acima |
 | **Migration 0005** | O passo 1 do runbook: guardar a `service_role` atual no Vault | Alexandre |
-| **Edge Functions no ar** | Deploy e os segredos `N8N_AGENTE_URL`, `N8N_ANALISE_URL`, `N8N_MEAVISA_URL`, `N8N_WEBHOOK_SECRET`, `RC_WEBHOOK_SECRET` | Alexandre |
+| **Edge Functions no ar** | Deploy e os segredos do n8n (`N8N_AGENTE_URL`, `N8N_ANALISE_URL`, `N8N_MEAVISA_URL`, `N8N_WEBHOOK_SECRET`) e das lojas (`APPLE_BUNDLE_ID`, `PLAY_PUSH_TOKEN`, `PLAY_SERVICE_ACCOUNT_EMAIL`, `PLAY_SERVICE_ACCOUNT_PRIVATE_KEY`) | Alexandre |
+| **As duas funções de loja** | Nunca foram exercitadas contra a Apple nem contra o Google. Passam em `deno check`, mas isso não é o mesmo que funcionar | depende dos produtos existirem |
 | **Pergunta 25.6** | A Edge Function `agendapsi-chat` (v5) vira a implementação de 13.1 ou é despublicada? | Alexandre |
 | **Perguntas 25.4, 25.7, 25.8** | Exclusão real de dados; quando o aviso de limite aparece (o app usa 80%, que é a suposição do spec); se dá para escolher quem recebe SMS | Alexandre |
 | **Épico 8.12** | Publicação. **O app já está na Play Store** — não é primeira publicação, é atualização | Alexandre |
 | **Verificação em Android** | Nada foi rodado em aparelho nem emulador Android | — |
 | **Testes de regressão dos 21 defeitos** | Há teste para os que cabem em função pura; os de tela dependem de teste de componente, ainda não escrito | — |
 
-### 6.8 A atualização desloga toda a base
+### 6.9 A atualização desloga toda a base
 
 O app FlutterFlow guarda a sessão em `SharedPreferences`; o Expo guarda no
 Keychain. São lugares diferentes: **todo mundo é deslogado na atualização**, por
