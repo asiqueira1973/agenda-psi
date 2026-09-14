@@ -514,6 +514,7 @@ factível, adaptei:
 | Rótulo `Pagamento mensal` da tabela 11.4 | **`Mensal`** no segmented | Não cabe em três posições. O **valor gravado** continua `pagamento mensal` |
 | Alerta de conta desativada do handoff | Texto do **spec** | O do spec diz para onde escrever; "fale com o suporte" sem endereço não resolve |
 | Rodapé `Agenda Psi 1.0` | Versão lida do `app.json` | O app publicado está na 4.0.0; número fixo envelheceria na primeira release |
+| Rótulo da quinta aba `Configurações` | **`Ajustes`** | Não cabe em 80pt de aba, nem em 10pt: truncava para "Configuraçõ...". É como o próprio iOS chama esse app em português, e o título da tela continua "Configurações" — rótulo de aba mais curto que o título é padrão do sistema |
 
 ### 6.6 Quatro defeitos que só o aparelho mostrou
 
@@ -526,7 +527,10 @@ Nenhum pegável por `tsc` nem por teste unitário:
    sem preenchimento tem área de toque da altura da letra. Virou o componente
    `TextLink`, com os 44×44pt do requisito 17.4. É o mais grave: com mouse quase
    não aparece, com o dedo o link não funciona;
-4. `Configurações` truncava na quinta aba.
+4. `Configurações` truncava na quinta aba;
+5. **a barra de abas tinha fundo claro no modo escuro** — sem `tabBarStyle`
+   declarado, o React Navigation usa o tema claro dele, e o app ficava com uma
+   faixa branca no pé.
 
 ### 6.7 O que NÃO está pronto
 

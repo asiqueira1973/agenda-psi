@@ -25,6 +25,13 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.accent as string,
         tabBarInactiveTintColor: colors.systemGray as string,
         tabBarLabelStyle: tabBarLabel,
+        // A barra precisa da cor declarada: sem isto ela usa o tema padrão do
+        // React Navigation, que é claro, e fica uma faixa branca no pé de um app
+        // em modo escuro. Verificado no simulador em 14/09/2026.
+        tabBarStyle: {
+          backgroundColor: colors.listSurface as string,
+          borderTopColor: colors.separator as string,
+        },
       }}
     >
       <Tabs.Screen
@@ -58,7 +65,13 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="configuracoes"
         options={{
-          title: 'Configurações',
+          // "Configurações" não cabe em 80pt de aba, nem em 10pt: trunca para
+          // "Configuraçõ...". "Ajustes" é como o próprio iOS chama esse app em
+          // português, cabe em qualquer tamanho de Dynamic Type, e rótulo de
+          // aba mais curto que o título da tela é padrão do sistema — o título
+          // da tela continua "Configurações". Verificado no simulador em
+          // 14/09/2026. Adaptação do handoff, decisão de 13/09/2026.
+          title: 'Ajustes',
           tabBarIcon: ({ color }) => <Icon name="settings" color={color} size={24} />,
         }}
       />
