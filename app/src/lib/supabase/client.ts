@@ -17,7 +17,7 @@ import type { Database } from './database.types';
  * - a sessão fica no chaveiro do aparelho, partida em pedaços;
  * - nenhuma chave secreta passa por aqui, só a publicável;
  * - o app nunca escreve em `assinaturas` — quem grava é a Edge Function
- *   rc-webhook com service_role (spec 5, 11.6 e a máquina 12.1).
+ *   das lojas, com service_role (spec 5, 11.6 e a máquina 12.1).
  */
 export const supabase = createClient<Database>(
   env.supabaseUrl,

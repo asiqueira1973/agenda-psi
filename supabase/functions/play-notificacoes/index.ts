@@ -153,7 +153,16 @@ Deno.serve(async (req) => {
   const token = aviso.subscriptionNotification?.purchaseToken;
   if (!token) return json({ ok: true, ignorado: 'sem_token_de_compra' });
 
-  const pacote = aviso.packageName ?? Deno.env.get('PLAY_PACKAGE_NAME') ?? 'com.dablab.agendapsi';
+  // O pacote vem do SECRET, nunca do corpo. Se viesse do corpo, quem
+  // descobrisse a URL poderia mandar o pacote de outro app junto com um token
+  // de compra dele, e a nossa conta de serviço faria a consulta — usar as
+  // credenciais do projeto para ler dados de terceiro. O corpo só serve para
+  // conferir se a notificação é mesmo deste app.
+  const pacote = Deno.env.get('PLAY_PACKAGE_NAME') ?? 'com.dablab.agendapsi';
+  if (aviso.packageName && aviso.packageName !== pacote) {
+    console.warn('play: notificação de outro pacote', aviso.packageName);
+    return json({ ok: true, ignorado: 'pacote_desconhecido' });
+  }
 
   const acesso = await tokenDeAcesso();
   if (!acesso) return json({ error: 'erro_interno' }, 500);

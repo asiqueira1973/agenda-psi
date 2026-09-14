@@ -37,7 +37,7 @@ export function useDashboardResumo() {
  *
  * Fonte única do estado do plano. O app não deduz plano de resposta local do
  * StoreKit, em nenhuma hipótese (regra 11.6 e máquina 12.1) — quem diz se
- * alguém é Pro é esta view, alimentada pelo webhook do RevenueCat.
+ * alguém é Pro é esta view, alimentada pelas notificações das lojas.
  */
 export function useMeuPlano() {
   const { usuarioId } = useSession();

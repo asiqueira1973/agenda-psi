@@ -309,7 +309,7 @@ Table config_app {
 // =====================================================================
 
 // Plano vigente de cada profissional.
-// Fonte da verdade: webhook do RevenueCat (Edge Function rc-webhook).
+// Fonte da verdade: as Edge Functions apple-notificacoes e play-notificacoes.
 // O APP NUNCA ESCREVE AQUI (regra 11.6).
 // Constraints: plano in (free,pro); status in (ativo,em_atraso,cancelado,expirado);
 //              store is null or in (app_store,play_store,cortesia).
@@ -320,12 +320,12 @@ Table assinaturas {
   status          status_assinatura [not null, default: 'ativo']
   store           loja_assinatura   [note: 'nulo em assinatura de cortesia manual']
   rc_customer_id  text              [note: 'nulo em cortesia ou antes da primeira compra']
-  rc_entitlement  text              [note: 'entitlement do RevenueCat que concedeu o acesso']
+  rc_entitlement  text              [note: 'identificador do produto na loja que concedeu o acesso']
   inicio_em       timestamptz       [not null, default: `now()`]
   expira_em       timestamptz       [note: 'nulo = sem expiração (plano free ou cortesia vitalícia)']
   atualizado_em   timestamptz       [not null, default: `now()`]
 
-  Note: 'Plano do profissional. Escrita exclusiva da Edge Function rc-webhook com service_role.'
+  Note: 'Plano do profissional. Escrita exclusiva das Edge Functions das lojas, com service_role.'
 }
 
 // Consumo do mês por profissional.

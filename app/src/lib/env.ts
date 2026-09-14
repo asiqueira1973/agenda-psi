@@ -2,14 +2,16 @@
  * Configuração pública do app, lida do ambiente.
  *
  * Tudo aqui é `EXPO_PUBLIC_*`, ou seja, embutido no bundle em tempo de build e
- * legível por quem abrir o IPA ou o APK. É de propósito: são as três chaves
- * públicas por design — a do Supabase é inútil sem passar pela RLS, a do
- * RevenueCat é a chave de cliente, e a do Visão do Produto é de ingestão, só
- * escrita.
+ * legível por quem abrir o IPA ou o APK. É de propósito: as duas chaves são
+ * públicas por design — a do Supabase é inútil sem passar pela RLS, e a do
+ * Visão do Produto é de ingestão, só escrita.
+ *
+ * Não há chave de compra: a assinatura é direto nas lojas, e quem autentica é
+ * a conta da loja no aparelho.
  *
  * O que NÃO pode aparecer neste arquivo, nem em nenhum outro do app: a
- * service_role do Supabase, o segredo do n8n e o segredo do webhook do
- * RevenueCat. Esses vivem só nos secrets das Edge Functions (spec P4 e 18).
+ * service_role do Supabase, os segredos do n8n e os das lojas. Esses vivem só
+ * nos secrets das Edge Functions (spec P4 e 18).
  *
  * Implementa: seção 18 do spec (variáveis de ambiente) e o princípio P4.
  */
@@ -43,7 +45,4 @@ export const env = {
   analyticsUrl:
     process.env.EXPO_PUBLIC_VISAODEPRODUTO_URL ??
     'https://api.visaodeproduto.com.br/functions/v1/ingest',
-  /** Chaves de cliente do RevenueCat. Só o épico 8.11 as usa. */
-  revenueCatIosKey: process.env.EXPO_PUBLIC_RC_IOS_KEY,
-  revenueCatAndroidKey: process.env.EXPO_PUBLIC_RC_ANDROID_KEY,
 } as const;

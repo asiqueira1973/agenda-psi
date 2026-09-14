@@ -92,6 +92,9 @@ export default function PaywallScreen() {
       descricao: 'tentou restaurar compras',
     });
     const resultado = await compra.restaurar();
+    // 'demorou' não leva alerta: a própria tela já está mostrando o aviso de
+    // espera. Dois avisos ao mesmo tempo, um deles dizendo que não há compra
+    // nenhuma, assustaria quem acabou de pagar.
     if (resultado === 'nada') Alert.alert(copyPlano.paywall.nadaARestaurar(LOJA));
   }
 

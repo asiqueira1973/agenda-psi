@@ -61,6 +61,11 @@ export function usePurchases() {
 
   useEffect(() => {
     let vivo = true;
+    // Precisa voltar a false a cada montagem: o StrictMode do React 19 roda o
+    // efeito duas vezes na MESMA instância, e a ref sobrevive à limpeza. Sem
+    // isto, em desenvolvimento a espera pela confirmação aborta antes de
+    // começar — e o sintoma seria "comprei e não liberou", o pior de todos.
+    cancelado.current = false;
 
     async function conectar() {
       try {
@@ -120,13 +125,15 @@ export function usePurchases() {
    * RevenueCat atrasado" — que agora é "notificação da loja atrasada", mesmo
    * problema. Depois do tempo, orienta a usar Restaurar compras em vez de
    * deixar a pessoa olhando um spinner eterno.
+   *
+   * Devolve `true` só se o servidor confirmou de verdade.
    */
-  const aguardarConfirmacaoDoServidor = useCallback(async () => {
+  const aguardarConfirmacaoDoServidor = useCallback(async (): Promise<boolean> => {
     setEstado({ tipo: 'confirmando' });
 
     for (const espera of ESPERAS) {
       await new Promise((r) => setTimeout(r, espera));
-      if (cancelado.current) return;
+      if (cancelado.current) return false;
 
       const { data } = await supabase.from('v_meu_plano').select('plano').maybeSingle();
       if (data?.plano === 'pro') {
@@ -145,11 +152,12 @@ export function usePurchases() {
         }
 
         setEstado({ tipo: 'confirmada' });
-        return;
+        return true;
       }
     }
 
     setEstado({ tipo: 'demorou' });
+    return false;
   }, [queryClient]);
 
   /** Abre o fluxo de compra da loja, carimbado com o id do usuário. */
@@ -179,15 +187,22 @@ export function usePurchases() {
     }
   }, [usuarioId]);
 
-  /** Restaura compras num aparelho novo (critério de aceite de 8.11). */
-  const restaurar = useCallback(async (): Promise<'restaurada' | 'nada'> => {
+  /**
+   * Restaura compras num aparelho novo (critério de aceite de 8.11).
+   *
+   * São três desfechos, e não dois, porque "não achei compra" e "achei mas o
+   * servidor não confirmou a tempo" pedem respostas diferentes na tela.
+   */
+  const restaurar = useCallback(async (): Promise<'restaurada' | 'nada' | 'demorou'> => {
     try {
       await restorePurchases();
       const compras = await getAvailablePurchases();
       if (!compras || compras.length === 0) return 'nada';
 
-      await aguardarConfirmacaoDoServidor();
-      return 'restaurada';
+      // Ter a compra no aparelho não é o mesmo que ter Pro: quem diz é o
+      // servidor. Responder 'restaurada' sem esperar mentiria para a tela.
+      const confirmou = await aguardarConfirmacaoDoServidor();
+      return confirmou ? 'restaurada' : 'demorou';
     } catch {
       return 'nada';
     }
