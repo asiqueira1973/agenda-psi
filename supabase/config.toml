@@ -413,3 +413,25 @@ enabled = true
 # formatted with uppercase keywords, indent 2, max width 180, trailing commas,
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
+
+# -----------------------------------------------------------------------------
+# Edge Functions (spec 13)
+#
+# As três primeiras exigem JWT do usuário: é delas que vem a correção da decisão
+# D3, em que o usuario_id passa a ser derivado do token e nunca do corpo.
+#
+# rc-webhook é a exceção, e é proposital: quem chama é o RevenueCat, não uma
+# pessoa. A autenticação dela é o segredo combinado no painel deles, conferido
+# dentro da função (spec 13.3).
+# -----------------------------------------------------------------------------
+[functions.agente-psi]
+verify_jwt = true
+
+[functions.analise-financeira]
+verify_jwt = true
+
+[functions.notifica-admin]
+verify_jwt = true
+
+[functions.rc-webhook]
+verify_jwt = false

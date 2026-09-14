@@ -22,3 +22,4 @@ export { SegmentedControl, SegmentedGroupContent, type SegmentoOpcao } from './s
 export { DateRow, hojeNoFormatoDoBanco } from './date-row';
 export { PickerRow, type OpcaoDoSeletor } from './picker-row';
 export { TimeRow } from './time-row';
+export { MarkdownText } from './markdown-text';
