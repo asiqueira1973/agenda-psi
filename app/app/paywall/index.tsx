@@ -79,7 +79,7 @@ export default function PaywallScreen() {
   return (
     <Screen footerSpace>
       <View style={{ paddingHorizontal: screenMargin, marginBottom: spacing.xl }}>
-        <TextLink label="‹ Voltar" onPress={() => router.back()} />
+        <TextLink label="‹ Voltar" align="start" onPress={() => router.back()} />
         <Text variant="largeTitle" style={{ marginTop: spacing.sm }}>
           {copyPlano.proTitulo}
         </Text>

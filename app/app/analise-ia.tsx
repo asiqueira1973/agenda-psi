@@ -58,7 +58,7 @@ export default function AnaliseComIaScreen() {
   return (
     <Screen>
       <View style={{ paddingHorizontal: screenMargin, marginBottom: spacing.xxl }}>
-        <TextLink label="‹ Início" onPress={() => router.back()} />
+        <TextLink label="‹ Início" align="start" onPress={() => router.back()} />
         <Text variant="largeTitle" style={{ marginTop: spacing.sm }}>
           Análise com IA
         </Text>

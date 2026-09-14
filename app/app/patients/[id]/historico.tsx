@@ -54,7 +54,7 @@ export default function HistoricoScreen() {
   return (
     <Screen>
       <View style={{ paddingHorizontal: screenMargin, marginBottom: spacing.xxl }}>
-        <TextLink label="‹ Voltar" variant="body" onPress={() => router.back()} />
+        <TextLink label="‹ Voltar" variant="body" align="start" onPress={() => router.back()} />
         <Text variant="largeTitle" style={{ marginTop: spacing.sm }}>
           {titulo}
         </Text>

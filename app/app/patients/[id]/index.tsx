@@ -96,7 +96,7 @@ export default function DetalheDoPacienteScreen() {
   return (
     <Screen>
       <View style={{ paddingHorizontal: screenMargin, marginBottom: spacing.xxl }}>
-        <TextLink label="‹ Pacientes" variant="body" onPress={() => router.back()} />
+        <TextLink label="‹ Pacientes" variant="body" align="start" onPress={() => router.back()} />
         <Text variant="largeTitle" style={{ marginTop: spacing.sm }}>
           {nome}
         </Text>

@@ -84,7 +84,7 @@ export default function AgentePsiScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={{ paddingTop: insets.top + spacing.lg, paddingHorizontal: screenMargin }}>
-        <TextLink label={copyAgente.voltar} onPress={() => router.back()} />
+        <TextLink label={copyAgente.voltar} align="start" onPress={() => router.back()} />
         <Text variant="largeTitle" style={{ marginTop: spacing.sm }}>
           {copyAgente.titulo}
         </Text>

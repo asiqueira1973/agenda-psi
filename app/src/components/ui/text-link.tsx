@@ -18,11 +18,18 @@ export function TextLink({
   onPress,
   disabled = false,
   variant = 'body',
+  align = 'center',
 }: {
   label: string;
   onPress: () => void;
   disabled?: boolean;
   variant?: TextVariant;
+  /**
+   * Onde o link se posiciona no espaço do pai. `center` serve para os links
+   * soltos de rodapé; `start` para o "‹ Voltar" de cabeçalho, que centralizado
+   * fica com cara de título e não de navegação.
+   */
+  align?: 'center' | 'start';
 }) {
   const colors = useColors();
 
@@ -38,8 +45,8 @@ export function TextLink({
         minHeight: size.minTouchTarget,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: spacing.lg,
-        alignSelf: 'center',
+        paddingHorizontal: align === 'center' ? spacing.lg : 0,
+        alignSelf: align === 'center' ? 'center' : 'flex-start',
         opacity: disabled ? 0.4 : pressed ? 0.5 : 1,
       })}
     >
