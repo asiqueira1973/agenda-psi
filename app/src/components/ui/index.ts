@@ -20,3 +20,5 @@ export { SearchField } from './search-field';
 export { SwipeToDelete } from './swipe-to-delete';
 export { SegmentedControl, SegmentedGroupContent, type SegmentoOpcao } from './segmented-control';
 export { DateRow, hojeNoFormatoDoBanco } from './date-row';
+export { PickerRow, type OpcaoDoSeletor } from './picker-row';
+export { TimeRow } from './time-row';
