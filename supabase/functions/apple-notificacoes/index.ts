@@ -4,6 +4,7 @@ import {
   Environment,
 } from 'npm:@apple/app-store-server-library@3';
 import { certificadosRaizDaApple } from '../_shared/apple-root-ca.ts';
+import { ambienteDoPayload } from '../_shared/apple-ambiente.ts';
 import { aplicarEstadoDaAssinatura, type EstadoDaAssinatura } from '../_shared/assinatura.ts';
 import { json } from '../_shared/cors.ts';
 
@@ -35,6 +36,10 @@ import { json } from '../_shared/cors.ts';
  * ⚠️ NÃO TESTADA CONTRA A APPLE. Só dá para exercitar depois que o produto de
  * assinatura existir no App Store Connect e o sandbox começar a mandar
  * notificação. Até lá, é código revisado, não código verificado.
+ *
+ * Ao testar pelo TestFlight, lembre que TestFlight é SEMPRE sandbox — a URL de
+ * sandbox tem de estar cadastrada no App Store Connect, separada da de
+ * produção, ou nenhuma notificação chega aqui.
  */
 
 /**
@@ -94,11 +99,7 @@ Deno.serve(async (req) => {
   const bundleId = Deno.env.get('APPLE_BUNDLE_ID') ?? 'com.dablab.agendapsi';
   const appId = Deno.env.get('APPLE_APP_ID');
 
-  // O ambiente vem do próprio payload; a Apple manda sandbox e produção para a
-  // mesma URL. Verificar com o ambiente errado faz a validação falhar.
-  const ambiente = corpo.signedPayload.includes('Sandbox')
-    ? Environment.SANDBOX
-    : Environment.PRODUCTION;
+  const ambiente = ambienteDoPayload(corpo.signedPayload);
 
   let verificador: SignedDataVerifier;
   try {
