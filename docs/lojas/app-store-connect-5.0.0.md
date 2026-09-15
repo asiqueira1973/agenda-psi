@@ -4,6 +4,56 @@ Só os campos que mudam numa atualização. O resto da ficha já está preenchid
 
 ---
 
+## Description  (pt-BR)
+
+Ordem que importa: o que o app FAZ primeiro, a assinatura depois, os links no
+fim. Foi a inversão disso que quase virou uma ficha abrindo com cobrança antes
+de dizer para que serve o app.
+
+Os dois links no fim atendem a diretriz 3.1.2, e são a causa da recusa de
+15/09/2026. Junto com eles, a mesma diretriz exige título, duração e preço da
+assinatura no texto — é o que o bloco SOBRE A ASSINATURA faz.
+
+```
+O Agenda Psi ajuda profissionais de psicologia e psicanálise a organizar o
+consultório: cadastre pacientes, registre sessões, defina o preço de cada um e
+acompanhe pagamentos. Tudo de forma rápida, segura e sem complicações.
+
+Feito para quem atende por conta própria, sem secretária e sem sistema de
+clínica.
+
+O QUE VOCÊ FAZ NO APP
+
+• Pacientes — cadastro, telefone, primeira consulta e o preço vigente de cada
+  um, com histórico de reajustes.
+• Agenda — o horário fixo semanal de cada paciente, sem remontar a semana toda
+  segunda-feira.
+• Sessões — registre entre um atendimento e outro: data, duração, presencial ou
+  remota, e se foi paga.
+• Pagamentos — por sessão ou mensal, com o valor já preenchido a partir do preço
+  do paciente.
+• Despesas — aluguel da sala, supervisão, análise pessoal, impostos e o resto do
+  custo real do consultório.
+• Início — sessões, recebimentos, despesas, lucro e margem do mês, com a
+  comparação com o mês anterior.
+• Lembretes por SMS — o paciente é avisado do horário da sessão.
+
+SOBRE A ASSINATURA
+
+Agenda Psi Pro é uma assinatura mensal de renovação automática de R$ 9,90 por
+mês, que libera lembretes por SMS ilimitados para os seus pacientes. No plano
+gratuito o limite é de 10 lembretes por mês. Todo o restante do app é gratuito e
+não depende da assinatura.
+
+A assinatura renova automaticamente ao fim de cada mês, a menos que seja
+cancelada até 24 horas antes do fim do período vigente. A cobrança é feita na sua
+conta da App Store, e o cancelamento é feito nos ajustes da conta, a qualquer
+momento.
+
+Política de privacidade: https://app.notion.com/p/POL-TICA-DE-PRIVACIDADE-APLICATIVOS-DA-DAB-LAB-2bd4305f24e180c395cdda41879cf567
+Termos de Uso (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+```
+
 ## What's New in This Version  (pt-BR)
 
 ```
