@@ -34,13 +34,15 @@ cancelada até 24 horas antes do fim do período vigente. A cobrança é feita n
 conta da App Store, e o cancelamento é feito nos ajustes da conta, a qualquer
 momento.
 
-Política de privacidade: https://dablab.notion.site/Pol-tica-de-Privacidade-Agenda-Psi
+Política de privacidade: COLE AQUI A MESMA URL DO CAMPO "Privacy Policy URL"
 Termos de Uso (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
-⚠️ **Confira a URL da política de privacidade acima** — eu não tenho como
-validá-la daqui. Use a mesma que já está no campo Privacy Policy URL da ficha.
-Link quebrado nesse parágrafo é nova recusa, pela mesma diretriz.
+⚠️ **A URL da política não está escrita aqui de propósito.** Ela não existe em
+nenhum arquivo do repositório, e um endereço inventado num documento é
+exatamente o que alguém copia meses depois e manda link quebrado para a revisão.
+Copie a que já está no campo **Privacy Policy URL** da ficha, que é por definição
+a certa.
 
 Usamos o **EULA padrão da Apple**, e não um personalizado, porque um EULA próprio
 precisa ser cadastrado e revisado, e não há no produto cláusula que o padrão não
