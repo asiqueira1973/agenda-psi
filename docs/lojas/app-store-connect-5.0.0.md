@@ -46,11 +46,14 @@ aviso, a primeira reação de quem atualizar é achar que perdeu os dados.
 |---|---|
 | Sign-in required | **Sim** |
 | User name | `alexandre.silva.siqueira+psiteste@gmail.com` |
-| Password | *preencher* |
+| Password | definida em 14/09/2026, direto no painel — **não fica escrita aqui** |
 
 Esta conta foi populada em 14/09/2026 com dados fictícios: 8 pacientes, agenda
 semanal, sessões dos dois últimos meses, pagamentos e despesas. Nenhum dado de
-paciente real.
+paciente real. O login com a senha nova foi testado no app e funciona.
+
+Senha nenhuma é versionada neste repositório. Se a conta for perdida, o caminho é
+Authentication → Users → Reset password, não procurar aqui.
 
 Ela **não** é conta fundadora, então o paywall aparece normalmente — que é o que
 o revisor precisa ver. Não troque para uma conta fundadora: nelas o Pro já vem
