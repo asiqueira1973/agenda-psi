@@ -14,7 +14,9 @@
       "supportsTablet": false,
       "config": {
         "usesNonExemptEncryption": false
-      }
+      },
+      "appleTeamId": "XGZW6Y6K25",
+      "buildNumber": "1"
     },
     "android": {
       "package": "com.dablab.agendapsi",
