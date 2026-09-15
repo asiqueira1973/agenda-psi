@@ -85,8 +85,15 @@ Mesmo prompt do iPhone, em `prompt-claude-design-iphone.md`, com três trocas:
    Material — grupos de lista sem cartão e títulos em azul, que é o previsto
    para a plataforma e não um defeito.
 
-## O que falta antes de gerar as capturas
+## As capturas
 
-As capturas do Android **ainda não existem**. Falta entrar na conta de
-demonstração no emulador — e senha não é coisa que o assistente digite. Feito o
-login, as seis telas saem em minutos, pelo mesmo caminho do iOS.
+Estão em `telas-android/`, sete telas em 1080 × 2400, tiradas de um build
+**Release** no emulador Pixel — sem o balão flutuante do dev client, que num
+build de desenvolvimento cobre o canto superior direito.
+
+Repare que elas mostram o desenho Material e não o do iOS: grupos de lista sem
+cartão arredondado, ocupando a largura toda, e títulos de seção em azul sem
+maiúsculas. É o previsto no handoff para a plataforma, não defeito.
+
+A sétima é o paywall, que no Android diz "Google Play" na copy e traz os mesmos
+links de Termos de Uso e Política de privacidade exigidos pela loja.

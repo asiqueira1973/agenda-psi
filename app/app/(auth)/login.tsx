@@ -47,10 +47,16 @@ export default function LoginScreen() {
       await entrar(email, senha);
       // A partir daqui quem decide o destino é o guardião da rota raiz, que
       // aplica a regra 6.3 consultando v_profissional_atual.
+      //
+      // `entrando` continua true de propósito: esta tela está saindo, e mexer no
+      // estado dela depois de mandar navegar é escrever numa tela que já começou
+      // a ser desmontada. No Android isso apareceu como crash de montagem do
+      // Fabric — "addViewAt: view already has a parent" — justamente na primeira
+      // entrada, que é o caminho que 100% da base percorre nesta atualização.
       router.replace('/');
     } catch (e) {
       setErro(e instanceof Error ? e.message : copyAuth.erros.falhaGenerica);
-    } finally {
+      // Só aqui: no erro a tela CONTINUA, e o botão precisa voltar a funcionar.
       setEntrando(false);
     }
   }
