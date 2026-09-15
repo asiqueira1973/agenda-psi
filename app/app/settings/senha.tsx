@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import { Alert, View } from 'react-native';
 import { router } from 'expo-router';
-import { Screen, ListGroup, ValueRow, FilledButton, Text } from '@/components/ui';
+import {
+  BackLink,
+  Screen,
+  ListGroup,
+  ValueRow,
+  FilledButton,
+  Text,
+} from '@/components/ui';
 import { screenMargin, spacing } from '@/theme';
 import { useSession } from '@/features/auth/session-provider';
 import { enviarEmailDeRecuperacao } from '@/features/auth/auth-service';
@@ -46,6 +53,7 @@ export default function TrocarSenhaScreen() {
   return (
     <Screen>
       <View style={{ paddingHorizontal: screenMargin, marginBottom: spacing.xxl }}>
+        <BackLink label="‹ Ajustes" />
         <Text variant="largeTitle">{copyConfiguracoes.senha.titulo}</Text>
       </View>
 

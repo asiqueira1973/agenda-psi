@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import {
+  BackLink,
   Screen,
   ListGroup,
   RowSeparator,
@@ -79,6 +80,7 @@ export default function NovaSessaoScreen() {
     >
       <Screen>
         <View style={{ paddingHorizontal: screenMargin, marginBottom: spacing.xxl }}>
+          <BackLink />
           <Text variant="largeTitle">{copySessoes.nova}</Text>
         </View>
 

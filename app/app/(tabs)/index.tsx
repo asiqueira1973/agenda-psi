@@ -36,9 +36,12 @@ import { gruposDoDashboard } from '@/features/home/indicadores';
  *   acredita, fecha o app e não volta;
  * - estado vazio de boas-vindas para quem não tem paciente, em vez de 13
  *   cartões zerados (fluxo 9.1);
- * - "Sair do app" saiu daqui e foi para Configurações (assunção 24.7);
- * - o Agente Psi ganhou entrada: o ícone no cabeçalho. Hoje a tela é órfã,
- *   alcançável só por deep link (defeito 11.9.16).
+ * - "Sair do app" saiu daqui e foi para Configurações (assunção 24.7).
+ *
+ * O Agente Psi e a Análise com IA foram REMOVIDOS do produto em 14/09/2026, por
+ * decisão do Alexandre depois do primeiro teste em aparelho. Some com eles o
+ * defeito 11.9.16 do spec — a tela órfã do agente deixou de existir em vez de
+ * ganhar entrada.
  */
 export default function InicioScreen() {
   const colors = useColors();
@@ -50,25 +53,8 @@ export default function InicioScreen() {
 
   return (
     <Screen>
-      <View
-        style={{
-          paddingHorizontal: screenMargin,
-          marginBottom: spacing.xxl,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
+      <View style={{ paddingHorizontal: screenMargin, marginBottom: spacing.xxl }}>
         <Text variant="largeTitle">Agenda Psi</Text>
-        {/* A entrada do Agente Psi. É o que tira a tela da orfandade. */}
-        <Pressable
-          onPress={() => router.push('/agent')}
-          accessibilityRole="button"
-          accessibilityLabel="Abrir o Agente Psi"
-          hitSlop={12}
-        >
-          <Icon name="agent" color={colors.accent} size={23} />
-        </Pressable>
       </View>
 
       {carregando ? <EsqueletoDaHome /> : null}
@@ -110,13 +96,6 @@ export default function InicioScreen() {
               ))}
             </ListGroup>
           ))}
-
-          <ListGroup>
-            <ActionRow
-              label="Análise com IA"
-              onPress={() => router.push('/analise-ia')}
-            />
-          </ListGroup>
         </>
       ) : null}
     </Screen>

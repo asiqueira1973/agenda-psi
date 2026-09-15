@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import {
+  BackLink,
   Screen,
   ListGroup,
   RowSeparator,
@@ -69,6 +70,7 @@ export default function AtualizarPrecoScreen() {
     >
       <Screen>
         <View style={{ paddingHorizontal: screenMargin, marginBottom: spacing.xxl }}>
+          <BackLink />
           <Text variant="largeTitle">{copyPacientes.atualizarPreco.titulo}</Text>
         </View>
 

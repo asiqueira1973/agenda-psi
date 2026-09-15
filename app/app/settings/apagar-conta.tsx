@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, View } from 'react-native';
 import { router } from 'expo-router';
 import {
+  BackLink,
   Screen,
   ListGroup,
   FormRow,
@@ -63,6 +64,7 @@ export default function ApagarContaScreen() {
     >
       <Screen>
         <View style={{ paddingHorizontal: screenMargin, marginBottom: spacing.xl }}>
+          <BackLink label="‹ Ajustes" />
           <Text variant="largeTitle">{copyConfiguracoes.apagar.titulo}</Text>
         </View>
 

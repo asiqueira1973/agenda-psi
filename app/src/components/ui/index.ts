@@ -8,6 +8,7 @@ export { Text, type TextVariant } from './text';
 export { Icon, type IconName } from './icon';
 export { IconButton } from './icon-button';
 export { TextLink } from './text-link';
+export { BackLink } from './back-link';
 export { ListGroup, RowSeparator } from './list-group';
 export { ActionRow, NavigationRow, ValueRow, FormRow, ToggleRow, MultilineRow } from './rows';
 export { FilledButton } from './filled-button';
@@ -22,4 +23,3 @@ export { SegmentedControl, SegmentedGroupContent, type SegmentoOpcao } from './s
 export { DateRow, hojeNoFormatoDoBanco } from './date-row';
 export { PickerRow, type OpcaoDoSeletor } from './picker-row';
 export { TimeRow } from './time-row';
-export { MarkdownText } from './markdown-text';

@@ -59,9 +59,10 @@ export type NomeDeEvento = (typeof eventos)[keyof typeof eventos];
  * maneira de garantir isso não é lembrar da regra na hora de chamar, é não ter
  * onde colocar. Por isso não existe `Record<string, string>` aqui.
  *
- * O defeito 11.9.18 é exatamente isso acontecendo no app atual: o texto
- * integral do comando do Agente Psi ia para o analytics, e comando de Agente
- * costuma conter nome de paciente e valor pago.
+ * O defeito 11.9.18 é exatamente isso acontecendo no app atual: o texto integral
+ * do comando do Agente Psi ia para o analytics, e comando de Agente costuma
+ * conter nome de paciente e valor pago. O agente foi removido do produto em
+ * 14/09/2026, mas a trava fica: ela vale para todo campo de texto do app.
  */
 export type PropriedadesDeEvento = {
   /** Plano vigente: 'free', 'pro' ou 'fundador'. */

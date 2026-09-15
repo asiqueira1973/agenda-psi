@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, View } from 'react-native';
 import { router } from 'expo-router';
 import {
+  BackLink,
   Screen,
   ListGroup,
   RowSeparator,
@@ -88,6 +89,7 @@ export default function MeuPerfilScreen() {
     >
       <Screen>
         <View style={{ paddingHorizontal: screenMargin, marginBottom: spacing.xxl }}>
+          <BackLink label="‹ Ajustes" />
           <Text variant="largeTitle">{copyConfiguracoes.perfil.titulo}</Text>
         </View>
 

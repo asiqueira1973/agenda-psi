@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import {
+  BackLink,
   Screen,
   ListGroup,
   RowSeparator,
@@ -122,6 +123,7 @@ export default function DetalheDoPagamentoScreen() {
     >
       <Screen>
         <View style={{ paddingHorizontal: screenMargin, marginBottom: spacing.xxl }}>
+          <BackLink />
           <Text variant="largeTitle">{copyPagamentos.detalhe}</Text>
         </View>
 

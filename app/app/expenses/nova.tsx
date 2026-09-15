@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, View } from 'react-native';
 import { router } from 'expo-router';
 import {
+  BackLink,
   Screen,
   ListGroup,
   RowSeparator,
@@ -90,6 +91,7 @@ export default function NovaDespesaScreen() {
     >
       <Screen>
         <View style={{ paddingHorizontal: screenMargin, marginBottom: spacing.xxl }}>
+          <BackLink label="‹ Despesas" />
           <Text variant="largeTitle">{copyDespesas.nova.titulo}</Text>
         </View>
 

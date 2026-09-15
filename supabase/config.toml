@@ -417,8 +417,8 @@ enabled = true
 # -----------------------------------------------------------------------------
 # Edge Functions (spec 13)
 #
-# As três primeiras exigem JWT do usuário: é delas que vem a correção da decisão
-# D3, em que o usuario_id passa a ser derivado do token e nunca do corpo.
+# A primeira exige JWT do usuário: é dela que vem a correção da decisão D3, em
+# que o usuario_id passa a ser derivado do token e nunca do corpo.
 #
 # As duas últimas são a exceção, e é proposital: quem chama é a loja, não uma
 # pessoa. A da Apple se autentica pela cadeia de certificados do JWS, validada
@@ -428,12 +428,6 @@ enabled = true
 # Substituem a rc-webhook do spec 13.3: sem RevenueCat (decisão de 14/09/2026),
 # cada loja avisa do seu jeito.
 # -----------------------------------------------------------------------------
-[functions.agente-psi]
-verify_jwt = true
-
-[functions.analise-financeira]
-verify_jwt = true
-
 [functions.notifica-admin]
 verify_jwt = true
 

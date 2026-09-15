@@ -20,7 +20,6 @@ import { size } from '@/theme';
 type IconPair = { ios: string; android: keyof typeof MaterialIcons.glyphMap };
 
 const icons = {
-  agent: { ios: 'sparkles', android: 'auto-awesome' },
   home: { ios: 'house.fill', android: 'home' },
   schedule: { ios: 'calendar', android: 'calendar-today' },
   patients: { ios: 'person.2.fill', android: 'people' },

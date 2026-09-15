@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, View } from 'react-native';
 import { router } from 'expo-router';
 import {
+  BackLink,
   Screen,
   ListGroup,
   MultilineRow,
@@ -49,6 +50,7 @@ export default function FeedbackScreen() {
     >
       <Screen>
         <View style={{ paddingHorizontal: screenMargin, marginBottom: spacing.xxl }}>
+          <BackLink label="‹ Ajustes" />
           <Text variant="largeTitle">{copyConfiguracoes.feedbackTela.titulo}</Text>
         </View>
 

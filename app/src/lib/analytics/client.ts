@@ -103,7 +103,6 @@ export const telas = {
   novoPaciente: 'novo paciente',
   novaDespesa: 'nova despesa',
   atualizarPreco: 'atualizar preco',
-  agentePsi: 'agente psi',
   novaConta: 'nova conta',
   login: 'login',
   editarPaciente: 'editar paciente',

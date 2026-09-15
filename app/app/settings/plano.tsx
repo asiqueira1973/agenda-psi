@@ -1,6 +1,7 @@
 import { Platform, View } from 'react-native';
 import { router } from 'expo-router';
 import {
+  BackLink,
   Screen,
   ListGroup,
   RowSeparator,
@@ -58,6 +59,7 @@ export default function MeuPlanoScreen() {
   return (
     <Screen>
       <View style={{ paddingHorizontal: screenMargin, marginBottom: spacing.xxl }}>
+        <BackLink label="‹ Ajustes" />
         <Text variant="largeTitle">{copyPlano.titulo}</Text>
       </View>
 
