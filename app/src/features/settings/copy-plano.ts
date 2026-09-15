@@ -88,8 +88,33 @@ export const copyPlano = {
      */
     demorou:
       'A loja confirmou a compra, mas ainda não recebemos o aviso dela. Toque em Restaurar compras em alguns minutos — nada foi perdido.',
+    /**
+     * Exigência da diretriz 3.1.2 da App Store: no ponto da compra têm de estar
+     * visíveis o título da assinatura, a duração, o preço e links FUNCIONAIS
+     * para os termos de uso e a política de privacidade.
+     *
+     * A submissão de 15/09/2026 foi recusada por faltar o link dos termos na
+     * ficha da loja. A ficha e o app são exigências separadas, e quem conserta
+     * só uma costuma levar a segunda recusa.
+     */
+    renovacao:
+      'Assinatura mensal de renovação automática. Renova sozinha ao fim de cada mês, a menos que você cancele até 24 horas antes, na sua conta da loja.',
+    termos: 'Termos de Uso',
+    privacidade: 'Política de privacidade',
   },
 } as const;
+
+/**
+ * EULA padrão da Apple.
+ *
+ * Usamos o dela em vez de escrever um próprio: um EULA personalizado precisa ser
+ * cadastrado no App Store Connect e revisado, e não há no produto nenhuma
+ * cláusula que o padrão não cubra.
+ *
+ * Implementa: diretriz 3.1.2 da App Store.
+ */
+export const URL_TERMOS_DE_USO =
+  'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
 
 /** Nome da loja, para a copy que fala em "sua conta da {loja}". */
 export function nomeDaLoja(plataforma: 'ios' | 'android' | string): string {

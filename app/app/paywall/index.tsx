@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Alert, View } from 'react-native';
 import { router } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import {
   Screen,
   ListGroup,
@@ -11,7 +12,7 @@ import {
   Text,
 } from '@/components/ui';
 import { useColors, screenMargin, spacing } from '@/theme';
-import { copyPlano } from '@/features/settings/copy-plano';
+import { copyPlano, URL_TERMOS_DE_USO } from '@/features/settings/copy-plano';
 import { usePurchases, LOJA } from '@/features/purchases/use-purchases';
 import { track, eventos, telas } from '@/lib/analytics';
 import { useSession } from '@/features/auth/session-provider';
@@ -173,6 +174,44 @@ export default function PaywallScreen() {
           label={copyPlano.paywall.restaurar}
           disabled={emAndamento}
           onPress={() => void aoRestaurar()}
+        />
+      </View>
+
+      {/* Condição da renovação, em texto. Exigência de 3.1.2. */}
+      <Text
+        variant="caption"
+        color="secondaryLabel"
+        style={{
+          marginHorizontal: screenMargin,
+          marginTop: spacing.lg,
+          textAlign: 'center',
+        }}
+      >
+        {copyPlano.paywall.renovacao}
+      </Text>
+
+      {/* Os dois links que a 3.1.2 exige no ponto da compra. Sem eles a
+          submissão é recusada, e foi o que aconteceu em 15/09/2026. */}
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginTop: spacing.xs,
+        }}
+      >
+        <TextLink
+          label={copyPlano.paywall.termos}
+          variant="caption"
+          onPress={() => void WebBrowser.openBrowserAsync(URL_TERMOS_DE_USO)}
+        />
+        <Text variant="caption" color="tertiaryLabel" style={{ marginHorizontal: spacing.sm }}>
+          ·
+        </Text>
+        <TextLink
+          label={copyPlano.paywall.privacidade}
+          variant="caption"
+          onPress={() => router.push('/politica-de-privacidade')}
         />
       </View>
 

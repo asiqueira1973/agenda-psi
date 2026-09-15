@@ -16,7 +16,7 @@
         "usesNonExemptEncryption": false
       },
       "appleTeamId": "XGZW6Y6K25",
-      "buildNumber": "3"
+      "buildNumber": "4"
     },
     "android": {
       "package": "com.dablab.agendapsi",
