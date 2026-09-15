@@ -1,6 +1,6 @@
 import { ScrollView, View, type ViewProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useColors, spacing, size } from '@/theme';
+import { useColors, spacing, size, larguraMaximaDeConteudo } from '@/theme';
 
 /**
  * Casca de tela: fundo agrupado, área segura e rolagem.
@@ -9,6 +9,10 @@ import { useColors, spacing, size } from '@/theme';
  * no escuro, não cinza escuro. É esse preto que faz a tela parecer profunda no
  * OLED, e é o detalhe que mais denuncia um app que só inverteu as cores
  * (handoff, "Modo escuro").
+ *
+ * No iPad o conteúdo tem largura máxima e fica centralizado — ver
+ * `larguraMaximaDeConteudo`. O fundo continua ocupando a tela toda; quem se
+ * limita é o conteúdo, não a casca.
  *
  * Implementa: 16.2, 16.6 e o layout base do handoff.
  */
@@ -46,7 +50,7 @@ export function Screen({
         ]}
         {...rest}
       >
-        {children}
+        <View style={colunaCentral}>{children}</View>
       </View>
     );
   }
@@ -61,10 +65,23 @@ export function Screen({
       showsVerticalScrollIndicator
       {...rest}
     >
-      {children}
+      <View style={colunaCentral}>{children}</View>
     </ScrollView>
   );
 }
+
+/**
+ * A coluna que segura o conteúdo no centro em telas largas.
+ *
+ * `width: '100%'` junto com `maxWidth` é o par que faz a coluna encolher no
+ * iPhone e parar de crescer no iPad. Só `maxWidth` não basta: sem a largura
+ * declarada, a View encolhe até o tamanho do filho mais largo.
+ */
+const colunaCentral = {
+  width: '100%',
+  maxWidth: larguraMaximaDeConteudo,
+  alignSelf: 'center',
+} as const;
 
 /**
  * Rodapé fixo para o botão preenchido da tela, quando houver um.
@@ -85,7 +102,9 @@ export function ScreenFooter({ children }: { children: React.ReactNode }) {
         paddingBottom: insets.bottom + spacing.lg,
       }}
     >
-      {children}
+      {/* O rodapé acompanha a mesma coluna do conteúdo: um botão de 1032pt de
+          largura no iPad não pareceria um botão. */}
+      <View style={colunaCentral}>{children}</View>
     </View>
   );
 }

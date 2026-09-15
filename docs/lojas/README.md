@@ -11,6 +11,10 @@ iPad. São dois conjuntos, com tratamentos diferentes.
 | iPhone | 6,5" | 1242 × 2688 | **imagem final com o texto de marketing** |
 | iPad | 13" | 2064 × 2752 | **só as telas**, já no tamanho, sem texto |
 
+São **seis** imagens no iPhone e **três** no iPad. Três bastam no iPad: quem
+chega ali já decidiu instalar e só quer confirmar que o app roda no aparelho
+grande. As escolhidas — Início, Agenda e Pacientes — cobrem o app inteiro.
+
 O iPhone leva a arte de marketing porque é onde a decisão de instalar acontece.
 No iPad basta a tela limpa: quem chega ali já decidiu, e o objetivo é só provar
 que o app funciona no aparelho.
@@ -51,3 +55,10 @@ outro bundle id, jogando fora usuários e avaliações.
 
 Consequência prática: as telas precisam **funcionar** no iPad, não só abrir.
 Revisão recusa app que aparece esticado ou quebrado no aparelho maior.
+
+E era o caso. Na primeira captura, em 14/09/2026, o layout era o do iPhone
+esticado: as linhas ocupavam os 1032pt inteiros, o nome do paciente ficava na
+borda esquerda e o preço na direita, com o olho percorrendo a tela para ligar um
+ao outro. O conserto foi limitar o conteúdo a `larguraMaximaDeConteudo` (700pt)
+dentro do componente `Screen` — como toda tela passa por ele, uma mudança
+resolveu todas.

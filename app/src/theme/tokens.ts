@@ -24,6 +24,24 @@ export const spacing = {
 /** Margem lateral padrão de toda tela (handoff, 16pt). */
 export const screenMargin = 16;
 
+/**
+ * Largura máxima do conteúdo de uma tela.
+ *
+ * DECISÃO de 14/09/2026, fora do handoff: ele só desenhou iPhone. O app foi
+ * obrigado a voltar a suportar iPad — a versão anterior declarava a família
+ * "1,2" e a Apple não aceita atualização que deixe de suportar um aparelho.
+ *
+ * Sem um teto, a mesma tela de lista se estica por 1032pt no iPad Pro de 13":
+ * o nome do paciente fica na borda esquerda, o preço na direita, e o olho
+ * percorre a tela inteira para ligar um ao outro. É o que a revisão da Apple
+ * chama de "not optimized for iPad".
+ *
+ * 700pt é largo o bastante para não parecer uma coluna espremida e estreito o
+ * bastante para a linha continuar legível. No iPhone o valor não tem efeito
+ * nenhum: a tela mais larga hoje tem 440pt.
+ */
+export const larguraMaximaDeConteudo = 700;
+
 /** Raios. Cada superfície tem o seu; não existe raio "genérico". */
 export const radius = {
   listGroup: 10,
