@@ -73,3 +73,47 @@ Título, duração e preço já estavam visíveis, que é o resto do que a 3.1.2
 Recomendação: **build 4**. A recusa de hoje foi automática, de triagem; a próxima
 passa por revisor humano, que abre o app e olha o paywall. Uma hora esperando o
 processamento custa menos do que mais um dia de fila.
+
+
+---
+
+## Resposta ao revisor (Resolution Center)
+
+Curta e factual, dizendo o que mudou em cada lugar e onde achar a tela. Revisor
+lê dezenas por dia; argumentação não ajuda, caminho até a tela ajuda.
+
+```
+Thank you for the review.
+
+We have addressed the issue in both the App Store metadata and the app itself.
+
+1) App Store product page metadata
+
+The App Description now includes the subscription's title, length and price, plus
+functional links to our Privacy Policy and to the Terms of Use (we use Apple's
+standard EULA):
+
+Privacy Policy: https://app.notion.com/p/POL-TICA-DE-PRIVACIDADE-APLICATIVOS-DA-DAB-LAB-2bd4305f24e180c395cdda41879cf567
+Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+
+2) Inside the app, at the point of purchase
+
+Although it was not raised in the rejection, we noticed the subscription screen
+did not carry the same links, so we corrected that as well. The screen now shows
+the subscription title, its monthly length, the price, the auto-renewal terms,
+and functional links to the Terms of Use and the Privacy Policy.
+
+This required a new binary. Build 5.0.0 (4) has been uploaded and includes the
+change.
+
+To reach the subscription screen: sign in with the demo account provided in the
+App Review Information, tap "Ajustes" in the bottom tab bar, then "Meu plano".
+The screen "Agenda Psi Pro" is the purchase screen.
+
+Please let us know if anything else is needed.
+```
+
+Repare no item 2: ele diz que consertamos algo **que a recusa não pediu**. Vale
+dizer — mostra que o app foi revisto inteiro contra a diretriz, e não só na frase
+citada. É a diferença entre parecer que se remendou o mínimo e parecer que se
+entendeu a regra.
