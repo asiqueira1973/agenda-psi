@@ -2,6 +2,34 @@
 
 Escrito em 15/09/2026, na primeira vez que se fez isso neste projeto.
 
+## Links diretos, para não caçar menu
+
+A navegação do Play Console mudou e caminho de memória erra. Estes links são
+montados a partir dos identificadores da conta e do app, e não dependem de onde
+o Google resolveu pôr o menu este mês.
+
+- conta Dab Lab Developer: `8846956815821113643`
+- app Agenda Psi: `4975046642989361560`
+
+```
+BASE=https://play.google.com/console/u/0/developers/8846956815821113643/app/4975046642989361560
+```
+
+| Página | Caminho |
+|---|---|
+| Assinaturas | `$BASE/subscriptions` |
+| Teste interno | `$BASE/tracks/internal-testing` |
+| Produção | `$BASE/tracks/production` |
+
+⚠️ **A página de assinatura de apps NÃO tem link direto que funcione** — as duas
+tentativas (`/app-signing` e `/app-integrity/app-signing`) caem no painel
+principal. Segundo a documentação do Google, o caminho é pelo menu:
+
+**Protected with Play → Play Store protection → Manage → Manage Play app signing**
+
+É o segundo card da página "Protected with Play", não o primeiro ("Automatic
+protection"), que é onde é fácil errar.
+
 ## Antes de tudo: o Google tem TRÊS níveis, a Apple tem um
 
 É o que mais confunde quem vem do App Store Connect.
