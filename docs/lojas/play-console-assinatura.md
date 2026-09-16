@@ -80,6 +80,43 @@ usada no versionCode 18. Se ela não estiver à mão, o caminho é o EAS
 chave nova, o Play vai recusar até que se peça a **redefinição da chave de
 upload** ao Google — que leva alguns dias. Vale descobrir isso ANTES de precisar.
 
+## Estado em 15/09/2026: esperando o Google
+
+**Pedido de redefinição da chave de upload enviado em 15/09/2026.** Prazo
+estimado pelo Google: um a dois dias úteis.
+
+Por que foi preciso: a chave que assinou o versionCode 18 foi gerada e guardada
+pelo **FlutterFlow** — o controle "Upload Keystore" no painel deles está
+DESLIGADO, ou seja, nunca se enviou uma chave própria. Ela não está nesta
+máquina, não veio no export e não é recuperável de lá.
+
+Confirmado na página do Play app signing que **"Releases signed by Play"** está
+ativo. É o que torna isso um contratempo e não um desastre: com o Play App
+Signing, a chave de upload é só o crachá de entrada e pode ser trocada. Sem ele,
+perder a chave significaria nunca mais poder atualizar o app.
+
+A chave nova está em `~/keys/agendapsi-upload.jks` — RSA 2048, válida até 2054,
+SHA-1 `22:DF:A6:FE:38:0C:74:E6:59:98:CA:85:5F:AC:B5:52:F0:2E:8A:A3`.
+
+**A partir da aprovação, só a chave nova funciona.** Como não se publica mais
+pelo FlutterFlow, isso é ganho: a chave passa a ser de fato nossa, ao lado das
+dos outros apps.
+
+### O que essa espera bloqueia, em cascata
+
+```
+chave aprovada → AAB assinado → trilha de teste interno
+                                 → produtos liberados → assinatura cadastrada
+                                                        → teste de compra
+                                                           → produção
+```
+
+### O que NÃO depende dela
+
+- a conta de serviço e o tópico Pub/Sub da `play-notificacoes`;
+- o feature graphic e o resto da ficha da loja;
+- as capturas do Android, que já estão em `telas-android/`.
+
 ## O passo a passo
 
 ### 1. Criar a assinatura
