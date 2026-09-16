@@ -37,3 +37,24 @@ coverage/
 # Arquivos de trabalho do Claude Design na raiz — o canônico é docs/spec.md
 /spec.md
 /prompt-design-agenda-psi.md
+
+# -----------------------------------------------------------------------------
+# Segredos, em qualquer pasta do repositório.
+#
+# O app/.gitignore já pegava .p8 e .jks, mas só dentro de app/ — e é na RAIZ que
+# keystore e conta de serviço acabam parando, que é exatamente onde não estavam
+# cobertos. Verificado com `git check-ignore` em 15/09/2026.
+#
+# A regra vale para o que já existe e para o que vier: chave de assinatura da
+# Apple e do Google, keystore do Android, senha de keystore e JSON de conta de
+# serviço. Nenhum deles entra aqui; o lugar deles é ~/keys e os secrets das
+# Edge Functions.
+# -----------------------------------------------------------------------------
+*.p8
+*.jks
+*.keystore
+*.p12
+*.pem
+key.properties
+*service-account*.json
+*conta-servico*.json
