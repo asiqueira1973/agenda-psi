@@ -5,7 +5,7 @@
 > Produzido por `scripts/gerar-schema.sql` + `scripts/gerar-schema.mjs`,
 > lidos do catálogo do Postgres. Regerar depois de toda migration.
 >
-> Gerado em 2026-09-15, a partir do banco local reconstruído pelas migrations
+> Gerado em 2026-09-18, a partir do banco local reconstruído pelas migrations
 > deste repositório. A contagem de linhas não aparece porque o banco local
 > não tem dados — para volume de produção, ver o DOCUMENTACAO-TECNICA.md.
 
