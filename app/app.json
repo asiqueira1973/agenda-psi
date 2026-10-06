@@ -16,11 +16,11 @@
         "usesNonExemptEncryption": false
       },
       "appleTeamId": "XGZW6Y6K25",
-      "buildNumber": "5"
+      "buildNumber": "6"
     },
     "android": {
       "package": "com.dablab.agendapsi",
-      "versionCode": 20,
+      "versionCode": 21,
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
