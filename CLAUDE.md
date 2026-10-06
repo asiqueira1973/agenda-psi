@@ -193,7 +193,28 @@ node scripts/gerar-schema.mjs /tmp/schema.json > docs/schema.md
 
 ---
 
-## Duas armadilhas de ambiente
+## Três armadilhas de ambiente
+
+0. **NUNCA abra `app/ios/AgendaPsi.xcodeproj`. Abra o `.xcworkspace`.** Com
+   CocoaPods, só o workspace tem os 120 pods integrados; o projeto sozinho dá
+   dezenas de `module map file does not exist`, uma por biblioteca — e a
+   mensagem não diz a causa.
+
+   Custou dois archives perdidos, em 15/09 e 06/10. Este é o ÚNICO projeto iOS
+   desta máquina que se abre pelo workspace; os outros dez são `.xcodeproj`, e a
+   memória muscular está certa para eles. Por isso existe o script abaixo, que
+   não dá a escolha:
+
+   ```bash
+   ./scripts/arquivar-ios.sh
+   ```
+
+   Para confirmar de qual container veio um build que falhou:
+
+   ```bash
+   /usr/libexec/PlistBuddy -c "Print :WorkspacePath" \
+     ~/Library/Developer/Xcode/DerivedData/AgendaPsi-*/info.plist
+   ```
 
 1. **A pasta do projeto não pode ter espaço no nome.** O script do RN 0.83 que
    baixa dependências pré-compiladas falha, e a mensagem fala de podspec sem
