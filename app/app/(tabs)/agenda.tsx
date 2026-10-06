@@ -13,6 +13,7 @@ import {
 import { useColors, radius, screenMargin, size, spacing } from '@/theme';
 import { formatarHora, nomeDoDiaDaSemana, diaDaSemanaDoBanco } from '@/lib/format';
 import { useAgenda } from '@/features/schedule/use-schedule';
+import { horasDaGrade } from '@/features/schedule/faixa-de-horas';
 import { useMeuPlano } from '@/features/home/use-dashboard';
 import {
   copyAgenda,
@@ -47,9 +48,12 @@ export default function AgendaScreen() {
   const smsPausado = plano.data?.limite_atingido === true;
   const doDia = (consulta.data ?? []).filter((a) => a.dia_semana === dia);
 
-  const horas = Array.from(
-    { length: HORA_FINAL_DA_GRADE - HORA_INICIAL_DA_GRADE + 1 },
-    (_, i) => HORA_INICIAL_DA_GRADE + i,
+  // A grade estica para caber agendamento fora de 8–21. Fixa, ela desenhava
+  // em lugar nenhum quem marcasse às 7h — e a pessoa achava que não salvou.
+  const horas = horasDaGrade(
+    doDia.map((a) => a.hora_bloco),
+    HORA_INICIAL_DA_GRADE,
+    HORA_FINAL_DA_GRADE,
   );
 
   return (

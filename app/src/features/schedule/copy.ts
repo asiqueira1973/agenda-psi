@@ -73,6 +73,11 @@ export const diasDoSegmented = [
   { valor: 6, rotulo: 'Sáb' },
 ] as const;
 
-/** Faixa de horas da grade: 08:00 às 21:00 (handoff, tela 6). */
+/**
+ * Faixa PADRÃO da grade: 08:00 às 21:00 (handoff, tela 6).
+ *
+ * É piso, não teto. A grade estica para caber agendamento fora dela — ver
+ * `faixa-de-horas.ts`. Tratar como teto escondia quem marcasse antes das 8.
+ */
 export const HORA_INICIAL_DA_GRADE = 8;
 export const HORA_FINAL_DA_GRADE = 21;
