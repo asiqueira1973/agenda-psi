@@ -3,7 +3,7 @@
     "name": "Agenda Psi",
     "slug": "agenda-psi",
     "owner": "alexsiq",
-    "version": "5.0.0",
+    "version": "5.0.1",
     "orientation": "portrait",
     "scheme": "agendapsi",
     "userInterfaceStyle": "automatic",
@@ -16,7 +16,7 @@
         "usesNonExemptEncryption": false
       },
       "appleTeamId": "XGZW6Y6K25",
-      "buildNumber": "6"
+      "buildNumber": "1"
     },
     "android": {
       "package": "com.dablab.agendapsi",
