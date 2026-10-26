@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import {
@@ -23,6 +24,8 @@ import {
   useTemPacientes,
 } from '@/features/home/use-dashboard';
 import { gruposDoDashboard } from '@/features/home/indicadores';
+import { track, eventos, telas } from '@/lib/analytics';
+import { useSession } from '@/features/auth/session-provider';
 
 /**
  * Tela 5 — Início, o dashboard.
@@ -168,20 +171,51 @@ function AvisoDeLimiteDeSms({
   plano: { limite_sms: number | null; sms_usados: number | null; sms_restantes: number | null; limite_atingido: boolean | null } | null | undefined;
 }) {
   const colors = useColors();
+  const { session, usuarioId } = useSession();
 
-  // Ilimitado — pro ou fundador — não vê aviso nenhum.
-  if (!plano || plano.limite_sms === null) return null;
-
-  const usados = plano.sms_usados ?? 0;
-  const limite = plano.limite_sms;
-  const restantes = plano.sms_restantes ?? Math.max(limite - usados, 0);
-  const atingido = plano.limite_atingido === true;
+  // Os cálculos vêm ANTES de qualquer return: há um hook abaixo, e hook não
+  // pode ficar depois de saída condicional.
+  const limitado = !!plano && plano.limite_sms !== null;
+  const usados = plano?.sms_usados ?? 0;
+  const limite = plano?.limite_sms ?? 0;
+  const restantes = plano?.sms_restantes ?? Math.max(limite - usados, 0);
+  const atingido = limitado && plano?.limite_atingido === true;
 
   // O aviso aparece a partir de 80% do limite. Este é o número da pergunta
   // aberta 25.7, ainda sem resposta do Alexandre: o spec assume 80%, e é o que
   // está aqui até ele decidir.
-  const chegandoNoLimite = !atingido && usados >= Math.ceil(limite * 0.8);
-  if (!atingido && !chegandoNoLimite) return null;
+  const chegandoNoLimite = limitado && !atingido && usados >= Math.ceil(limite * 0.8);
+  const visivel = limitado && (atingido || chegandoNoLimite);
+
+  /**
+   * Registra que a pessoa VIU o aviso — não que o limite foi atingido.
+   *
+   * A diferença decide o negócio. Em 26/10/2026, sete profissionais foram
+   * cortados no mês e seis nunca abriram a tela de plano; sem este evento não
+   * havia como saber se o aviso apareceu e foi ignorado, ou se elas sequer
+   * abriram o app depois do corte. Os dois eventos existiam no catálogo da
+   * seção 21 e nunca eram disparados.
+   *
+   * O id é estável por pessoa, mês e tipo de aviso. O Visão do Produto deduplica
+   * por id, então abrir a Home dez vezes conta como uma pessoa que viu — que é
+   * a pergunta real. Sem isso, o número mediria renderização de tela.
+   */
+  useEffect(() => {
+    if (!visivel || !usuarioId) return;
+    const mes = new Date().toISOString().slice(0, 7);
+    track({
+      id: `${usuarioId}-${mes}-${atingido ? 'atingido' : 'aviso'}`,
+      nome: atingido ? eventos.limiteSmsAtingido : eventos.limiteSmsAviso,
+      distinctId: session?.user.email ?? null,
+      tela: telas.inicio,
+      descricao: atingido
+        ? 'viu o aviso de que os lembretes pausaram'
+        : 'viu o aviso de que o limite está perto',
+      propriedades: { plano: 'free', sms_usados: usados },
+    });
+  }, [visivel, atingido, usuarioId, session?.user.email, usados]);
+
+  if (!visivel) return null;
 
   const cor = atingido ? colors.destructive : colors.warning;
 
