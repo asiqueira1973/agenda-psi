@@ -67,11 +67,18 @@ agente respeita a separação:
 | Pagamento | `pagamentos` | o dinheiro que entrou | "a Beatriz pagou 280" |
 | Despesa | `despesas` | o dinheiro que saiu | "paguei 1.450 de aluguel" |
 
-Se uma frase toca duas coisas ("paciente nova, Laura, quartas 10h"), o agente
-monta **dois cartões, um de cada**, na ordem em que dependem um do outro — o
-paciente primeiro, o horário depois. Nunca um cartão híbrido. Da mesma forma,
-"Beatriz pagou hoje" não cria sessão por conta própria: se não há sessão de hoje,
-o agente pergunta se é para registrar a sessão também.
+Se uma frase toca duas coisas ("paciente nova, Laura, quartas 10h"), são **duas
+funções diferentes**: `propor_paciente` e `propor_horario`, cada uma com o seu
+rascunho e a sua gravação, pelos mesmos hooks das telas. Para a pessoa, isso pode
+aparecer mascarado como um passo só — um cartão com duas seções (Paciente /
+Agenda) e um único Confirmar. Por baixo, o app grava na ordem da dependência: o
+paciente primeiro, o horário depois, com o id do paciente recém-criado. Se a
+segunda gravação falhar, a primeira fica (paciente cadastrado sem horário é um
+estado válido do app) e o cartão diz o que faltou.
+
+Da mesma forma, "Beatriz pagou hoje" é pagamento, não sessão: o agente não cria
+sessão por conta própria. Se não há sessão de hoje, pergunta se é para registrá-la
+também.
 
 A tradução é o caminho principal; o cartão só garante que nada é gravado sem a
 pessoa ver. Um "Helena pagou" gravado na Helena errada é pior que nenhum agente.
