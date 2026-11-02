@@ -435,14 +435,15 @@ imediato**. Sair pede confirmação.
 O Agente Psi antigo saiu em 14/09/2026. O atual nasceu em 02/11/2026 e mora no
 Início (plano completo em `docs/agente-plano.md`). **Fase 1: só consultas.**
 
-- Ao abrir: campo no topo, três sugestões de consulta e o aviso de SMS. Depois
+- Ao abrir: campo no topo, quatro sugestões de consulta e o aviso de SMS. Depois
   da primeira pergunta, o Início vira a conversa e o campo desce para o rodapé.
 - A conversa vive só na memória do app. "Nova conversa" e fechar o app apagam.
 - O app manda `{ mensagens: [{ papel, texto }] }` para a Edge Function `agente`.
   **Sem `usuario_id`** (pegadinha 3).
 - A função confere o sinalizador `agente` a cada chamada (403 se desligado) e
-  roda com o JWT do usuário. O modelo (Claude Haiku 4.5) só escolhe entre três
-  ferramentas de leitura: `buscar_paciente` (`v_pacientes_cartao`),
+  roda com o JWT do usuário. O modelo (Claude Haiku 4.5) só escolhe entre quatro
+  ferramentas de leitura: `agenda_do_dia` (`view_agenda_semana_padrao`, com
+  `dia_semana` 1 = segunda), `buscar_paciente` (`v_pacientes_cartao`),
   `consultar_mes` (`v_financeiro_mensal` e contagem de `sessoes`) e
   `listar_pendencias` (`v_pendencias_por_paciente` e `v_pacientes_cartao`). A IA
   não escreve SQL e não grava nada.

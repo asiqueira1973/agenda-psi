@@ -67,7 +67,9 @@ function hojeEmBrasilia(): string {
 function instrucoes(): string {
   return [
     'Você é o assistente do Agenda Psi, app de gestão de consultório para psicólogos e psicanalistas no Brasil.',
-    `Hoje é ${hojeEmBrasilia()} (horário de Brasília).`,
+    // O dia da semana vai junto: sem ele, "quinta que vem" vira conta que o
+    // modelo erra.
+    `Hoje é ${hojeEmBrasilia()}, ${new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long' }).format(new Date())} (horário de Brasília).`,
     'Responda em português do Brasil, em texto simples, sem Markdown, sem emoji, em no máximo três frases curtas, ou numa lista curta com um item por linha.',
     'Dinheiro sempre no formato R$ 1.234,56. Datas no formato dd/mm.',
     'Use SOMENTE os números devolvidos pelas ferramentas. Nunca invente nem estime valores. Se a ferramenta não trouxer o dado, diga que não encontrou.',
@@ -100,7 +102,9 @@ Deno.serve(async (req) => {
   const conversa = validarConversa(corpo);
   if (!conversa) return json({ error: 'conversa_invalida' }, 400);
 
-  const chave = Deno.env.get('ANTHROPIC_API_KEY');
+  // trim: chave colada no painel costuma vir com quebra de linha no fim, e o
+  // fetch recusa cabeçalho com \n antes mesmo de sair do servidor.
+  const chave = Deno.env.get('ANTHROPIC_API_KEY')?.trim();
   if (!chave) {
     console.error('agente: ANTHROPIC_API_KEY ausente nos secrets');
     return json({ error: 'agente_indisponivel' }, 502);
@@ -113,6 +117,9 @@ Deno.serve(async (req) => {
     (m) => ({ role: m.papel === 'usuario' ? 'user' : 'assistant', content: m.texto }),
   );
   const usadas: string[] = [];
+  // Em que passo a falha aconteceu, para o log. Nunca a mensagem do erro: a de
+  // cabeçalho inválido pode citar o valor da chave.
+  let etapa = 'chamada';
 
   try {
     for (let rodada = 0; rodada < MAX_RODADAS; rodada++) {
@@ -133,6 +140,7 @@ Deno.serve(async (req) => {
         signal: AbortSignal.timeout(25_000),
       });
 
+      etapa = 'resposta';
       if (!resposta.ok) {
         // O corpo do erro pode citar a conversa; registra só o status.
         console.error(`agente: API respondeu ${resposta.status}`);
@@ -159,6 +167,7 @@ Deno.serve(async (req) => {
 
       // A IA pediu ferramentas: executa todas e devolve os resultados.
       mensagens.push({ role: 'assistant', content: dados.content });
+      etapa = 'ferramenta';
       const resultados = [];
       for (const bloco of dados.content) {
         if (bloco.type !== 'tool_use') continue;
@@ -171,12 +180,13 @@ Deno.serve(async (req) => {
         });
       }
       mensagens.push({ role: 'user', content: resultados });
+      etapa = 'chamada';
     }
 
     // Esgotou as rodadas sem resposta final.
     return json({ error: 'agente_indisponivel' }, 502);
   } catch (e) {
-    console.error('agente: falha', e instanceof Error ? e.name : 'desconhecida');
+    console.error(`agente: falha na etapa ${etapa}:`, e instanceof Error ? e.name : 'desconhecida');
     return json({ error: 'agente_indisponivel' }, 502);
   }
 });

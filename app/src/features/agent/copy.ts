@@ -9,7 +9,8 @@ export const copyAgente = {
   placeholderContinuar: 'Continuar…',
   grupoSugestoes: 'Experimente',
   sugestoes: [
-    'Quem está me devendo?',
+    'Qual é a minha agenda de hoje?',
+    'Quais pacientes não me pagaram?',
     'Quanto recebi no mês passado?',
     'Quantas sessões fiz este mês?',
   ],

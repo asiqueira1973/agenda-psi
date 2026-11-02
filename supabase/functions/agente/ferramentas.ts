@@ -43,6 +43,18 @@ export const definicoesDeFerramentas = [
     },
   },
   {
+    name: 'agenda_do_dia',
+    description:
+      'Os horários fixos da agenda semanal num dia: hora de início, hora de fim e paciente, em ordem. A agenda é uma semana-padrão que se repete; não diz se a sessão aconteceu. Use para "qual é a minha agenda de hoje?", "quem eu atendo amanhã?" ou "o que tenho na quinta?".',
+    input_schema: {
+      type: 'object',
+      properties: {
+        data: { type: 'string', description: 'Data no formato AAAA-MM-DD. Para "hoje", use a data de hoje.' },
+      },
+      required: ['data'],
+    },
+  },
+  {
     name: 'listar_pendencias',
     description:
       'Lista os pacientes com pagamentos pendentes ou vencidos, com quantidade, total pendente e o vencimento mais antigo, e também os pacientes com sessões marcadas como "não pagou". Use para "quem não pagou?" ou "quem está me devendo?".',
@@ -80,6 +92,8 @@ export async function executarFerramenta(
       return await buscarPaciente(String(entrada.nome ?? ''), cliente, usuarioId);
     case 'consultar_mes':
       return await consultarMes(String(entrada.mes ?? ''), cliente, usuarioId);
+    case 'agenda_do_dia':
+      return await agendaDoDia(String(entrada.data ?? ''), cliente, usuarioId);
     case 'listar_pendencias':
       return await listarPendencias(cliente, usuarioId);
     default:
@@ -146,6 +160,47 @@ async function consultarMes(mes: string, cliente: SupabaseClient, usuarioId: str
     recebido: financeiro.data?.recebido ?? 0,
     pendente: financeiro.data?.pendente ?? 0,
     sessoes_realizadas: sessoes.count ?? 0,
+  };
+}
+
+/**
+ * Dia da semana na convenção DO BANCO: 1 = segunda, 7 = domingo (pegadinha 7).
+ *
+ * Não é a do JavaScript, onde 0 é domingo. A data vem como AAAA-MM-DD e é lida
+ * em UTC de propósito: é só um dia do calendário, sem hora, e ler no fuso do
+ * servidor poderia voltar um dia.
+ *
+ * Devolve `null` se a data não for válida.
+ */
+export function diaDaSemanaDoBanco(data: string): number | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return null;
+  const d = new Date(`${data}T00:00:00Z`);
+  if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== data) return null;
+  const js = d.getUTCDay(); // 0 = domingo
+  return js === 0 ? 7 : js;
+}
+
+/** Os horários fixos da semana-padrão que caem no dia da data pedida. */
+async function agendaDoDia(data: string, cliente: SupabaseClient, usuarioId: string) {
+  const dia = diaDaSemanaDoBanco(data);
+  if (dia === null) return { erro: 'data deve ser AAAA-MM-DD' };
+
+  const { data: horarios, error } = await cliente
+    .from('view_agenda_semana_padrao')
+    .select('dia_semana_label, hora_inicio, hora_fim, paciente_nome')
+    .eq('usuario_id', usuarioId)
+    .eq('dia_semana', dia)
+    .order('hora_inicio', { ascending: true });
+  if (error) return { erro: 'falha ao ler a agenda' };
+
+  return {
+    data,
+    dia_da_semana: horarios?.[0]?.dia_semana_label ?? null,
+    horarios: (horarios ?? []).map((h) => ({
+      inicio: h.hora_inicio?.slice(0, 5),
+      fim: h.hora_fim?.slice(0, 5),
+      paciente: h.paciente_nome,
+    })),
   };
 }
 

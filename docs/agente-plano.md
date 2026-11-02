@@ -137,7 +137,7 @@ registro rápido, que é o caso de uso mais forte.
 | Fase | O que entra | Por quê |
 |---|---|---|
 | 1 | Só consultas: "quem não pagou este mês?", "quanto recebi em outubro?" — com os eventos de uso do agente | Risco zero de escrita; valida se as pessoas usam |
-| 2 | Escrita, unitária e em lote, com cartão de confirmação: sessão, pagamento, paciente, horário fixo, despesa | Cobre tanto quem registra na hora quanto quem lança atrasado |
+| 2 | Escrita, unitária e em lote, com cartão de confirmação: sessão, pagamento, paciente, horário fixo, despesa. Entram sugestões de registro no Início: "Quero incluir um novo paciente", "Quero registrar um pagamento", "Quero registrar uma sessão" | Cobre tanto quem registra na hora quanto quem lança atrasado |
 | 3 | Voz | Entre atendimentos, falar é mais natural; o ditado do teclado já resolve boa parte sem código |
 
 ## Como medir
