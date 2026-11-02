@@ -56,6 +56,23 @@ confere e confirma. Campo ambíguo vem destacado e editável no próprio cartão
 O mesmo cartão serve aos dois casos: num registro unitário, uma linha; num lote,
 uma tabela com N linhas e um único Confirmar.
 
+**Um cartão, uma coisa do app.** O app separa coisas que a fala mistura, e o
+agente respeita a separação:
+
+| Coisa | Tabela | O que é | Exemplo de frase |
+|---|---|---|---|
+| Paciente | `pacientes` (+ preço em `precos_paciente`) | o cadastro: nome, telefone, e-mail, primeira consulta, preço | "cadastra a Laura Mendes, 11 98888-0000, R$ 250" |
+| Horário na agenda | `agenda_semana_padrao` | a semana-padrão do profissional: dia, início, fim, paciente — é dela que saem os lembretes de SMS | "põe a Laura na agenda toda quarta às 10h" |
+| Sessão | `sessoes` | o atendimento que aconteceu, numa data | "atendi a Beatriz hoje" |
+| Pagamento | `pagamentos` | o dinheiro que entrou | "a Beatriz pagou 280" |
+| Despesa | `despesas` | o dinheiro que saiu | "paguei 1.450 de aluguel" |
+
+Se uma frase toca duas coisas ("paciente nova, Laura, quartas 10h"), o agente
+monta **dois cartões, um de cada**, na ordem em que dependem um do outro — o
+paciente primeiro, o horário depois. Nunca um cartão híbrido. Da mesma forma,
+"Beatriz pagou hoje" não cria sessão por conta própria: se não há sessão de hoje,
+o agente pergunta se é para registrar a sessão também.
+
 A tradução é o caminho principal; o cartão só garante que nada é gravado sem a
 pessoa ver. Um "Helena pagou" gravado na Helena errada é pior que nenhum agente.
 
@@ -84,7 +101,10 @@ continuam disponíveis — por pergunta ("quanto recebi em outubro?"), lidos da
 mesma `v_dashboard_resumo`, que fica no banco.
 
 - **Ao abrir:** título, campo "Pergunte ou registre algo…" no topo, quatro
-  sugestões tocáveis e o aviso de limite de SMS quando houver.
+  sugestões tocáveis e o aviso de limite de SMS quando houver. Cada sugestão
+  mexe numa coisa só: "Atendi a Beatriz e o Caio hoje", "Quem não pagou este
+  mês?", "Cadastrar paciente: Laura Mendes, R$ 250", "Pôr a Laura na agenda
+  toda quarta às 10h".
 - **Depois da primeira frase:** o Início vira a conversa. O campo desce para o
   rodapé ("Continuar…"), as respostas e os cartões de confirmação ficam no fio,
   e um cartão confirmado fica marcado como "Registrado". "Nova conversa" no topo
