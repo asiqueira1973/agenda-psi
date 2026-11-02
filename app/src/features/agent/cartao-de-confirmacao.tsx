@@ -335,11 +335,13 @@ function CampoDeValor({
   valor,
   aoMudar,
   comErro,
+  placeholder = '0',
 }: {
   label: string;
   valor: number | null;
   aoMudar: (v: number | null) => void;
   comErro: boolean;
+  placeholder?: string;
 }) {
   const [texto, setTexto] = useState(valor === null ? '' : String(valor));
   return (
@@ -351,7 +353,7 @@ function CampoDeValor({
         aoMudar(/^\d+$/.test(t.trim()) ? Number(t.trim()) : null);
       }}
       keyboardType="number-pad"
-      placeholder="0"
+      placeholder={placeholder}
       hasError={comErro}
     />
   );
@@ -445,6 +447,7 @@ function CamposDeDespesa({ item, aoMudar }: { item: ItemDeDespesa; aoMudar: (i: 
       <RowSeparator />
       <FormRow
         label={c.descricao}
+        placeholder={c.opcional}
         value={item.descricao ?? ''}
         onChangeText={(t) => aoMudar({ ...item, descricao: t.trim() ? t : null })}
       />
@@ -482,6 +485,9 @@ function CamposDePacienteNovo({
           value={p.telefone ?? ''}
           onChangeText={(t) => mudar({ telefone: t.trim() ? t : null })}
           keyboardType="phone-pad"
+          // Sem placeholder, o campo vazio não parece campo: a pessoa não
+          // achava onde digitar (teste de 02/11/2026).
+          placeholder={c.obrigatorio}
           hasError={!p.telefone?.trim()}
         />
         <RowSeparator />
@@ -491,9 +497,16 @@ function CamposDePacienteNovo({
           onChangeText={(t) => mudar({ email: t.trim() ? t : null })}
           keyboardType="email-address"
           autoCapitalize="none"
+          placeholder={c.opcional}
         />
         <RowSeparator />
-        <CampoDeValor label={c.preco} valor={p.preco} comErro={p.preco === null} aoMudar={(preco) => mudar({ preco })} />
+        <CampoDeValor
+          label={c.preco}
+          valor={p.preco}
+          comErro={p.preco === null}
+          placeholder={c.obrigatorio}
+          aoMudar={(preco) => mudar({ preco })}
+        />
         <RowSeparator />
         <ToggleRow label="SMS" value={p.receber_sms} onValueChange={(receber_sms) => mudar({ receber_sms })} />
       </ListGroup>

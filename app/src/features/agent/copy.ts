@@ -51,6 +51,8 @@ export const copyAgente = {
     preco: 'Preço',
     tipoDeDespesa: 'Tipo',
     descricao: 'Descrição',
+    obrigatorio: 'Obrigatório',
+    opcional: 'Opcional',
     remover: 'Remover',
     confirmar: (n: number) => (n > 1 ? `Confirmar ${n} registros` : 'Confirmar'),
     registrando: 'Registrando…',
