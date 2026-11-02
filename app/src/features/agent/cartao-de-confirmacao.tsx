@@ -18,7 +18,7 @@ import {
   ValueRow,
   type OpcaoDoSeletor,
 } from '@/components/ui';
-import { useColors, screenMargin, spacing } from '@/theme';
+import { useColors, screenMargin, size, spacing } from '@/theme';
 import { formatarData, formatarDinheiro, nomeDoDiaDaSemana } from '@/lib/format';
 import { usePacientes } from '@/features/patients/use-patients';
 import { useTiposDeDespesa } from '@/features/expenses/use-expenses';
@@ -645,7 +645,15 @@ function SeletorDeRegistro<T extends { id: string }>({
   rotulo: (t: T) => string;
   aoMudar: (a: Alvo<T>) => void;
 }) {
-  if (alvo.situacao === 'ok') return <ValueRow label={c.registro} value={rotulo(alvo.registro)} />;
+  // Linha inteira, sem rótulo ao lado: "Aluguel da sala · 02/11/2026 · R$ 1.450"
+  // não cabe junto de um rótulo, e o rótulo acabava quebrado letra a letra.
+  if (alvo.situacao === 'ok') {
+    return (
+      <View style={{ minHeight: size.listRow, justifyContent: 'center', paddingHorizontal: screenMargin, paddingVertical: spacing.sm }}>
+        <Text variant="listBody">{rotulo(alvo.registro)}</Text>
+      </View>
+    );
+  }
   return (
     <PickerRow
       label={c.registro}
