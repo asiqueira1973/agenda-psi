@@ -216,7 +216,10 @@ async function listarPendencias(cliente: SupabaseClient, usuarioId: string) {
 
   const sessoes = await cliente
     .from('v_pacientes_cartao')
-    .select('nome_completo, sessoes_nao_pagas, preco_vigente')
+    // Sem preço: o preço do cadastro é referência, não o valor cobrado
+    // naquela sessão. Com ele no resultado, a IA multiplicava e apresentava
+    // como dívida um número que nenhum registro tem.
+    .select('nome_completo, sessoes_nao_pagas')
     .eq('usuario_id', usuarioId)
     .gt('sessoes_nao_pagas', 0)
     .order('sessoes_nao_pagas', { ascending: false });

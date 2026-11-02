@@ -231,6 +231,11 @@ function CampoDePergunta({
           placeholderTextColor={colors.secondaryLabel}
           multiline
           editable={!pensando}
+          // Sem autocorreção: ela troca nome de paciente por palavra do
+          // dicionário ("Erasmo" vira outra coisa) no meio da digitação, e o
+          // agente busca pelo nome que chegou.
+          autoCorrect={false}
+          spellCheck={false}
           // Enter envia no teclado de hardware e no "enviar" do teclado do
           // Android; o multiline continua quebrando linha sozinho no texto longo.
           submitBehavior="submit"
