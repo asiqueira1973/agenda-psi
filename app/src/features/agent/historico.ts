@@ -36,16 +36,17 @@ const nomeDoEstado: Record<EstadoDoCartao, string> = {
 };
 
 /**
- * O texto de uma mensagem como a IA vai lê-lo.
+ * A nota do que aconteceu com os cartões de uma resposta do agente.
  *
- * Resposta com cartão leva uma nota do que aconteceu com ele. Sem isso, a IA
- * não sabe se o "Confira o cartão" virou registro, e numa pergunta seguinte
- * ("e a Helena também") pode repropor o que já foi gravado.
+ * Vai na mensagem SEGUINTE da pessoa, e não no texto do agente: em 02/11/2026,
+ * com a nota no texto do agente, o modelo passou a imitá-la — escreveu
+ * "[cartão … confirmado e gravado]" sem ter proposto nada. Como fala do app
+ * dentro da vez da pessoa, ela é contexto, não modelo de resposta.
  */
-function textoParaEnvio(m: Mensagem): string {
-  if (!m.cartoes?.length) return m.texto;
-  const notas = m.cartoes.map((c) => `[cartão de ${nomeDoCartao[c.rascunho.tipo]}: ${nomeDoEstado[c.estado]}]`);
-  return `${m.texto}\n${notas.join('\n')}`;
+function notaDosCartoes(m: Mensagem): string | null {
+  if (m.papel !== 'agente' || !m.cartoes?.length) return null;
+  const partes = m.cartoes.map((c) => `cartão de ${nomeDoCartao[c.rascunho.tipo]} ${nomeDoEstado[c.estado]}`);
+  return `(nota do app sobre a resposta anterior: ${partes.join('; ')})`;
 }
 
 /** Mesmo teto da Edge Function. Passou disso, as mais antigas ficam de fora. */
@@ -66,13 +67,21 @@ export function historicoParaEnvio(
   conversa: Mensagem[],
 ): Array<{ papel: Mensagem['papel']; texto: string }> {
   const juntas: Array<{ papel: Mensagem['papel']; texto: string }> = [];
+  let notaPendente: string | null = null;
   for (const m of conversa) {
+    // A nota dos cartões entra no começo da próxima fala da pessoa.
+    const texto = m.papel === 'usuario' && notaPendente ? `${notaPendente}\n${m.texto}` : m.texto;
+    if (m.papel === 'usuario') notaPendente = null;
+
     const anterior = juntas[juntas.length - 1];
     if (anterior && anterior.papel === m.papel) {
-      anterior.texto = `${anterior.texto}\n${textoParaEnvio(m)}`;
+      anterior.texto = `${anterior.texto}\n${texto}`;
     } else {
-      juntas.push({ papel: m.papel, texto: textoParaEnvio(m) });
+      juntas.push({ papel: m.papel, texto });
     }
+
+    const nota = notaDosCartoes(m);
+    if (nota) notaPendente = notaPendente ? `${notaPendente}\n${nota}` : nota;
   }
 
   const recentes = juntas.slice(-MAX_MENSAGENS_ENVIADAS);

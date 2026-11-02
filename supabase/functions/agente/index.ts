@@ -2,7 +2,7 @@ import { identificarUsuario } from '../_shared/auth.ts';
 import { corsHeaders, json } from '../_shared/cors.ts';
 import { sinalizadorLigado } from '../_shared/feature-flag.ts';
 import { definicoesDeFerramentas, executarFerramenta } from './ferramentas.ts';
-import { validarConversa } from './conversa.ts';
+import { falaDeCartao, limparNotasImitadas, validarConversa } from './conversa.ts';
 import { definicoesDePropostas, executarProposta, nomesDePropostas, type Rascunho } from './propostas.ts';
 import { registrarAuditoria, type LinhaDeAuditoria } from './auditoria.ts';
 
@@ -48,7 +48,7 @@ import { registrarAuditoria, type LinhaDeAuditoria } from './auditoria.ts';
 const MODELO = 'claude-sonnet-5';
 
 /** Rodadas máximas de ferramenta por pergunta. Evita laço caro se a IA insistir. */
-const MAX_RODADAS = 4;
+const MAX_RODADAS = 5;
 
 /** Rate limit da regra 20.5: 20 perguntas por usuário por hora, por instância. */
 const LIMITE_POR_HORA = 20;
@@ -99,6 +99,8 @@ function instrucoes(registros: boolean): string {
  * `agente_registros` ligado.
  */
 const instrucoesDeRegistro = [
+  'Um cartão SÓ existe se você chamar uma ferramenta propor_* NESTA resposta. Todo pedido de registro, mesmo parecido com um anterior, precisa da sua própria chamada. Nunca diga que montou, preparou ou gravou algo sem ter chamado a ferramenta agora.',
+  'As notas "(nota do app …)" nas falas da pessoa são do app, para você saber o que aconteceu com cartões anteriores. Nunca escreva notas assim, nem texto entre colchetes.',
   'Você também prepara registros, mas NUNCA grava: as ferramentas propor_* montam um cartão que a pessoa confere e confirma no app. Depois de chamar uma delas, responda numa frase curta pedindo para conferir o cartão. Nunca diga que registrou, salvou ou cadastrou.',
   'Cada coisa do app tem a sua ferramenta: sessão (atendimento que aconteceu) é propor_sessoes; pagamento (dinheiro que entrou) é propor_pagamentos; paciente novo é propor_paciente (com os horários fixos dele, se a frase pedir); horário fixo de paciente já cadastrado é propor_horarios; despesa é propor_despesas.',
   '"Atendi a Beatriz e ela pagou" é UMA sessão com pagamento "pagou" — não chame propor_pagamentos junto. "A Beatriz pagou 280" é UM pagamento — não crie sessão.',
@@ -182,6 +184,8 @@ Deno.serve(async (req) => {
   const mensagens: Array<{ role: 'user' | 'assistant'; content: unknown }> = conversa.map(
     (m) => ({ role: m.papel === 'usuario' ? 'user' : 'assistant', content: m.texto }),
   );
+  // Já pediu uma vez ao modelo para chamar a ferramenta que ele pulou.
+  let cobrouFerramenta = false;
   // Em que passo a falha aconteceu, para o log. Nunca a mensagem do erro: a de
   // cabeçalho inválido pode citar o valor da chave.
   let etapa = 'chamada';
@@ -228,11 +232,29 @@ Deno.serve(async (req) => {
       uso.saida += dados.usage?.output_tokens ?? 0;
 
       if (dados.stop_reason !== 'tool_use') {
-        const texto = dados.content
+        const bruto = dados.content
           .filter((b) => b.type === 'text')
           .map((b) => (b as { text: string }).text)
-          .join('\n')
-          .trim();
+          .join('\n');
+        // Nota do app imitada pelo modelo nunca chega à tela.
+        const texto = limparNotasImitadas(bruto);
+
+        // Falou em cartão sem ter montado nenhum: o modelo pulou a ferramenta
+        // (aconteceu em 02/11/2026, com "cadastro confirmado" sem registro).
+        // Uma chance de corrigir; se insistir, a resposta sai sem a promessa.
+        if (registros && rascunhos.length === 0 && falaDeCartao(texto) && !cobrouFerramenta) {
+          cobrouFerramenta = true;
+          mensagens.push({ role: 'assistant', content: dados.content });
+          mensagens.push({
+            role: 'user',
+            content:
+              '(nota do app: sua resposta fala de um cartão, mas nenhuma ferramenta propor_* foi chamada, então nenhum cartão existe. Chame a ferramenta agora, ou, se faltar dado, pergunte o que falta.)',
+          });
+          continue;
+        }
+        if (registros && rascunhos.length === 0 && falaDeCartao(texto)) {
+          return responder('erro', json({ error: 'agente_indisponivel' }, 502));
+        }
         if (!texto) return responder('erro', json({ error: 'agente_indisponivel' }, 502));
         return responder('ok', json({ resposta: texto, ferramentas: usadas, rascunhos }));
       }

@@ -1,5 +1,5 @@
 import { assertEquals } from 'jsr:@std/assert@1';
-import { validarConversa } from './conversa.ts';
+import { falaDeCartao, limparNotasImitadas, validarConversa } from './conversa.ts';
 
 const u = (texto: string) => ({ papel: 'usuario', texto });
 const a = (texto: string) => ({ papel: 'agente', texto });
@@ -29,4 +29,19 @@ Deno.test('texto vazio ou longo demais é recusado', () => {
 Deno.test('conversa longa demais é recusada', () => {
   const muitas = Array.from({ length: 21 }, (_, i) => (i % 2 === 0 ? u('p') : a('r')));
   assertEquals(validarConversa({ mensagens: muitas }), null);
+});
+
+Deno.test('nota do app imitada pelo modelo é apagada', () => {
+  assertEquals(
+    limparNotasImitadas('Montei o cadastro do Pedro.\n[cartão de paciente novo: confirmado e gravado]'),
+    'Montei o cadastro do Pedro.',
+  );
+  assertEquals(limparNotasImitadas('(nota do app: cartão confirmado) Pronto.'), 'Pronto.');
+  assertEquals(limparNotasImitadas('Roberto tem 4 sessões.'), 'Roberto tem 4 sessões.');
+});
+
+Deno.test('resposta que promete cartão é reconhecida; consulta não', () => {
+  assertEquals(falaDeCartao('Montei o cadastro de Pedro Cardoso'), true);
+  assertEquals(falaDeCartao('Confira o cartão da sessão'), true);
+  assertEquals(falaDeCartao('O Roberto tem horário às segundas, das 8h às 9h.'), false);
 });

@@ -36,7 +36,7 @@ describe('historicoParaEnvio', () => {
     expect(conversa.map((m) => m.texto)).toEqual(['a', 'b']);
   });
 
-  it('resposta com cartão leva a nota do que aconteceu com ele', () => {
+  it('a nota do cartão vai na fala seguinte da pessoa, nunca no texto do agente', () => {
     const resposta: Mensagem = {
       ...a('Confira o cartão.'),
       cartoes: [
@@ -47,6 +47,10 @@ describe('historicoParaEnvio', () => {
       ],
     };
     const enviado = historicoParaEnvio([u('paguei 1450 de aluguel'), resposta, u('obrigado')]);
-    expect(enviado[1].texto).toBe('Confira o cartão.\n[cartão de despesas: confirmado e gravado]');
+    // O texto do agente fica intacto: é o que ele imitaria.
+    expect(enviado[1].texto).toBe('Confira o cartão.');
+    expect(enviado[2].texto).toBe(
+      '(nota do app sobre a resposta anterior: cartão de despesas confirmado e gravado)\nobrigado',
+    );
   });
 });

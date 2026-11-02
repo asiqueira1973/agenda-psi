@@ -27,3 +27,16 @@ export function validarConversa(corpo: unknown): MensagemDoApp[] | null {
   if (mensagens[mensagens.length - 1].papel !== 'usuario') return null;
   return mensagens as MensagemDoApp[];
 }
+
+/** Tira do texto qualquer nota entre colchetes ou "(nota do app …)" imitada. */
+export function limparNotasImitadas(texto: string): string {
+  return texto
+    .replace(/\[[^\]]*cart[ãa]o[^\]]*\]/gi, '')
+    .replace(/\(nota do app[^)]*\)/gi, '')
+    .trim();
+}
+
+/** O texto promete um cartão? ("confira o cartão", "montei o cadastro"…) */
+export function falaDeCartao(texto: string): boolean {
+  return /cart[ãa]o|montei|preparei|registrei|cadastrei|gravei/i.test(texto);
+}
