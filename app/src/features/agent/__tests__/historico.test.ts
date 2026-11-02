@@ -35,4 +35,18 @@ describe('historicoParaEnvio', () => {
     historicoParaEnvio(conversa);
     expect(conversa.map((m) => m.texto)).toEqual(['a', 'b']);
   });
+
+  it('resposta com cartão leva a nota do que aconteceu com ele', () => {
+    const resposta: Mensagem = {
+      ...a('Confira o cartão.'),
+      cartoes: [
+        {
+          estado: 'confirmado',
+          rascunho: { tipo: 'despesas', itens: [{ tipo_despesa: { situacao: 'ok', id: 't', nome: 'Aluguel' }, valor: 1450, data: '2026-11-02', descricao: null }] },
+        },
+      ],
+    };
+    const enviado = historicoParaEnvio([u('paguei 1450 de aluguel'), resposta, u('obrigado')]);
+    expect(enviado[1].texto).toBe('Confira o cartão.\n[cartão de despesas: confirmado e gravado]');
+  });
 });

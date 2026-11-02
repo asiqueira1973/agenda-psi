@@ -7,11 +7,46 @@
  * valida do outro lado.
  */
 
+import type { EstadoDoCartao, Rascunho } from './rascunhos';
+
+/** Um cartão de confirmação dentro de uma resposta do agente. */
+export type Cartao = { rascunho: Rascunho; estado: EstadoDoCartao };
+
 export type Mensagem = {
   id: string;
   papel: 'usuario' | 'agente';
   texto: string;
+  /** Só nas respostas do agente que propuseram registros (fase 2). */
+  cartoes?: Cartao[];
 };
+
+/** Nome do tipo de cartão, para a nota que volta à IA. */
+const nomeDoCartao: Record<Rascunho['tipo'], string> = {
+  sessoes: 'sessões',
+  pagamentos: 'pagamentos',
+  paciente: 'paciente novo',
+  horarios: 'horários',
+  despesas: 'despesas',
+};
+
+const nomeDoEstado: Record<EstadoDoCartao, string> = {
+  aberto: 'ainda não confirmado',
+  confirmado: 'confirmado e gravado',
+  cancelado: 'cancelado pela pessoa',
+};
+
+/**
+ * O texto de uma mensagem como a IA vai lê-lo.
+ *
+ * Resposta com cartão leva uma nota do que aconteceu com ele. Sem isso, a IA
+ * não sabe se o "Confira o cartão" virou registro, e numa pergunta seguinte
+ * ("e a Helena também") pode repropor o que já foi gravado.
+ */
+function textoParaEnvio(m: Mensagem): string {
+  if (!m.cartoes?.length) return m.texto;
+  const notas = m.cartoes.map((c) => `[cartão de ${nomeDoCartao[c.rascunho.tipo]}: ${nomeDoEstado[c.estado]}]`);
+  return `${m.texto}\n${notas.join('\n')}`;
+}
 
 /** Mesmo teto da Edge Function. Passou disso, as mais antigas ficam de fora. */
 export const MAX_MENSAGENS_ENVIADAS = 20;
@@ -34,9 +69,9 @@ export function historicoParaEnvio(
   for (const m of conversa) {
     const anterior = juntas[juntas.length - 1];
     if (anterior && anterior.papel === m.papel) {
-      anterior.texto = `${anterior.texto}\n${m.texto}`;
+      anterior.texto = `${anterior.texto}\n${textoParaEnvio(m)}`;
     } else {
-      juntas.push({ papel: m.papel, texto: m.texto });
+      juntas.push({ papel: m.papel, texto: textoParaEnvio(m) });
     }
   }
 

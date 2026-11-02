@@ -47,6 +47,10 @@ export const eventos = {
   paywallRestaurou: 'agenda_psi_paywall_restaurou',
   limiteSmsAviso: 'agenda_psi_limite_sms_aviso',
   limiteSmsAtingido: 'agenda_psi_limite_sms_atingido',
+
+  // --- Novos: os cartões do agente (fase 2, docs/agente-plano.md). ---
+  agenteConfirmou: 'agenda_psi_agente_confirmou',
+  agenteCancelou: 'agenda_psi_agente_cancelou',
 } as const;
 
 export type NomeDeEvento = (typeof eventos)[keyof typeof eventos];
@@ -81,4 +85,8 @@ export type PropriedadesDeEvento = {
    * da pessoa. Dizem que tipo de pergunta o agente recebe.
    */
   ferramentas?: string;
+  /** Tipo do cartão do agente: sessoes, pagamentos, paciente, horarios, despesas. */
+  tipo_de_registro?: string;
+  /** Quantos registros o cartão tinha. Número, não identifica ninguém. */
+  quantidade?: number;
 };

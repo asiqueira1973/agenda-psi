@@ -20,7 +20,7 @@ import { useSession } from '@/features/auth/session-provider';
  * Implementa: a migration 0014 e a seção "Interface" de docs/agente-plano.md.
  */
 
-export type ChaveDeSinalizador = 'agente';
+export type ChaveDeSinalizador = 'agente' | 'agente_registros';
 
 /**
  * Lê um sinalizador e relê quando o app volta para o primeiro plano — é o

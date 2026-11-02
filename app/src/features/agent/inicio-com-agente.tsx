@@ -19,6 +19,8 @@ import {
   typography,
 } from '@/theme';
 import { useAgente } from './use-agente';
+import { CartaoDeConfirmacao } from './cartao-de-confirmacao';
+import { useSinalizador } from '@/lib/feature-flags';
 import { copyAgente } from './copy';
 
 /**
@@ -42,7 +44,12 @@ import { copyAgente } from './copy';
 export function InicioComAgente({ aviso }: { aviso: ReactNode }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { mensagens, enviar, novaConversa, pensando, erro } = useAgente();
+  const { mensagens, enviar, novaConversa, terminarCartao, pensando, erro } = useAgente();
+  // As sugestões de registro só aparecem com as inclusões ligadas.
+  const registros = useSinalizador('agente_registros');
+  const sugestoes = registros
+    ? [...copyAgente.sugestoes, ...copyAgente.sugestoesDeRegistro]
+    : copyAgente.sugestoes;
   const [entrada, setEntrada] = useState('');
   const rolagem = useRef<ScrollView>(null);
 
@@ -96,7 +103,7 @@ export function InicioComAgente({ aviso }: { aviso: ReactNode }) {
             {campo}
             {aviso}
             <ListGroup first title={copyAgente.grupoSugestoes}>
-              {copyAgente.sugestoes.map((sugestao, i) => (
+              {sugestoes.map((sugestao, i) => (
                 <View key={sugestao}>
                   {i > 0 ? <RowSeparator /> : null}
                   <ActionRow label={sugestao} onPress={() => mandar(sugestao)} />
@@ -119,7 +126,19 @@ export function InicioComAgente({ aviso }: { aviso: ReactNode }) {
               keyboardDismissMode="interactive"
             >
               {mensagens.map((m) => (
-                <Balao key={m.id} daPessoa={m.papel === 'usuario'} texto={m.texto} />
+                <View key={m.id} style={{ gap: spacing.md }}>
+                  <Balao daPessoa={m.papel === 'usuario'} texto={m.texto} />
+                  {m.cartoes?.map((cartao, i) => (
+                    <CartaoDeConfirmacao
+                      key={i}
+                      rascunho={cartao.rascunho}
+                      estado={cartao.estado}
+                      aoTerminar={(estado, gravado, gravados) =>
+                        terminarCartao(m.id, i, estado, gravado, gravados)
+                      }
+                    />
+                  ))}
+                </View>
               ))}
               {pensando ? <Balao daPessoa={false} texto={copyAgente.pensando} discreto /> : null}
               {erro ? (
