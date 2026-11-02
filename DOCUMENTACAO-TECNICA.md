@@ -472,6 +472,11 @@ Início (plano completo em `docs/agente-plano.md`). **Fase 1: só consultas.**
   da sessão e a competência do pagamento e da despesa não se alteram, como nas
   telas. **Apagar paciente não existe no agente** (decisão de 02/11/2026): é
   exclusão em cascata e fica na ficha, com a confirmação nominal.
+- **Teto de perguntas** (`limite.ts`): gratuito 10 por dia e 30 por semana; Pro
+  (inclui fundador) 20 por dia e 60 por semana. Dia do calendário em Brasília,
+  semana de 7 dias corridos, contados na `agente_auditoria` (só `ok` e `erro`).
+  Ao estourar, a função responde 200 com a frase do limite, que até a 5.0.2
+  mostra como resposta do agente. Substituiu o limite de 20 por hora em memória.
 - **Auditoria** (`agente_auditoria`, migration 0016): uma linha por pergunta,
   com o texto, resultado, tokens e custo estimado. Tabela de sistema: RLS sem
   policy; só a Edge Function grava, com service_role e só nela. O texto NÃO vai

@@ -13,6 +13,7 @@ import {
 } from './propostas.ts';
 import { definicoesDeRegistros, executarRegistro, nomesDeRegistros } from './registros.ts';
 import { registrarAuditoria, type LinhaDeAuditoria } from './auditoria.ts';
+import { conferirTeto, mensagemDoTeto } from './limite.ts';
 
 /**
  * Edge Function `agente` — fases 1 (consultas) e 2 (inclusões por cartão) de
@@ -31,7 +32,8 @@ import { registrarAuditoria, type LinhaDeAuditoria } from './auditoria.ts';
  *   400 → { "error": "conversa_invalida" }
  *   401 → { "error": "nao_autenticado" }
  *   403 → { "error": "desligado" }
- *   429 → { "error": "limite_excedido" }
+ *   200 → { "resposta": "Você chegou ao limite…" } quando estoura o teto
+ *         diário ou semanal (limite.ts) — resposta normal, não erro
  *   502 → { "error": "agente_indisponivel" }
  *
  * O corpo NÃO tem `usuario_id` (pegadinha 3). A conversa vive no aparelho e vem
@@ -57,20 +59,6 @@ const MODELO = 'claude-sonnet-5';
 
 /** Rodadas máximas de ferramenta por pergunta. Evita laço caro se a IA insistir. */
 const MAX_RODADAS = 5;
-
-/** Rate limit da regra 20.5: 20 perguntas por usuário por hora, por instância. */
-const LIMITE_POR_HORA = 20;
-const chamadasPorUsuario = new Map<string, number[]>();
-
-function excedeuOLimite(usuarioId: string): boolean {
-  const agora = Date.now();
-  const recentes = (chamadasPorUsuario.get(usuarioId) ?? []).filter(
-    (t) => t > agora - 60 * 60 * 1000,
-  );
-  recentes.push(agora);
-  chamadasPorUsuario.set(usuarioId, recentes);
-  return recentes.length > LIMITE_POR_HORA;
-}
 
 /** Data de hoje em Brasília, AAAA-MM-DD — o fuso do produto (migration 0007). */
 function hojeEmBrasilia(): string {
@@ -178,8 +166,12 @@ Deno.serve(async (req) => {
   // As inclusões têm interruptor próprio: desligá-las mantém as consultas.
   const registros = await sinalizadorLigado(cliente, 'agente_registros');
 
-  if (excedeuOLimite(usuarioId)) {
-    return responder('limite_excedido', json({ error: 'limite_excedido' }, 429));
+  // Teto por dia e por semana (limite.ts). Vai como resposta NORMAL do
+  // agente, com 200: assim a 5.0.2, que só conhece o texto, mostra a frase
+  // certa em vez de um erro genérico.
+  const estouro = await conferirTeto(cliente, usuarioId);
+  if (estouro) {
+    return responder('limite_excedido', json({ resposta: mensagemDoTeto(estouro), ferramentas: [], rascunhos: [] }));
   }
 
   // Quais cartões o app sabe mostrar. A 5.0.2 não manda o campo: vale 1.
