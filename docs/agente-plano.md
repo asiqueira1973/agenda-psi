@@ -76,9 +76,14 @@ paciente primeiro, o horário depois, com o id do paciente recém-criado. Se a
 segunda gravação falhar, a primeira fica (paciente cadastrado sem horário é um
 estado válido do app) e o cartão diz o que faltou.
 
-Da mesma forma, "Beatriz pagou hoje" é pagamento, não sessão: o agente não cria
-sessão por conta própria. Se não há sessão de hoje, pergunta se é para registrá-la
-também.
+**Sessão "paga" e pagamento são coisas diferentes, como nas telas.** "Atendi a
+Beatriz e ela pagou" grava **só a sessão**, com o campo de pagamento da sessão
+marcado como pago. Não cria registro em `pagamentos`. Depois de confirmada a
+sessão, o agente pode oferecer, numa linha, "Registrar também o pagamento de
+R$ 280?" — e só cria o pagamento se a pessoa aceitar, com cartão próprio.
+
+No sentido inverso, "a Beatriz pagou 280" é pagamento, não sessão: o agente não
+cria sessão por conta própria.
 
 A tradução é o caminho principal; o cartão só garante que nada é gravado sem a
 pessoa ver. Um "Helena pagou" gravado na Helena errada é pior que nenhum agente.
