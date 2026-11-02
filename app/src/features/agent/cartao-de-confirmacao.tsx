@@ -22,6 +22,7 @@ import { useColors, screenMargin, spacing } from '@/theme';
 import { formatarData, formatarDinheiro, nomeDoDiaDaSemana } from '@/lib/format';
 import { usePacientes } from '@/features/patients/use-patients';
 import { useTiposDeDespesa } from '@/features/expenses/use-expenses';
+import { useAgenda } from '@/features/schedule/use-schedule';
 import {
   modalidadeDaSessao,
   pagamentoDaSessao,
@@ -29,9 +30,14 @@ import {
 } from '@/features/patients/valores-do-banco';
 import { copyAgente } from './copy';
 import {
+  camposAlterados,
+  conflitosDoHorario,
   podeConfirmar,
   problemasDoRascunho,
   rotuloDaCategoria,
+  type CadastroDoPaciente,
+  type HorarioExistente,
+  type HorarioResolvido,
   quantidadeDeItens,
   type EstadoDoCartao,
   type ItemDeDespesa,
@@ -80,12 +86,14 @@ export function CartaoDeConfirmacao({
   // Uma chave estável por item: remover uma linha não pode embaralhar o que
   // foi digitado nas outras.
   const [chaves, setChaves] = useState(() =>
-    (inicial.tipo === 'paciente' || inicial.tipo === 'feedback' ? [inicial] : inicial.itens).map(() => Crypto.randomUUID()),
+    ('itens' in inicial ? inicial.itens : [inicial]).map(() => Crypto.randomUUID()),
   );
   const [gravando, setGravando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [gravadosAteAqui, setGravadosAteAqui] = useState(0);
-  const { confirmar } = useConfirmarRascunho();
+  // Os hooks da edição de cadastro precisam do id na criação; nos outros
+  // cartões vai vazio e eles nunca são acionados.
+  const { confirmar } = useConfirmarRascunho(rascunho.tipo === 'edicao_paciente' ? rascunho.paciente.id : '');
 
   const problemas = problemasDoRascunho(rascunho);
   const liberado = podeConfirmar(rascunho) && !gravando;
@@ -98,7 +106,7 @@ export function CartaoDeConfirmacao({
   /** Troca o item `i` do rascunho, mantendo o tipo. */
   function trocarItem<T>(i: number, novo: T) {
     setRascunho((r) => {
-      if (r.tipo === 'paciente' || r.tipo === 'feedback') return r;
+      if (!('itens' in r)) return r;
       const itens = [...r.itens] as T[];
       itens[i] = novo;
       return { ...r, itens } as Rascunho;
@@ -107,8 +115,8 @@ export function CartaoDeConfirmacao({
 
   function remover(i: number) {
     setRascunho((r) => {
-      if (r.tipo === 'paciente' || r.tipo === 'feedback') return r;
-      return { ...r, itens: r.itens.filter((_, j) => j !== i) } as Rascunho;
+      if (!('itens' in r)) return r;
+      return { ...r, itens: (r.itens as unknown[]).filter((_, j) => j !== i) } as Rascunho;
     });
     setChaves((k) => k.filter((_, j) => j !== i));
   }
@@ -129,14 +137,12 @@ export function CartaoDeConfirmacao({
     // sucesso quando a escrita falhou (regra dos quatro estados).
     setRascunho(restante);
     setChaves(
-      (restante.tipo === 'paciente' || restante.tipo === 'feedback' ? [restante] : restante.itens).map(() =>
-        Crypto.randomUUID()
-      ),
+      ('itens' in restante ? restante.itens : [restante]).map(() => Crypto.randomUUID()),
     );
     setErro(c.falhaParcial(gravados));
   }
 
-  const removivel = rascunho.tipo !== 'paciente' && rascunho.tipo !== 'feedback' && rascunho.itens.length > 1;
+  const removivel = 'itens' in rascunho && rascunho.itens.length > 1;
 
   return (
     <View style={{ gap: spacing.sm }}>
@@ -222,6 +228,29 @@ export function CartaoDeConfirmacao({
         </ListGroup>
       )}
 
+      {rascunho.tipo === 'troca_horario' && (
+        <CamposDaTroca rascunho={rascunho} problemas={problemas[0]} aoMudar={setRascunho} />
+      )}
+
+      {rascunho.tipo === 'remocao_horario' && (
+        <ListGroup
+          title={c.titulo.remocao_horario}
+          footer={problemas[0].length ? problemas[0].join(' · ') : c.avisoDaRemocao}
+          footerIsError={problemas[0].length > 0}
+        >
+          <ValueRow label={c.paciente} value={rascunho.paciente.nome} />
+          <RowSeparator />
+          <SeletorDeHorarioAtual
+            atual={rascunho.atual}
+            aoMudar={(atual) => setRascunho({ ...rascunho, atual })}
+          />
+        </ListGroup>
+      )}
+
+      {rascunho.tipo === 'edicao_paciente' && (
+        <CamposDaEdicao rascunho={rascunho} problemas={problemas[0]} aoMudar={setRascunho} />
+      )}
+
       {rascunho.tipo === 'paciente' && (
         <CamposDePacienteNovo
           rascunho={rascunho}
@@ -233,10 +262,18 @@ export function CartaoDeConfirmacao({
       <ListGroup footer={erro ?? undefined} footerIsError={!!erro}>
         <ActionRow
           label={
-            gravando ? c.registrando : rascunho.tipo === 'feedback' ? c.enviarFeedback : c.confirmar(total)
+            gravando
+              ? c.registrando
+              : rascunho.tipo === 'feedback'
+                ? c.enviarFeedback
+                : rascunho.tipo === 'remocao_horario'
+                  ? c.tirarDaAgenda
+                  : c.confirmar(total)
           }
           onPress={() => void aoConfirmar()}
           disabled={!liberado}
+          // Tirar da agenda apaga: vermelho, como toda ação destrutiva do app.
+          destructive={rascunho.tipo === 'remocao_horario'}
         />
         <RowSeparator />
         <ActionRow
@@ -563,6 +600,161 @@ function CamposDePacienteNovo({
   );
 }
 
+/** "Quarta, 09:00–09:50" — um horário fixo como a pessoa lê. */
+function rotuloDoHorario(h: { dia_semana: number; hora_inicio: string; hora_fim: string }): string {
+  return `${nomeDoDiaDaSemana(h.dia_semana)}, ${h.hora_inicio}–${h.hora_fim}`;
+}
+
+/**
+ * O horário atual: texto quando o agente achou qual é; escolha, em vermelho,
+ * quando o paciente tem vários e a frase não disse qual.
+ */
+function SeletorDeHorarioAtual({
+  atual,
+  aoMudar,
+}: {
+  atual: HorarioResolvido;
+  aoMudar: (h: HorarioResolvido) => void;
+}) {
+  if (atual.situacao === 'ok') return <ValueRow label={c.horarioAtual} value={rotuloDoHorario(atual)} />;
+  return (
+    <PickerRow
+      label={c.horarioAtual}
+      opcoes={atual.opcoes.map((h) => ({ id: h.id, rotulo: rotuloDoHorario(h) }))}
+      valorSelecionado={null}
+      placeholder={c.escolher}
+      tituloDaFolha={c.horarioAtual}
+      hasError
+      onSelecionar={(id) => {
+        const h = atual.opcoes.find((o: HorarioExistente) => o.id === id);
+        if (h) aoMudar({ situacao: 'ok', ...h });
+      }}
+    />
+  );
+}
+
+/** Troca de horário: o atual, o novo editável e o aviso de conflito. */
+function CamposDaTroca({
+  rascunho,
+  problemas,
+  aoMudar,
+}: {
+  rascunho: Extract<Rascunho, { tipo: 'troca_horario' }>;
+  problemas: string[];
+  aoMudar: (r: Rascunho) => void;
+}) {
+  const agenda = useAgenda();
+  const conflitos = conflitosDoHorario(
+    rascunho.novo,
+    agenda.data ?? [],
+    rascunho.atual.situacao === 'ok' ? rascunho.atual.id : null,
+  );
+
+  return (
+    <>
+      <ListGroup
+        title={c.titulo.troca_horario}
+        footer={problemas.length ? problemas.join(' · ') : undefined}
+        footerIsError={problemas.length > 0}
+      >
+        <ValueRow label={c.paciente} value={rascunho.paciente.nome} />
+        <RowSeparator />
+        <SeletorDeHorarioAtual atual={rascunho.atual} aoMudar={(atual) => aoMudar({ ...rascunho, atual })} />
+      </ListGroup>
+      <ListGroup title={c.novoHorario} footer={conflitos.length ? c.conflito(conflitos) : c.avisoDaTroca}>
+        <CamposDeHorario item={rascunho.novo} aoMudar={(novo) => aoMudar({ ...rascunho, novo })} />
+      </ListGroup>
+    </>
+  );
+}
+
+/** Rótulo de cada campo do cadastro, para o "antes" no rodapé. */
+const rotuloDoCampo: Record<keyof CadastroDoPaciente, string> = {
+  nome: 'nome',
+  telefone: 'telefone',
+  email: 'e-mail',
+  observacoes: 'observações',
+  status: 'ativo',
+  receber_sms: 'SMS',
+  preco: 'preço',
+};
+
+function valorDoCampo(cadastro: CadastroDoPaciente, k: keyof CadastroDoPaciente): string {
+  const v = cadastro[k];
+  if (k === 'preco') return v === null ? '—' : formatarDinheiro(v as number);
+  if (k === 'receber_sms') return v ? 'ligado' : 'desligado';
+  if (k === 'status') return v === 'ativo' ? 'sim' : 'não';
+  return (v as string | null) || '—';
+}
+
+/**
+ * Alteração de cadastro: os campos da tela de editar, já com o que a frase
+ * pediu. O rodapé mostra o "antes" do que mudou, para a pessoa ver a troca.
+ */
+function CamposDaEdicao({
+  rascunho,
+  problemas,
+  aoMudar,
+}: {
+  rascunho: Extract<Rascunho, { tipo: 'edicao_paciente' }>;
+  problemas: string[];
+  aoMudar: (r: Rascunho) => void;
+}) {
+  const n = rascunho.novo;
+  const mudar = (campos: Partial<CadastroDoPaciente>) => aoMudar({ ...rascunho, novo: { ...n, ...campos } });
+  const mudou = camposAlterados(rascunho.atual, n);
+  const antes = mudou.map((k) => `${rotuloDoCampo[k]}: ${valorDoCampo(rascunho.atual, k)}`).join(' · ');
+  const rodape = problemas.length
+    ? problemas.join(' · ')
+    : [c.antes(antes), mudou.includes('preco') ? c.avisoDoPreco : null].filter(Boolean).join(' ');
+
+  return (
+    <ListGroup title={c.titulo.edicao_paciente} footer={rodape} footerIsError={problemas.length > 0}>
+      <FormRow label={c.nome} value={n.nome} onChangeText={(nome) => mudar({ nome })} hasError={!n.nome.trim()} />
+      <RowSeparator />
+      <FormRow
+        label={c.telefone}
+        value={n.telefone}
+        onChangeText={(telefone) => mudar({ telefone })}
+        keyboardType="phone-pad"
+        placeholder={c.obrigatorio}
+        hasError={!n.telefone.trim()}
+      />
+      <RowSeparator />
+      <FormRow
+        label={c.email}
+        value={n.email ?? ''}
+        onChangeText={(t) => mudar({ email: t.trim() ? t : null })}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        placeholder={c.opcional}
+      />
+      <RowSeparator />
+      <CampoDeValor
+        label={c.preco}
+        valor={n.preco}
+        comErro={n.preco === null}
+        placeholder={c.obrigatorio}
+        aoMudar={(preco) => mudar({ preco })}
+      />
+      <RowSeparator />
+      <ToggleRow label="SMS" value={n.receber_sms} onValueChange={(receber_sms) => mudar({ receber_sms })} />
+      <RowSeparator />
+      <ToggleRow
+        label={c.status}
+        value={n.status === 'ativo'}
+        onValueChange={(ativo) => mudar({ status: ativo ? 'ativo' : 'inativo' })}
+      />
+      <RowSeparator />
+      <MultilineRow
+        value={n.observacoes ?? ''}
+        onChangeText={(t) => mudar({ observacoes: t.trim() ? t : null })}
+        placeholder={c.observacoes}
+      />
+    </ListGroup>
+  );
+}
+
 /** O cartão depois de confirmado ou cancelado: um resumo, sem campos. */
 function CartaoEncerrado({
   rascunho,
@@ -624,6 +816,18 @@ function resumoDoRascunho(r: Rascunho): { rotulo: string; valor: string }[] {
       return r.itens.map((i) => ({
         rotulo: i.tipo_despesa.situacao === 'ok' ? i.tipo_despesa.nome : i.tipo_despesa.termo,
         valor: `${formatarData(i.data)} · ${formatarDinheiro(i.valor)}`,
+      }));
+    case 'troca_horario':
+      return [
+        { rotulo: r.paciente.nome, valor: rotuloDoHorario(r.novo) },
+        ...(r.atual.situacao === 'ok' ? [{ rotulo: c.horarioAtual, valor: `era ${rotuloDoHorario(r.atual)}` }] : []),
+      ];
+    case 'remocao_horario':
+      return [{ rotulo: r.paciente.nome, valor: r.atual.situacao === 'ok' ? `saiu: ${rotuloDoHorario(r.atual)}` : '' }];
+    case 'edicao_paciente':
+      return camposAlterados(r.atual, r.novo).map((k) => ({
+        rotulo: `${r.paciente.nome} · ${rotuloDoCampo[k]}`,
+        valor: valorDoCampo(r.novo, k),
       }));
     case 'feedback':
       return [{ rotulo: rotuloDaCategoria[r.categoria], valor: r.mensagem.length > 40 ? `${r.mensagem.slice(0, 40)}…` : r.mensagem }];

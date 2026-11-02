@@ -74,14 +74,48 @@ export type Rascunho =
   | { tipo: 'paciente'; paciente: DadosDePacienteNovo; horarios: Omit<ItemDeHorario, 'paciente'>[] }
   | { tipo: 'horarios'; itens: ItemDeHorario[] }
   | { tipo: 'despesas'; itens: ItemDeDespesa[] }
-  | { tipo: 'feedback'; categoria: 'problema' | 'sugestao' | 'elogio'; mensagem: string };
+  | { tipo: 'feedback'; categoria: 'problema' | 'sugestao' | 'elogio'; mensagem: string }
+  | { tipo: 'troca_horario'; paciente: PacienteOk; atual: HorarioResolvido; novo: HorarioNovo }
+  | { tipo: 'remocao_horario'; paciente: PacienteOk; atual: HorarioResolvido }
+  | { tipo: 'edicao_paciente'; paciente: PacienteOk; atual: CadastroDoPaciente; novo: CadastroDoPaciente };
+
+/**
+ * Versão dos cartões que este app sabe mostrar, mandada à Edge Function a cada
+ * pergunta. 2 = troca e remoção de horário e edição de cadastro (5.0.3). Sem
+ * isso, a função não oferece essas ferramentas — a 5.0.2 descartaria o cartão.
+ */
+export const VERSAO_DOS_CARTOES = 2;
+
+type PacienteOk = Extract<PacienteResolvido, { situacao: 'ok' }>;
+
+/** Um horário fixo que já existe na agenda. */
+export type HorarioExistente = { id: string; dia_semana: number; hora_inicio: string; hora_fim: string };
+export type HorarioNovo = Omit<HorarioExistente, 'id'>;
+
+/** Qual horário do paciente a frase quis dizer; ambíguo, a pessoa escolhe. */
+export type HorarioResolvido =
+  | ({ situacao: 'ok' } & HorarioExistente)
+  | { situacao: 'ambiguo'; opcoes: HorarioExistente[] };
+
+/** Campos do cadastro que o agente altera (os da tela de editar, mais o preço). */
+export type CadastroDoPaciente = {
+  nome: string;
+  telefone: string;
+  email: string | null;
+  observacoes: string | null;
+  status: 'ativo' | 'inativo';
+  receber_sms: boolean;
+  preco: number | null;
+};
 
 /** Estado de um cartão na conversa. */
 export type EstadoDoCartao = 'aberto' | 'confirmado' | 'cancelado';
 
 /** Quantos registros o cartão grava — o que vai no evento de analytics. */
 export function quantidadeDeItens(r: Rascunho): number {
-  if (r.tipo === 'feedback') return 1;
+  if (r.tipo === 'feedback' || r.tipo === 'troca_horario' || r.tipo === 'remocao_horario' || r.tipo === 'edicao_paciente') {
+    return 1;
+  }
   return r.tipo === 'paciente' ? 1 + r.horarios.length : r.itens.length;
 }
 
@@ -119,6 +153,33 @@ export function problemasDoRascunho(r: Rascunho): string[][] {
         ...(i.tipo_despesa.situacao === 'ok' ? [] : ['Escolha o tipo da despesa']),
         ...problemasDoValor(i.valor),
       ]);
+    case 'troca_horario': {
+      const horas = validarIntervaloDeHoras(r.novo.hora_inicio, r.novo.hora_fim);
+      const mesmo =
+        r.atual.situacao === 'ok' &&
+        r.atual.dia_semana === r.novo.dia_semana &&
+        r.atual.hora_inicio === r.novo.hora_inicio &&
+        r.atual.hora_fim === r.novo.hora_fim;
+      return [[
+        ...(r.atual.situacao === 'ok' ? [] : ['Escolha qual horário vai mudar']),
+        ...(horas.valido ? [] : [horas.mensagem]),
+        ...(mesmo ? ['O novo horário é igual ao atual'] : []),
+      ]];
+    }
+    case 'remocao_horario':
+      return [r.atual.situacao === 'ok' ? [] : ['Escolha qual horário sai da agenda']];
+    case 'edicao_paciente': {
+      const nome = validarNome(r.novo.nome);
+      const telefone = validarTelefone(r.novo.telefone);
+      const email = validarEmailOpcional(r.novo.email ?? '');
+      return [[
+        ...(nome.valido ? [] : [nome.mensagem]),
+        ...(telefone.valido ? [] : [telefone.mensagem]),
+        ...(email.valido ? [] : [email.mensagem]),
+        ...problemasDoValor(r.novo.preco),
+        ...(camposAlterados(r.atual, r.novo).length === 0 ? ['Nada mudou no cadastro'] : []),
+      ]];
+    }
     case 'feedback':
       // Mesma regra da tela de feedback: mensagem obrigatória (spec 8.10).
       return [r.mensagem.trim() ? [] : ['Escreva a mensagem']];
@@ -143,7 +204,7 @@ export function problemasDoRascunho(r: Rascunho): string[][] {
 
 /** O Confirmar só libera com o cartão inteiro válido e ao menos um item. */
 export function podeConfirmar(r: Rascunho): boolean {
-  if (r.tipo !== 'paciente' && r.tipo !== 'feedback' && r.itens.length === 0) return false;
+  if ('itens' in r && r.itens.length === 0) return false;
   return problemasDoRascunho(r).every((p) => p.length === 0);
 }
 
@@ -175,6 +236,30 @@ export function ofertaDePagamento(sessoes: ItemDeSessao[]): Rascunho | null {
   };
 }
 
+/** Quais campos do cadastro mudaram. */
+export function camposAlterados(a: CadastroDoPaciente, b: CadastroDoPaciente): (keyof CadastroDoPaciente)[] {
+  return (Object.keys(a) as (keyof CadastroDoPaciente)[]).filter((k) => a[k] !== b[k]);
+}
+
+/**
+ * Horários de OUTROS pacientes que se sobrepõem ao novo horário.
+ *
+ * É aviso, não bloqueio: o app aceita horários sobrepostos (há quem atenda em
+ * dupla, ou deixe dois horários marcados de propósito). Calculado aqui, e não
+ * no servidor, para continuar certo quando a pessoa edita o horário no cartão.
+ * O horário que está sendo trocado (`ignorarId`) não conta.
+ */
+export function conflitosDoHorario(
+  novo: HorarioNovo,
+  agenda: Array<{ id: string | null; paciente_nome: string | null; dia_semana: number | null; hora_inicio: string | null; hora_fim: string | null }>,
+  ignorarId: string | null,
+): string[] {
+  return agenda
+    .filter((h) => h.id !== ignorarId && h.dia_semana === novo.dia_semana && h.hora_inicio && h.hora_fim)
+    .filter((h) => novo.hora_inicio < (h.hora_fim as string).slice(0, 5) && novo.hora_fim > (h.hora_inicio as string).slice(0, 5))
+    .map((h) => `${h.paciente_nome ?? 'Outro paciente'} (${(h.hora_inicio as string).slice(0, 5)}–${(h.hora_fim as string).slice(0, 5)})`);
+}
+
 /** Rótulo da categoria do feedback, como aparece no cartão e no texto enviado. */
 export const rotuloDaCategoria = { problema: 'Problema', sugestao: 'Sugestão', elogio: 'Elogio' } as const;
 
@@ -190,11 +275,18 @@ export function textoDoFeedback(r: Extract<Rascunho, { tipo: 'feedback' }>): str
 /** Lê os rascunhos da resposta da função, descartando o que não tiver forma. */
 export function rascunhosDaResposta(bruto: unknown): Rascunho[] {
   if (!Array.isArray(bruto)) return [];
-  const tipos = ['sessoes', 'pagamentos', 'paciente', 'horarios', 'despesas', 'feedback'];
+  const tipos = [
+    'sessoes', 'pagamentos', 'paciente', 'horarios', 'despesas', 'feedback',
+    'troca_horario', 'remocao_horario', 'edicao_paciente',
+  ];
   return bruto.filter((r): r is Rascunho => {
     if (!r || typeof r !== 'object' || !tipos.includes((r as { tipo?: string }).tipo ?? '')) return false;
     const x = r as { tipo: string; itens?: unknown; paciente?: unknown; horarios?: unknown; mensagem?: unknown };
     if (x.tipo === 'feedback') return typeof x.mensagem === 'string';
+    if (x.tipo === 'troca_horario' || x.tipo === 'remocao_horario' || x.tipo === 'edicao_paciente') {
+      const y = r as { paciente?: { situacao?: string }; atual?: unknown };
+      return y.paciente?.situacao === 'ok' && !!y.atual;
+    }
     return x.tipo === 'paciente'
       ? !!x.paciente && Array.isArray(x.horarios)
       : Array.isArray(x.itens) && x.itens.length > 0;

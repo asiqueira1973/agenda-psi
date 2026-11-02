@@ -5,6 +5,8 @@ import {
   quantidadeDeItens,
   rascunhosDaResposta,
   textoDoFeedback,
+  conflitosDoHorario,
+  camposAlterados,
   type ItemDeSessao,
   type Rascunho,
 } from '../rascunhos';
@@ -103,5 +105,52 @@ describe('feedback pelo agente', () => {
     expect(quantidadeDeItens(r)).toBe(1);
     expect(textoDoFeedback(r)).toBe('[Sugestão · via assistente] Agenda do mês inteiro');
     expect(rascunhosDaResposta([r]).length).toBe(1);
+  });
+});
+
+describe('troca de horário', () => {
+  const tomas = { situacao: 'ok' as const, id: 't', nome: 'Tomás Ribeiro', preco_referencia: 250 };
+  const atual = { situacao: 'ok' as const, id: 'h1', dia_semana: 3, hora_inicio: '09:00', hora_fim: '09:50' };
+
+  it('novo igual ao atual não confirma', () => {
+    const r: Rascunho = { tipo: 'troca_horario', paciente: tomas, atual, novo: { dia_semana: 3, hora_inicio: '09:00', hora_fim: '09:50' } };
+    expect(podeConfirmar(r)).toBe(false);
+    expect(podeConfirmar({ ...r, novo: { dia_semana: 3, hora_inicio: '10:00', hora_fim: '10:50' } })).toBe(true);
+  });
+
+  it('horário atual ambíguo trava até a escolha', () => {
+    const r: Rascunho = {
+      tipo: 'remocao_horario',
+      paciente: tomas,
+      atual: { situacao: 'ambiguo', opcoes: [atual, { ...atual, id: 'h2', dia_semana: 5 }] },
+    };
+    expect(podeConfirmar(r)).toBe(false);
+  });
+
+  it('conflito com outro paciente vira aviso; o próprio horário trocado não conta', () => {
+    const agenda = [
+      { id: 'h1', paciente_nome: 'Tomás Ribeiro', dia_semana: 3, hora_inicio: '09:00:00', hora_fim: '09:50:00' },
+      { id: 'x', paciente_nome: 'Laura Mendes', dia_semana: 3, hora_inicio: '10:00:00', hora_fim: '10:50:00' },
+      { id: 'y', paciente_nome: 'Caio', dia_semana: 4, hora_inicio: '10:00:00', hora_fim: '10:50:00' },
+    ];
+    expect(conflitosDoHorario({ dia_semana: 3, hora_inicio: '10:30', hora_fim: '11:20' }, agenda, 'h1')).toEqual([
+      'Laura Mendes (10:00–10:50)',
+    ]);
+    expect(conflitosDoHorario({ dia_semana: 3, hora_inicio: '09:10', hora_fim: '09:40' }, agenda, 'h1')).toEqual([]);
+  });
+});
+
+describe('edição de cadastro', () => {
+  const tomas = { situacao: 'ok' as const, id: 't', nome: 'Tomás Ribeiro', preco_referencia: 250 };
+  const atual = {
+    nome: 'Tomás Ribeiro', telefone: '11 90000-0000', email: null, observacoes: 'manhã',
+    status: 'ativo' as const, receber_sms: true, preco: 250,
+  };
+  it('sem mudança não confirma; telefone vazio também não', () => {
+    expect(podeConfirmar({ tipo: 'edicao_paciente', paciente: tomas, atual, novo: atual })).toBe(false);
+    expect(podeConfirmar({ tipo: 'edicao_paciente', paciente: tomas, atual, novo: { ...atual, telefone: ' ' } })).toBe(false);
+    const novo = { ...atual, receber_sms: false };
+    expect(camposAlterados(atual, novo)).toEqual(['receber_sms']);
+    expect(podeConfirmar({ tipo: 'edicao_paciente', paciente: tomas, atual, novo })).toBe(true);
   });
 });

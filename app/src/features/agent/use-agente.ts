@@ -11,6 +11,7 @@ import {
   rascunhosDaResposta,
   type EstadoDoCartao,
   type Rascunho,
+  VERSAO_DOS_CARTOES,
 } from './rascunhos';
 import { copyAgente } from './copy';
 
@@ -38,7 +39,8 @@ export function useAgente() {
   const perguntar = useMutation({
     mutationFn: async (conversa: Mensagem[]) => {
       const { data, error } = await supabase.functions.invoke('agente', {
-        body: { mensagens: historicoParaEnvio(conversa) },
+        // `versao_cartoes` diz à função quais cartões este app sabe mostrar.
+        body: { mensagens: historicoParaEnvio(conversa), versao_cartoes: VERSAO_DOS_CARTOES },
       });
 
       if (error) {

@@ -458,6 +458,13 @@ Início (plano completo em `docs/agente-plano.md`). **Fase 1: só consultas.**
   cartão com o texto editável; o envio usa o mesmo `useEnviarFeedback` da tela
   de Ajustes (grava em `feedback` e chama `notifica-admin`). A tabela não tem
   coluna de tipo: a mensagem vai como `[Problema · via assistente] …`.
+- **Agenda e cadastro pelo agente** (só para o app que manda `versao_cartoes`
+  >= 2, ou seja, a partir do build 2 da 5.0.2): troca de horário (grava o novo
+  e depois apaga o antigo, pelos hooks da Agenda), tirar da agenda (exclusão
+  com botão vermelho; paciente e sessões ficam) e alteração de cadastro (hook
+  da tela de editar, com o cadastro inteiro para não apagar observações; preço
+  como linha nova em `precos_paciente`). Conflito de horário é aviso, calculado
+  no app.
 - **Auditoria** (`agente_auditoria`, migration 0016): uma linha por pergunta,
   com o texto, resultado, tokens e custo estimado. Tabela de sistema: RLS sem
   policy; só a Edge Function grava, com service_role e só nela. O texto NÃO vai

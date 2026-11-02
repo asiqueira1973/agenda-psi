@@ -1,7 +1,7 @@
 import { useCriarSessao } from '@/features/sessions/use-sessions';
 import { useCriarPagamento } from '@/features/payments/use-payments';
-import { useCriarPaciente } from '@/features/patients/use-patients';
-import { useCriarAgendamento } from '@/features/schedule/use-schedule';
+import { useAtualizarPreco, useCriarPaciente, useEditarPaciente } from '@/features/patients/use-patients';
+import { useCriarAgendamento, useExcluirAgendamento } from '@/features/schedule/use-schedule';
 import { useCriarDespesa } from '@/features/expenses/use-expenses';
 import { useEnviarFeedback } from '@/features/settings/use-settings';
 import { textoDoFeedback, type Rascunho } from './rascunhos';
@@ -23,10 +23,18 @@ import { textoDoFeedback, type Rascunho } from './rascunhos';
  * dele. Se só os horários falharem, o paciente fica (paciente sem horário é um
  * estado válido do app) e o restante vira um cartão de horários dele.
  *
+ * Troca de horário: o novo primeiro, o antigo sai depois — o paciente nunca
+ * fica sem horário. Se só a saída do antigo falhar, o restante vira o cartão
+ * de tirar o antigo da agenda.
+ *
+ * Edição de cadastro: os hooks da tela de editar e do preço recebem o id do
+ * paciente na criação, então quem chama passa `pacienteDaEdicao` (vazio quando
+ * o cartão não é de edição — o hook existe, mas nunca é acionado).
+ *
  * Chame só com `podeConfirmar(rascunho)` verdadeiro: as validações da tela
  * moram em `rascunhos.ts`, e este arquivo confia nelas.
  */
-export function useConfirmarRascunho() {
+export function useConfirmarRascunho(pacienteDaEdicao: string) {
   const criarSessao = useCriarSessao();
   const criarPagamento = useCriarPagamento();
   const criarPaciente = useCriarPaciente();
@@ -35,6 +43,9 @@ export function useConfirmarRascunho() {
   // O feedback sai pelo mesmo hook da tela de Ajustes: grava em `feedback` e
   // avisa o administrador pela `notifica-admin`, que lê o texto pelo id.
   const enviarFeedback = useEnviarFeedback();
+  const excluirAgendamento = useExcluirAgendamento();
+  const editarPaciente = useEditarPaciente(pacienteDaEdicao);
+  const atualizarPreco = useAtualizarPreco(pacienteDaEdicao);
 
   /**
    * Recebe o rascunho já editado e válido. Devolve quantos registros foram
@@ -114,6 +125,69 @@ export function useConfirmarRascunho() {
           });
         });
         return { gravados, restante: faltam.length ? { tipo: 'despesas', itens: faltam } : null };
+      }
+      case 'troca_horario': {
+        if (r.atual.situacao !== 'ok') return { gravados: 0, restante: r };
+        try {
+          await criarAgendamento.mutateAsync({
+            pacienteId: r.paciente.id,
+            diaSemana: r.novo.dia_semana,
+            horaInicio: r.novo.hora_inicio,
+            horaFim: r.novo.hora_fim,
+            observacoes: null,
+          });
+        } catch {
+          return { gravados: 0, restante: r };
+        }
+        try {
+          await excluirAgendamento.mutateAsync(r.atual.id);
+          return { gravados: 1, restante: null };
+        } catch {
+          // O novo já existe; o que falta é só tirar o antigo.
+          return { gravados: 1, restante: { tipo: 'remocao_horario', paciente: r.paciente, atual: r.atual } };
+        }
+      }
+      case 'remocao_horario': {
+        if (r.atual.situacao !== 'ok') return { gravados: 0, restante: r };
+        try {
+          await excluirAgendamento.mutateAsync(r.atual.id);
+          return { gravados: 1, restante: null };
+        } catch {
+          return { gravados: 0, restante: r };
+        }
+      }
+      case 'edicao_paciente': {
+        const { atual, novo } = r;
+        const cadastroMudou =
+          atual.nome !== novo.nome || atual.telefone !== novo.telefone || atual.email !== novo.email ||
+          atual.observacoes !== novo.observacoes || atual.status !== novo.status ||
+          atual.receber_sms !== novo.receber_sms;
+        try {
+          // O cadastro vai inteiro, observações incluídas: a edição da tela
+          // grava todos os campos, e omitir um o apagaria.
+          if (cadastroMudou) {
+            await editarPaciente.mutateAsync({
+              nomeCompleto: novo.nome,
+              telefone: novo.telefone,
+              email: novo.email,
+              observacoes: novo.observacoes,
+              status: novo.status,
+              receberSms: novo.receber_sms,
+            });
+          }
+        } catch {
+          return { gravados: 0, restante: r };
+        }
+        // Preço é linha NOVA em precos_paciente, nunca update (regra 11.2).
+        if (novo.preco !== atual.preco && novo.preco !== null) {
+          try {
+            await atualizarPreco.mutateAsync({ preco: novo.preco, observacoes: null });
+          } catch {
+            // O cadastro foi; falta o preço. O cartão continua só com ele.
+            return { gravados: cadastroMudou ? 1 : 0, restante: { ...r, atual: { ...novo, preco: atual.preco } } };
+          }
+        }
+        return { gravados: 1, restante: null };
       }
       case 'feedback': {
         try {
