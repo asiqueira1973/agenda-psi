@@ -70,6 +70,19 @@ export const definicoesDeFerramentas = [
     },
   },
   {
+    name: 'consultar_periodo',
+    description:
+      'Faturamento e gastos de um PERÍODO de vários meses, mês a mês e com o total já somado: recebido, pendente, despesas, saldo (recebido menos despesas) e sessões realizadas. Use para "quanto faturei este ano?", "quanto gastei no semestre?", "como foram os últimos 3 meses?". Para um mês só, use consultar_mes.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        desde: { type: 'string', description: 'Primeiro mês, AAAA-MM. "Este ano" começa em janeiro do ano corrente.' },
+        ate: { type: 'string', description: 'Último mês, AAAA-MM, inclusive. Para "até agora", o mês corrente.' },
+      },
+      required: ['desde', 'ate'],
+    },
+  },
+  {
     name: 'consultar_mes',
     description:
       'Números de um mês: quanto foi recebido, quanto está pendente de pagamentos, e quantas sessões realizadas houve. Use para perguntas como "quanto recebi em outubro?" ou "quantas sessões fiz este mês?".',
@@ -147,6 +160,8 @@ export async function executarFerramenta(
       return await consultarDespesas(entrada, cliente, usuarioId);
     case 'listar_pacientes':
       return await listarPacientes(entrada, cliente, usuarioId);
+    case 'consultar_periodo':
+      return await consultarPeriodo(String(entrada.desde ?? ''), String(entrada.ate ?? ''), cliente, usuarioId);
     case 'consultar_mes':
       return await consultarMes(String(entrada.mes ?? ''), cliente, usuarioId);
     case 'agenda_do_dia':
@@ -343,6 +358,78 @@ async function listarPacientes(
   const { data, error } = await consulta;
   if (error) return { erro: 'falha ao ler pacientes' };
   return { total: data?.length ?? 0, pacientes: data ?? [] };
+}
+
+/** Os meses AAAA-MM de `desde` até `ate`, inclusive. Vazio se o intervalo for inválido. */
+export function mesesDoPeriodo(desde: string, ate: string): string[] {
+  const ok = /^\d{4}-(0[1-9]|1[0-2])$/;
+  if (!ok.test(desde) || !ok.test(ate) || desde > ate) return [];
+  const meses: string[] = [];
+  let [a, m] = desde.split('-').map(Number);
+  // Teto de 36 meses: além disso, a resposta deixa de caber numa tela.
+  while (meses.length < 36) {
+    const atual = `${a}-${String(m).padStart(2, '0')}`;
+    meses.push(atual);
+    if (atual === ate) break;
+    m++;
+    if (m === 13) { m = 1; a++; }
+  }
+  return meses;
+}
+
+/**
+ * Vários meses de uma vez, mês a mês e com total.
+ *
+ * Recebido e pendente vêm de `v_financeiro_mensal` (P2); despesas e sessões são
+ * contadas sobre as linhas que a RLS devolve. O saldo é recebido menos
+ * despesas, feito aqui porque a IA é instruída a nunca fazer conta.
+ */
+async function consultarPeriodo(desde: string, ate: string, cliente: SupabaseClient, usuarioId: string) {
+  const meses = mesesDoPeriodo(desde, ate);
+  if (meses.length === 0) return { erro: 'período deve ser AAAA-MM a AAAA-MM, em ordem' };
+  const inicio = `${meses[0]}-01`;
+  const [ua, um] = meses[meses.length - 1].split('-').map(Number);
+  const fim = um === 12 ? `${ua + 1}-01-01` : `${ua}-${String(um + 1).padStart(2, '0')}-01`;
+
+  const [fin, desp, sess] = await Promise.all([
+    cliente.from('v_financeiro_mensal').select('mes_referencia, recebido, pendente')
+      .eq('usuario_id', usuarioId).gte('mes_referencia', inicio).lt('mes_referencia', fim),
+    cliente.from('despesas').select('data_competencia, valor_despesa')
+      .eq('usuario_id', usuarioId).gte('data_competencia', inicio).lt('data_competencia', fim),
+    cliente.from('sessoes').select('ocorreu_em_dia')
+      .eq('usuario_id', usuarioId).eq('status', 'realizada').gte('ocorreu_em_dia', inicio).lt('ocorreu_em_dia', fim),
+  ]);
+  if (fin.error || desp.error || sess.error) return { erro: 'falha ao ler o período' };
+
+  const porMes = meses.map((mes) => {
+    const f = (fin.data ?? []).find((x) => String(x.mes_referencia).startsWith(mes));
+    const recebido = Number(f?.recebido ?? 0);
+    const despesas = (desp.data ?? [])
+      .filter((d) => String(d.data_competencia).startsWith(mes))
+      .reduce((soma, d) => soma + Number(d.valor_despesa ?? 0), 0);
+    return {
+      mes,
+      recebido,
+      pendente: Number(f?.pendente ?? 0),
+      despesas,
+      saldo: recebido - despesas,
+      sessoes_realizadas: (sess.data ?? []).filter((s) => String(s.ocorreu_em_dia).startsWith(mes)).length,
+    };
+  });
+  const soma = (k: 'recebido' | 'pendente' | 'despesas' | 'saldo' | 'sessoes_realizadas') =>
+    porMes.reduce((t, m) => t + m[k], 0);
+
+  return {
+    periodo: `${meses[0]} a ${meses[meses.length - 1]}`,
+    total: {
+      recebido: soma('recebido'),
+      pendente: soma('pendente'),
+      despesas: soma('despesas'),
+      saldo: soma('saldo'),
+      sessoes_realizadas: soma('sessoes_realizadas'),
+    },
+    por_mes: porMes,
+  };
 }
 
 /** Recebido, pendente e sessões realizadas de um mês. */

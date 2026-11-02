@@ -442,7 +442,8 @@ Início (plano completo em `docs/agente-plano.md`). **Fase 1: só consultas.**
   **Sem `usuario_id`** (pegadinha 3).
 - A função confere o sinalizador `agente` a cada chamada (403 se desligado) e
   roda com o JWT do usuário. O modelo (Claude Sonnet 5) só escolhe entre ferramentas
-  de leitura: `historico_do_paciente` (`sessoes`, `pagamentos`), `consultar_despesas`
+  de leitura: `consultar_periodo` (vários meses, mês a mês e total, com saldo
+  somado na função), `historico_do_paciente` (`sessoes`, `pagamentos`), `consultar_despesas`
   (`despesas` com `tipos_despesa`, total somado na função), `listar_pacientes`
   (`v_pacientes_cartao`), `agenda_do_dia` (`view_agenda_semana_padrao`, com
   `dia_semana` 1 = segunda), `buscar_paciente` (`v_pacientes_cartao`),

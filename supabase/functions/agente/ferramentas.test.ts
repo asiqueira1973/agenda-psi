@@ -1,5 +1,5 @@
 import { assertEquals } from 'jsr:@std/assert@1';
-import { definicoesDeFerramentas, diaDaSemanaDoBanco, diasDaSemanaDe, normalizar } from './ferramentas.ts';
+import { definicoesDeFerramentas, diaDaSemanaDoBanco, diasDaSemanaDe, mesesDoPeriodo, normalizar } from './ferramentas.ts';
 
 Deno.test('normalizar tira acento e caixa', () => {
   assertEquals(normalizar('  José Conceição '), 'jose conceicao');
@@ -9,7 +9,7 @@ Deno.test('fase 1 só tem ferramentas de consulta', () => {
   // Se alguém acrescentar uma ferramenta de escrita aqui, este teste falha de
   // propósito: escrita é fase 2 e passa pelo cartão de confirmação no app.
   const nomes = definicoesDeFerramentas.map((f) => f.name).sort();
-  assertEquals(nomes, ['agenda_da_semana', 'agenda_do_dia', 'buscar_paciente', 'consultar_despesas', 'consultar_mes', 'historico_do_paciente', 'listar_pacientes', 'listar_pendencias']);
+  assertEquals(nomes, ['agenda_da_semana', 'agenda_do_dia', 'buscar_paciente', 'consultar_despesas', 'consultar_mes', 'consultar_periodo', 'historico_do_paciente', 'listar_pacientes', 'listar_pendencias']);
 });
 
 Deno.test('dia da semana na convenção do banco: 1 = segunda, 7 = domingo', () => {
@@ -28,4 +28,11 @@ Deno.test('semana de segunda a domingo, mesmo a partir de um domingo', () => {
   assertEquals(diasDaSemanaDe('2026-11-04'), semana);
   assertEquals(diasDaSemanaDe('2026-11-08'), semana);
   assertEquals(diasDaSemanaDe('2026-11-02'), semana);
+});
+
+Deno.test('meses do período, atravessando o ano', () => {
+  assertEquals(mesesDoPeriodo('2026-01', '2026-03'), ['2026-01', '2026-02', '2026-03']);
+  assertEquals(mesesDoPeriodo('2025-11', '2026-02'), ['2025-11', '2025-12', '2026-01', '2026-02']);
+  assertEquals(mesesDoPeriodo('2026-05', '2026-02'), []);
+  assertEquals(mesesDoPeriodo('2026', '2026-02'), []);
 });
