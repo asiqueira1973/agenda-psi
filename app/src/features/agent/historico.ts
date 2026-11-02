@@ -27,6 +27,7 @@ const nomeDoCartao: Record<Rascunho['tipo'], string> = {
   paciente: 'paciente novo',
   horarios: 'horários',
   despesas: 'despesas',
+  feedback: 'feedback',
 };
 
 const nomeDoEstado: Record<EstadoDoCartao, string> = {

@@ -73,13 +73,15 @@ export type Rascunho =
   | { tipo: 'pagamentos'; itens: ItemDePagamento[] }
   | { tipo: 'paciente'; paciente: DadosDePacienteNovo; horarios: Omit<ItemDeHorario, 'paciente'>[] }
   | { tipo: 'horarios'; itens: ItemDeHorario[] }
-  | { tipo: 'despesas'; itens: ItemDeDespesa[] };
+  | { tipo: 'despesas'; itens: ItemDeDespesa[] }
+  | { tipo: 'feedback'; categoria: 'problema' | 'sugestao'; mensagem: string };
 
 /** Estado de um cartão na conversa. */
 export type EstadoDoCartao = 'aberto' | 'confirmado' | 'cancelado';
 
 /** Quantos registros o cartão grava — o que vai no evento de analytics. */
 export function quantidadeDeItens(r: Rascunho): number {
+  if (r.tipo === 'feedback') return 1;
   return r.tipo === 'paciente' ? 1 + r.horarios.length : r.itens.length;
 }
 
@@ -117,6 +119,9 @@ export function problemasDoRascunho(r: Rascunho): string[][] {
         ...(i.tipo_despesa.situacao === 'ok' ? [] : ['Escolha o tipo da despesa']),
         ...problemasDoValor(i.valor),
       ]);
+    case 'feedback':
+      // Mesma regra da tela de feedback: mensagem obrigatória (spec 8.10).
+      return [r.mensagem.trim() ? [] : ['Escreva o que aconteceu ou a sugestão']];
     case 'paciente': {
       const nome = validarNome(r.paciente.nome);
       const telefone = validarTelefone(r.paciente.telefone ?? '');
@@ -138,7 +143,7 @@ export function problemasDoRascunho(r: Rascunho): string[][] {
 
 /** O Confirmar só libera com o cartão inteiro válido e ao menos um item. */
 export function podeConfirmar(r: Rascunho): boolean {
-  if (r.tipo !== 'paciente' && r.itens.length === 0) return false;
+  if (r.tipo !== 'paciente' && r.tipo !== 'feedback' && r.itens.length === 0) return false;
   return problemasDoRascunho(r).every((p) => p.length === 0);
 }
 
@@ -170,13 +175,26 @@ export function ofertaDePagamento(sessoes: ItemDeSessao[]): Rascunho | null {
   };
 }
 
+/** Rótulo da categoria do feedback, como aparece no cartão e no texto enviado. */
+export const rotuloDaCategoria = { problema: 'Problema', sugestao: 'Sugestão' } as const;
+
+/**
+ * O texto que vai para a tabela `feedback`. A tabela não tem coluna de tipo,
+ * então a categoria e a origem vão no começo da mensagem — quem lê o feedback
+ * sabe se é problema ou sugestão e que chegou pelo assistente.
+ */
+export function textoDoFeedback(r: Extract<Rascunho, { tipo: 'feedback' }>): string {
+  return `[${rotuloDaCategoria[r.categoria]} · via assistente] ${r.mensagem.trim()}`;
+}
+
 /** Lê os rascunhos da resposta da função, descartando o que não tiver forma. */
 export function rascunhosDaResposta(bruto: unknown): Rascunho[] {
   if (!Array.isArray(bruto)) return [];
-  const tipos = ['sessoes', 'pagamentos', 'paciente', 'horarios', 'despesas'];
+  const tipos = ['sessoes', 'pagamentos', 'paciente', 'horarios', 'despesas', 'feedback'];
   return bruto.filter((r): r is Rascunho => {
     if (!r || typeof r !== 'object' || !tipos.includes((r as { tipo?: string }).tipo ?? '')) return false;
-    const x = r as { tipo: string; itens?: unknown; paciente?: unknown; horarios?: unknown };
+    const x = r as { tipo: string; itens?: unknown; paciente?: unknown; horarios?: unknown; mensagem?: unknown };
+    if (x.tipo === 'feedback') return typeof x.mensagem === 'string';
     return x.tipo === 'paciente'
       ? !!x.paciente && Array.isArray(x.horarios)
       : Array.isArray(x.itens) && x.itens.length > 0;

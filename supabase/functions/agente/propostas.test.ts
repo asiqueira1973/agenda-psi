@@ -4,6 +4,7 @@ import {
   diaDoNome,
   horaFimPadrao,
   horaValida,
+  proporFeedback,
   nomesDePropostas,
   pagamentoDaSessao,
   resolverPaciente,
@@ -79,4 +80,12 @@ Deno.test('datas e valores impossíveis são recusados', () => {
 
 Deno.test('todas as propostas começam com propor_ — nenhuma grava', () => {
   assertEquals(nomesDePropostas.every((n) => n.startsWith('propor_')), true);
+});
+
+Deno.test('feedback vira rascunho com categoria; mensagem vazia é recusada', () => {
+  const r = proporFeedback({ categoria: 'sugestao', mensagem: ' Queria ver a agenda do mês. ' });
+  assertEquals('rascunho' in r && r.rascunho, { tipo: 'feedback', categoria: 'sugestao', mensagem: 'Queria ver a agenda do mês.' });
+  const semCategoria = proporFeedback({ mensagem: 'O app fechou' });
+  assertEquals('rascunho' in semCategoria && semCategoria.rascunho.tipo === 'feedback' && semCategoria.rascunho.categoria, 'problema');
+  assertEquals('erro' in proporFeedback({ categoria: 'problema', mensagem: '  ' }), true);
 });

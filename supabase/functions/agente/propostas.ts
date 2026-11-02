@@ -86,7 +86,8 @@ export type Rascunho =
     horarios: Omit<ItemDeHorario, 'paciente'>[];
   }
   | { tipo: 'horarios'; itens: ItemDeHorario[] }
-  | { tipo: 'despesas'; itens: ItemDeDespesa[] };
+  | { tipo: 'despesas'; itens: ItemDeDespesa[] }
+  | { tipo: 'feedback'; categoria: 'problema' | 'sugestao'; mensagem: string };
 
 // ---------------------------------------------------------------------------
 // Definições para a API
@@ -239,6 +240,27 @@ export const definicoesDePropostas = [
       required: ['itens'],
     },
   },
+  {
+    name: 'propor_feedback',
+    description:
+      'Monta o rascunho de um feedback para a equipe do Agenda Psi: um problema, erro ou bug no app, ou uma sugestão de melhoria. Não envia nada: a pessoa confere o texto num cartão e confirma. Use quando a pessoa reclamar de algo que não funciona, relatar um erro ou sugerir uma melhoria no app.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        categoria: {
+          type: 'string',
+          enum: ['problema', 'sugestao'],
+          description: 'problema para erro, bug ou algo que não funciona; sugestao para melhoria ou ideia.',
+        },
+        mensagem: {
+          type: 'string',
+          description:
+            'O feedback com as palavras da pessoa, fiel ao que ela disse, em uma a três frases. Sem nome de paciente nem valores, a menos que sejam necessários para entender o problema.',
+        },
+      },
+      required: ['categoria', 'mensagem'],
+    },
+  },
 ] as const;
 
 export const nomesDePropostas: readonly string[] = definicoesDePropostas.map((d) => d.name);
@@ -383,6 +405,7 @@ export async function executarProposta(
   usuarioId: string,
 ): Promise<ResultadoDeProposta> {
   if (nome === 'propor_paciente') return proporPaciente(entrada);
+  if (nome === 'propor_feedback') return proporFeedback(entrada);
   if (nome === 'propor_despesas') return await proporDespesas(entrada, cliente);
 
   const pacientes = await lerPacientes(cliente, usuarioId);
@@ -496,6 +519,17 @@ function proporPaciente(e: Entrada): ResultadoDeProposta {
       ],
       horarios: horarios.length,
     },
+  };
+}
+
+/** Feedback para a equipe: categoria e o texto, conferidos no cartão. */
+export function proporFeedback(e: Entrada): ResultadoDeProposta {
+  const mensagem = typeof e.mensagem === 'string' ? e.mensagem.trim() : '';
+  if (!mensagem) return { erro: 'mensagem vazia' };
+  const categoria = e.categoria === 'sugestao' ? 'sugestao' : 'problema';
+  return {
+    rascunho: { tipo: 'feedback', categoria, mensagem: mensagem.slice(0, 2000) },
+    resumo: { categoria, mensagem },
   };
 }
 

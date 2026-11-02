@@ -3,7 +3,8 @@ import { useCriarPagamento } from '@/features/payments/use-payments';
 import { useCriarPaciente } from '@/features/patients/use-patients';
 import { useCriarAgendamento } from '@/features/schedule/use-schedule';
 import { useCriarDespesa } from '@/features/expenses/use-expenses';
-import type { Rascunho } from './rascunhos';
+import { useEnviarFeedback } from '@/features/settings/use-settings';
+import { textoDoFeedback, type Rascunho } from './rascunhos';
 
 /**
  * Grava um rascunho confirmado — o único lugar do agente que escreve no banco.
@@ -31,6 +32,9 @@ export function useConfirmarRascunho() {
   const criarPaciente = useCriarPaciente();
   const criarAgendamento = useCriarAgendamento();
   const criarDespesa = useCriarDespesa();
+  // O feedback sai pelo mesmo hook da tela de Ajustes: grava em `feedback` e
+  // avisa o administrador pela `notifica-admin`, que lê o texto pelo id.
+  const enviarFeedback = useEnviarFeedback();
 
   /**
    * Recebe o rascunho já editado e válido. Devolve quantos registros foram
@@ -110,6 +114,14 @@ export function useConfirmarRascunho() {
           });
         });
         return { gravados, restante: faltam.length ? { tipo: 'despesas', itens: faltam } : null };
+      }
+      case 'feedback': {
+        try {
+          await enviarFeedback.mutateAsync(textoDoFeedback(r));
+          return { gravados: 1, restante: null };
+        } catch {
+          return { gravados: 0, restante: r };
+        }
       }
       case 'paciente': {
         let pacienteId: string;

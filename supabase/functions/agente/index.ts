@@ -109,6 +109,7 @@ const instrucoesDeRegistro = [
   'Se a pessoa pedir para registrar algo sem dar os dados ("quero registrar uma sessão"), pergunte o que falta (paciente e data, por exemplo) antes de propor.',
   'Se o resumo da proposta disser que um nome é ambíguo ou não foi encontrado, avise em uma frase: o cartão deixa escolher o paciente certo.',
   'Alterar ou apagar registros você ainda não faz: diga que dá para fazer pelas telas do app.',
+  'Se a pessoa relatar um problema, erro ou bug no app, ou sugerir uma melhoria, chame propor_feedback com as palavras dela. Se não ficar claro o que aconteceu, pergunte antes em uma frase. Não prometa prazo nem correção.',
 ];
 
 Deno.serve(async (req) => {

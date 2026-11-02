@@ -7,6 +7,7 @@ import {
   FormRow,
   Icon,
   ListGroup,
+  MultilineRow,
   PickerRow,
   RowSeparator,
   SegmentedControl,
@@ -30,6 +31,7 @@ import { copyAgente } from './copy';
 import {
   podeConfirmar,
   problemasDoRascunho,
+  rotuloDaCategoria,
   quantidadeDeItens,
   type EstadoDoCartao,
   type ItemDeDespesa,
@@ -78,7 +80,7 @@ export function CartaoDeConfirmacao({
   // Uma chave estável por item: remover uma linha não pode embaralhar o que
   // foi digitado nas outras.
   const [chaves, setChaves] = useState(() =>
-    (inicial.tipo === 'paciente' ? [inicial.paciente] : inicial.itens).map(() => Crypto.randomUUID()),
+    (inicial.tipo === 'paciente' || inicial.tipo === 'feedback' ? [inicial] : inicial.itens).map(() => Crypto.randomUUID()),
   );
   const [gravando, setGravando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -96,7 +98,7 @@ export function CartaoDeConfirmacao({
   /** Troca o item `i` do rascunho, mantendo o tipo. */
   function trocarItem<T>(i: number, novo: T) {
     setRascunho((r) => {
-      if (r.tipo === 'paciente') return r;
+      if (r.tipo === 'paciente' || r.tipo === 'feedback') return r;
       const itens = [...r.itens] as T[];
       itens[i] = novo;
       return { ...r, itens } as Rascunho;
@@ -105,7 +107,7 @@ export function CartaoDeConfirmacao({
 
   function remover(i: number) {
     setRascunho((r) => {
-      if (r.tipo === 'paciente') return r;
+      if (r.tipo === 'paciente' || r.tipo === 'feedback') return r;
       return { ...r, itens: r.itens.filter((_, j) => j !== i) } as Rascunho;
     });
     setChaves((k) => k.filter((_, j) => j !== i));
@@ -126,11 +128,15 @@ export function CartaoDeConfirmacao({
     // Parte gravou: o cartão continua só com o que falta. Nunca mensagem de
     // sucesso quando a escrita falhou (regra dos quatro estados).
     setRascunho(restante);
-    setChaves((restante.tipo === 'paciente' ? [restante.paciente] : restante.itens).map(() => Crypto.randomUUID()));
+    setChaves(
+      (restante.tipo === 'paciente' || restante.tipo === 'feedback' ? [restante] : restante.itens).map(() =>
+        Crypto.randomUUID()
+      ),
+    );
     setErro(c.falhaParcial(gravados));
   }
 
-  const removivel = rascunho.tipo !== 'paciente' && rascunho.itens.length > 1;
+  const removivel = rascunho.tipo !== 'paciente' && rascunho.tipo !== 'feedback' && rascunho.itens.length > 1;
 
   return (
     <View style={{ gap: spacing.sm }}>
@@ -188,6 +194,31 @@ export function CartaoDeConfirmacao({
           </GrupoDoItem>
         ))}
 
+      {rascunho.tipo === 'feedback' && (
+        <ListGroup
+          title={c.titulo.feedback}
+          footer={problemas[0].length ? problemas[0].join(' · ') : c.avisoDoFeedback}
+          footerIsError={problemas[0].length > 0}
+        >
+          <SegmentedGroupContent>
+            <SegmentedControl
+              opcoes={[
+                { valor: 'problema', rotulo: rotuloDaCategoria.problema },
+                { valor: 'sugestao', rotulo: rotuloDaCategoria.sugestao },
+              ]}
+              valor={rascunho.categoria}
+              onChange={(categoria) => setRascunho({ ...rascunho, categoria: categoria as 'problema' | 'sugestao' })}
+              accessibilityLabel={c.titulo.feedback}
+            />
+          </SegmentedGroupContent>
+          <MultilineRow
+            value={rascunho.mensagem}
+            onChangeText={(mensagem) => setRascunho({ ...rascunho, mensagem })}
+            editable={!gravando}
+          />
+        </ListGroup>
+      )}
+
       {rascunho.tipo === 'paciente' && (
         <CamposDePacienteNovo
           rascunho={rascunho}
@@ -198,7 +229,9 @@ export function CartaoDeConfirmacao({
 
       <ListGroup footer={erro ?? undefined} footerIsError={!!erro}>
         <ActionRow
-          label={gravando ? c.registrando : c.confirmar(total)}
+          label={
+            gravando ? c.registrando : rascunho.tipo === 'feedback' ? c.enviarFeedback : c.confirmar(total)
+          }
           onPress={() => void aoConfirmar()}
           disabled={!liberado}
         />
@@ -561,7 +594,7 @@ function CartaoEncerrado({
       >
         {confirmado ? <Icon name="check" color={colors.positive} size={17} /> : null}
         <Text variant="footnote" color={confirmado ? 'positive' : 'secondaryLabel'}>
-          {confirmado ? c.registrado(gravados) : c.cancelado}
+          {confirmado ? (rascunho.tipo === 'feedback' ? c.feedbackEnviado : c.registrado(gravados)) : c.cancelado}
         </Text>
       </View>
     </ListGroup>
@@ -589,6 +622,8 @@ function resumoDoRascunho(r: Rascunho): { rotulo: string; valor: string }[] {
         rotulo: i.tipo_despesa.situacao === 'ok' ? i.tipo_despesa.nome : i.tipo_despesa.termo,
         valor: `${formatarData(i.data)} · ${formatarDinheiro(i.valor)}`,
       }));
+    case 'feedback':
+      return [{ rotulo: rotuloDaCategoria[r.categoria], valor: r.mensagem.length > 40 ? `${r.mensagem.slice(0, 40)}…` : r.mensagem }];
     case 'paciente':
       return [
         { rotulo: r.paciente.nome, valor: r.paciente.preco ? formatarDinheiro(r.paciente.preco) : '' },

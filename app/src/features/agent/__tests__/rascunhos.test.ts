@@ -4,6 +4,7 @@ import {
   problemasDoRascunho,
   quantidadeDeItens,
   rascunhosDaResposta,
+  textoDoFeedback,
   type ItemDeSessao,
   type Rascunho,
 } from '../rascunhos';
@@ -91,5 +92,16 @@ describe('leitura da resposta', () => {
     ]);
     expect(bons.map((r) => r.tipo)).toEqual(['sessoes']);
     expect(rascunhosDaResposta(undefined)).toEqual([]);
+  });
+});
+
+describe('feedback pelo agente', () => {
+  it('mensagem vazia não confirma; o texto enviado leva categoria e origem', () => {
+    expect(podeConfirmar({ tipo: 'feedback', categoria: 'problema', mensagem: ' ' })).toBe(false);
+    const r = { tipo: 'feedback' as const, categoria: 'sugestao' as const, mensagem: 'Agenda do mês inteiro ' };
+    expect(podeConfirmar(r)).toBe(true);
+    expect(quantidadeDeItens(r)).toBe(1);
+    expect(textoDoFeedback(r)).toBe('[Sugestão · via assistente] Agenda do mês inteiro');
+    expect(rascunhosDaResposta([r]).length).toBe(1);
   });
 });
