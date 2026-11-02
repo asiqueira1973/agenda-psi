@@ -76,6 +76,26 @@ pessoa ver. Um "Helena pagou" gravado na Helena errada é pior que nenhum agente
 - Nomes resolvidos no banco com o `unaccent` que já existe. Duas "Ana", o cartão
   pergunta qual.
 
+## Interface (decidido em 02/11/2026)
+
+**O agente É o Início.** O resumo de 13 indicadores sai: é pouco lido, e lucro,
+margem e break-even dependem de despesa, que quase ninguém registra. Os números
+continuam disponíveis — por pergunta ("quanto recebi em outubro?"), lidos da
+mesma `v_dashboard_resumo`, que fica no banco.
+
+- **Ao abrir:** título, campo "Pergunte ou registre algo…" no topo, quatro
+  sugestões tocáveis e o aviso de limite de SMS quando houver.
+- **Depois da primeira frase:** o Início vira a conversa. O campo desce para o
+  rodapé ("Continuar…"), as respostas e os cartões de confirmação ficam no fio,
+  e um cartão confirmado fica marcado como "Registrado". "Nova conversa" no topo
+  limpa e volta ao estado inicial.
+- A conversa vive só na memória do app — não se grava histórico no banco.
+- **Com o sinalizador `agente` desligado:** o Início mostra o resumo antigo. Por
+  isso o código do resumo só é apagado depois que o agente estiver estável.
+
+Alternativa descartada: tela de conversa separada. Um toque a mais justamente no
+registro rápido, que é o caso de uso mais forte.
+
 ## Fases
 
 | Fase | O que entra | Por quê |
