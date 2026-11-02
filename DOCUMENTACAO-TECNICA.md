@@ -449,9 +449,19 @@ Início (plano completo em `docs/agente-plano.md`). **Fase 1: só consultas.**
   `consultar_mes` (`v_financeiro_mensal` e contagem de `sessoes`) e
   `listar_pendencias` (`v_pendencias_por_paciente` e `v_pacientes_cartao`). A IA
   não escreve SQL e não grava nada.
+- **Fase 2, inclusões** (sinalizador `agente_registros`, migration 0015): cinco
+  ferramentas `propor_*` (`propostas.ts`) devolvem rascunhos; o app mostra o
+  cartão de confirmação e grava pelos mesmos hooks das telas de cadastro
+  (`use-confirmar.ts`). Paciente ambíguo nunca é escolhido sozinho. Sessão paga
+  não cria pagamento: o app oferece o pagamento num cartão próprio.
+- **Auditoria** (`agente_auditoria`, migration 0016): uma linha por pergunta,
+  com o texto, resultado, tokens e custo estimado. Tabela de sistema: RLS sem
+  policy; só a Edge Function grava, com service_role e só nela. O texto NÃO vai
+  para o Visão do Produto.
 - Segredo: `ANTHROPIC_API_KEY`.
-- Analytics: `agenda_psi_perguntou_assistente`, com comprimento da pergunta,
-  sucesso e as ferramentas usadas. **Nunca o texto.**
+- Analytics: `agenda_psi_perguntou_assistente` (comprimento, sucesso,
+  ferramentas), `agenda_psi_agente_confirmou` e `agenda_psi_agente_cancelou`
+  (tipo e quantidade). **Nunca o texto.**
 - Desligar em produção: `update feature_flags set ativo = false where chave = 'agente';`
 
 ---

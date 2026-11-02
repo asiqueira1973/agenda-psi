@@ -4,6 +4,7 @@ import { sinalizadorLigado } from '../_shared/feature-flag.ts';
 import { definicoesDeFerramentas, executarFerramenta } from './ferramentas.ts';
 import { validarConversa } from './conversa.ts';
 import { definicoesDePropostas, executarProposta, nomesDePropostas, type Rascunho } from './propostas.ts';
+import { registrarAuditoria, type LinhaDeAuditoria } from './auditoria.ts';
 
 /**
  * Edge Function `agente` — fases 1 (consultas) e 2 (inclusões por cartão) de
@@ -113,32 +114,65 @@ Deno.serve(async (req) => {
   const identidade = await identificarUsuario(req);
   if (!identidade) return json({ error: 'nao_autenticado' }, 401);
   const { usuarioId, cliente } = identidade;
+  const inicio = Date.now();
+
+  // Lido antes das checagens para a auditoria saber O QUE foi perguntado até
+  // quando a pergunta é recusada.
+  let corpo: unknown = null;
+  try {
+    corpo = await req.json();
+  } catch {
+    corpo = null;
+  }
+  const ultima = (corpo as { mensagens?: Array<{ texto?: unknown }> } | null)?.mensagens?.at(-1)?.texto;
+
+  // Contadores da pergunta, somados a cada rodada, para a auditoria.
+  const uso = { rodadas: 0, entrada: 0, saida: 0 };
+  const usadas: string[] = [];
+  const rascunhos: Rascunho[] = [];
+
+  /**
+   * Toda saída depois de identificar a pessoa passa por aqui: grava a linha de
+   * auditoria (0016) e devolve a resposta. A auditoria é aguardada para não
+   * ser cortada quando a função encerra, mas nunca lança.
+   */
+  async function responder(resultado: LinhaDeAuditoria['resultado'], resposta: Response) {
+    await registrarAuditoria({
+      usuarioId,
+      pergunta: typeof ultima === 'string' ? ultima : '',
+      resultado,
+      modelo: uso.rodadas > 0 ? MODELO : null,
+      rodadas: uso.rodadas,
+      tokensEntrada: uso.entrada,
+      tokensSaida: uso.saida,
+      ferramentas: usadas,
+      rascunhos: rascunhos.length,
+      duracaoMs: Date.now() - inicio,
+    });
+    return resposta;
+  }
 
   // Conferido a cada chamada: desligar no painel vale na próxima pergunta.
   if (!(await sinalizadorLigado(cliente, 'agente'))) {
-    return json({ error: 'desligado' }, 403);
+    return responder('desligado', json({ error: 'desligado' }, 403));
   }
 
   // As inclusões têm interruptor próprio: desligá-las mantém as consultas.
   const registros = await sinalizadorLigado(cliente, 'agente_registros');
 
-  if (excedeuOLimite(usuarioId)) return json({ error: 'limite_excedido' }, 429);
-
-  let corpo: unknown;
-  try {
-    corpo = await req.json();
-  } catch {
-    return json({ error: 'conversa_invalida' }, 400);
+  if (excedeuOLimite(usuarioId)) {
+    return responder('limite_excedido', json({ error: 'limite_excedido' }, 429));
   }
+
   const conversa = validarConversa(corpo);
-  if (!conversa) return json({ error: 'conversa_invalida' }, 400);
+  if (!conversa) return responder('conversa_invalida', json({ error: 'conversa_invalida' }, 400));
 
   // trim: chave colada no painel costuma vir com quebra de linha no fim, e o
   // fetch recusa cabeçalho com \n antes mesmo de sair do servidor.
   const chave = Deno.env.get('ANTHROPIC_API_KEY')?.trim();
   if (!chave) {
     console.error('agente: ANTHROPIC_API_KEY ausente nos secrets');
-    return json({ error: 'agente_indisponivel' }, 502);
+    return responder('erro', json({ error: 'agente_indisponivel' }, 502));
   }
 
   // A conversa do app vira o formato da API. Só texto: os resultados de
@@ -147,8 +181,6 @@ Deno.serve(async (req) => {
   const mensagens: Array<{ role: 'user' | 'assistant'; content: unknown }> = conversa.map(
     (m) => ({ role: m.papel === 'usuario' ? 'user' : 'assistant', content: m.texto }),
   );
-  const usadas: string[] = [];
-  const rascunhos: Rascunho[] = [];
   // Em que passo a falha aconteceu, para o log. Nunca a mensagem do erro: a de
   // cabeçalho inválido pode citar o valor da chave.
   let etapa = 'chamada';
@@ -178,16 +210,21 @@ Deno.serve(async (req) => {
       if (!resposta.ok) {
         // O corpo do erro pode citar a conversa; registra só o status.
         console.error(`agente: API respondeu ${resposta.status}`);
-        return json({ error: 'agente_indisponivel' }, 502);
+        return responder('erro', json({ error: 'agente_indisponivel' }, 502));
       }
 
       const dados = await resposta.json() as {
         stop_reason: string;
+        usage?: { input_tokens?: number; output_tokens?: number };
         content: Array<
           | { type: 'text'; text: string }
           | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
         >;
       };
+
+      uso.rodadas++;
+      uso.entrada += dados.usage?.input_tokens ?? 0;
+      uso.saida += dados.usage?.output_tokens ?? 0;
 
       if (dados.stop_reason !== 'tool_use') {
         const texto = dados.content
@@ -195,8 +232,8 @@ Deno.serve(async (req) => {
           .map((b) => (b as { text: string }).text)
           .join('\n')
           .trim();
-        if (!texto) return json({ error: 'agente_indisponivel' }, 502);
-        return json({ resposta: texto, ferramentas: usadas, rascunhos });
+        if (!texto) return responder('erro', json({ error: 'agente_indisponivel' }, 502));
+        return responder('ok', json({ resposta: texto, ferramentas: usadas, rascunhos }));
       }
 
       // A IA pediu ferramentas: executa todas e devolve os resultados.
@@ -236,7 +273,7 @@ Deno.serve(async (req) => {
     }
 
     // Esgotou as rodadas sem resposta final.
-    return json({ error: 'agente_indisponivel' }, 502);
+    return responder('erro', json({ error: 'agente_indisponivel' }, 502));
   } catch (e) {
     // A mensagem do erro vai para o log com a chave apagada: um cabeçalho
     // inválido costuma citar o valor. O formato da chave (tamanho, prefixo,
@@ -246,6 +283,6 @@ Deno.serve(async (req) => {
       `agente: falha na etapa ${etapa}: ${e instanceof Error ? e.name : ''} ${mensagem}`,
       `| chave: tamanho=${chave.length} prefixo_ok=${chave.startsWith('sk-ant-')} ascii=${/^[\x21-\x7e]+$/.test(chave)}`,
     );
-    return json({ error: 'agente_indisponivel' }, 502);
+    return responder('erro', json({ error: 'agente_indisponivel' }, 502));
   }
 });
