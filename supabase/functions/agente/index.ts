@@ -33,10 +33,12 @@ import { validarConversa } from './conversa.ts';
  */
 
 /**
- * Modelo das consultas. Haiku: responde rápido e custa pouco, e consulta é
- * escolher uma de três ferramentas. A fase 2 (escrita) reavalia.
+ * Modelo do agente. Sonnet 5, decidido em 02/11/2026: tirar de uma frase
+ * "segunda passada Beatriz e Caio pagaram, Helena não" exige mais que escolher
+ * uma consulta, e o Haiku erra mais data relativa e lote. Com o volume atual do
+ * app, a diferença de custo é pequena.
  */
-const MODELO = 'claude-haiku-4-5-20251001';
+const MODELO = 'claude-sonnet-5';
 
 /** Rodadas máximas de ferramenta por pergunta. Evita laço caro se a IA insistir. */
 const MAX_RODADAS = 4;

@@ -441,8 +441,8 @@ Início (plano completo em `docs/agente-plano.md`). **Fase 1: só consultas.**
 - O app manda `{ mensagens: [{ papel, texto }] }` para a Edge Function `agente`.
   **Sem `usuario_id`** (pegadinha 3).
 - A função confere o sinalizador `agente` a cada chamada (403 se desligado) e
-  roda com o JWT do usuário. O modelo (Claude Haiku 4.5) só escolhe entre quatro
-  ferramentas de leitura: `agenda_do_dia` (`view_agenda_semana_padrao`, com
+  roda com o JWT do usuário. O modelo (Claude Sonnet 5) só escolhe entre cinco
+  ferramentas de leitura: `listar_pacientes` (`v_pacientes_cartao`), `agenda_do_dia` (`view_agenda_semana_padrao`, com
   `dia_semana` 1 = segunda), `buscar_paciente` (`v_pacientes_cartao`),
   `consultar_mes` (`v_financeiro_mensal` e contagem de `sessoes`) e
   `listar_pendencias` (`v_pendencias_por_paciente` e `v_pacientes_cartao`). A IA

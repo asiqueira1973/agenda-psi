@@ -21,13 +21,25 @@ export const definicoesDeFerramentas = [
   {
     name: 'buscar_paciente',
     description:
-      'Procura pacientes pelo nome (aceita parte do nome, sem acento). Devolve até 5, com status, preço atual de referência, sessões realizadas, sessões não pagas, última sessão, primeira consulta e total pago. Use sempre que a pergunta citar um paciente pelo nome.',
+      'Procura pacientes pelo nome (aceita parte do nome, sem acento). Devolve até 5, com status, se recebe lembrete por SMS, preço atual de referência, sessões realizadas, sessões não pagas, última sessão, primeira consulta, total pago e TODOS os horários fixos do paciente na agenda semanal (dia da semana, início e fim). Use sempre que a pergunta citar um paciente pelo nome, inclusive "quais os horários do fulano".',
     input_schema: {
       type: 'object',
       properties: {
         nome: { type: 'string', description: 'Nome ou parte do nome do paciente.' },
       },
       required: ['nome'],
+    },
+  },
+  {
+    name: 'listar_pacientes',
+    description:
+      'Lista os nomes dos pacientes, com filtros opcionais: status (ativo ou inativo) e se recebe lembrete por SMS. Use para "quantos pacientes ativos eu tenho?", "quem tem aviso de SMS ligado?" ou "quais pacientes estão inativos?".',
+    input_schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', enum: ['ativo', 'inativo'], description: 'Filtra por status. Omita para todos.' },
+        receber_sms: { type: 'boolean', description: 'true para só quem recebe SMS, false para só quem não recebe. Omita para todos.' },
+      },
     },
   },
   {
@@ -90,6 +102,8 @@ export async function executarFerramenta(
   switch (nome) {
     case 'buscar_paciente':
       return await buscarPaciente(String(entrada.nome ?? ''), cliente, usuarioId);
+    case 'listar_pacientes':
+      return await listarPacientes(entrada, cliente, usuarioId);
     case 'consultar_mes':
       return await consultarMes(String(entrada.mes ?? ''), cliente, usuarioId);
     case 'agenda_do_dia':
@@ -109,7 +123,7 @@ async function buscarPaciente(termo: string, cliente: SupabaseClient, usuarioId:
   const { data, error } = await cliente
     .from('v_pacientes_cartao')
     .select(
-      'nome_completo, status, preco_vigente, sessoes_realizadas, sessoes_nao_pagas, ultima_sessao, primeira_consulta, valor_total_pago_ate_hoje',
+      'paciente_id, nome_completo, status, receber_sms, preco_vigente, sessoes_realizadas, sessoes_nao_pagas, ultima_sessao, primeira_consulta, valor_total_pago_ate_hoje',
     )
     .eq('usuario_id', usuarioId);
   if (error) return { erro: 'falha ao ler pacientes' };
@@ -122,10 +136,53 @@ async function buscarPaciente(termo: string, cliente: SupabaseClient, usuarioId:
     return palavras.every((w) => nome.includes(w));
   });
 
+  const primeiros = achados.slice(0, 5);
+
+  // Os horários fixos de cada um, numa leitura só.
+  const ids = primeiros.map((p) => p.paciente_id).filter((id): id is string => !!id);
+  const horarios = ids.length
+    ? await cliente
+      .from('view_agenda_semana_padrao')
+      .select('paciente_id, dia_semana, dia_semana_label, hora_inicio, hora_fim')
+      .eq('usuario_id', usuarioId)
+      .in('paciente_id', ids)
+      .order('dia_semana', { ascending: true })
+      .order('hora_inicio', { ascending: true })
+    : { data: [], error: null };
+  if (horarios.error) return { erro: 'falha ao ler a agenda' };
+
   return {
     total_encontrado: achados.length,
-    pacientes: achados.slice(0, 5),
+    // O id fica de fora do que a IA lê: ela não precisa dele para responder.
+    pacientes: primeiros.map(({ paciente_id, ...p }) => ({
+      ...p,
+      horarios_fixos: (horarios.data ?? [])
+        .filter((h) => h.paciente_id === paciente_id)
+        .map((h) => ({ dia: h.dia_semana_label, inicio: h.hora_inicio?.slice(0, 5), fim: h.hora_fim?.slice(0, 5) })),
+    })),
   };
+}
+
+/** Nomes dos pacientes, com filtro opcional por status e por SMS. */
+async function listarPacientes(
+  entrada: Record<string, unknown>,
+  cliente: SupabaseClient,
+  usuarioId: string,
+) {
+  let consulta = cliente
+    .from('v_pacientes_cartao')
+    .select('nome_completo, status, receber_sms')
+    .eq('usuario_id', usuarioId)
+    .order('nome_completo', { ascending: true });
+  if (entrada.status === 'ativo' || entrada.status === 'inativo') {
+    consulta = consulta.eq('status', entrada.status);
+  }
+  if (typeof entrada.receber_sms === 'boolean') {
+    consulta = consulta.eq('receber_sms', entrada.receber_sms);
+  }
+  const { data, error } = await consulta;
+  if (error) return { erro: 'falha ao ler pacientes' };
+  return { total: data?.length ?? 0, pacientes: data ?? [] };
 }
 
 /** Recebido, pendente e sessões realizadas de um mês. */
