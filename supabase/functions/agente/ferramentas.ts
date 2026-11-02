@@ -94,6 +94,18 @@ export const definicoesDeFerramentas = [
     },
   },
   {
+    name: 'agenda_da_semana',
+    description:
+      'Todos os horários fixos da agenda semanal na semana (segunda a domingo) que contém a data dada, com a data de cada dia. Use para "qual a minha agenda essa semana?" ou "e semana que vem?". Prefira esta a chamar agenda_do_dia sete vezes.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        data: { type: 'string', description: 'Qualquer data da semana desejada, AAAA-MM-DD.' },
+      },
+      required: ['data'],
+    },
+  },
+  {
     name: 'listar_pendencias',
     description:
       'Lista os pacientes com pagamentos pendentes ou vencidos, com quantidade, total pendente e o vencimento mais antigo, e também os pacientes com sessões marcadas como "não pagou". Use para "quem não pagou?" ou "quem está me devendo?".',
@@ -139,6 +151,8 @@ export async function executarFerramenta(
       return await consultarMes(String(entrada.mes ?? ''), cliente, usuarioId);
     case 'agenda_do_dia':
       return await agendaDoDia(String(entrada.data ?? ''), cliente, usuarioId);
+    case 'agenda_da_semana':
+      return await agendaDaSemana(String(entrada.data ?? ''), cliente, usuarioId);
     case 'listar_pendencias':
       return await listarPendencias(cliente, usuarioId);
     default:
@@ -403,6 +417,46 @@ async function agendaDoDia(data: string, cliente: SupabaseClient, usuarioId: str
       inicio: h.hora_inicio?.slice(0, 5),
       fim: h.hora_fim?.slice(0, 5),
       paciente: h.paciente_nome,
+    })),
+  };
+}
+
+/**
+ * As datas de segunda a domingo da semana que contém `data`, na ordem.
+ * Devolve `null` se a data não for válida.
+ */
+export function diasDaSemanaDe(data: string): string[] | null {
+  const dia = diaDaSemanaDoBanco(data);
+  if (dia === null) return null;
+  const base = new Date(`${data}T00:00:00Z`);
+  return [1, 2, 3, 4, 5, 6, 7].map((d) => {
+    const x = new Date(base);
+    x.setUTCDate(base.getUTCDate() + (d - dia));
+    return x.toISOString().slice(0, 10);
+  });
+}
+
+/** A semana-padrão inteira, agrupada por dia e com a data de cada um. */
+async function agendaDaSemana(data: string, cliente: SupabaseClient, usuarioId: string) {
+  const datas = diasDaSemanaDe(data);
+  if (!datas) return { erro: 'data deve ser AAAA-MM-DD' };
+
+  const { data: horarios, error } = await cliente
+    .from('view_agenda_semana_padrao')
+    .select('dia_semana, dia_semana_label, hora_inicio, hora_fim, paciente_nome')
+    .eq('usuario_id', usuarioId)
+    .order('dia_semana', { ascending: true })
+    .order('hora_inicio', { ascending: true });
+  if (error) return { erro: 'falha ao ler a agenda' };
+
+  const nomes = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+  return {
+    dias: datas.map((d, i) => ({
+      dia: nomes[i],
+      data: d,
+      horarios: (horarios ?? [])
+        .filter((h) => h.dia_semana === i + 1)
+        .map((h) => ({ inicio: h.hora_inicio?.slice(0, 5), fim: h.hora_fim?.slice(0, 5), paciente: h.paciente_nome })),
     })),
   };
 }
