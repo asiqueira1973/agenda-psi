@@ -10,7 +10,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-# Saída: o conjunto da 5.0.2. As outras cinco vêm das artes publicadas na
+# Saída: o conjunto da 5.0.2. As outras (03 a 07) vêm das artes publicadas na
 # 5.0.1 (telas-iphone-loja-5.0.1/), convertidas para 1206 x 2622.
 SAIDA=../telas-iphone-5.0.2
 
@@ -26,4 +26,5 @@ while IFS='|' read -r saida captura titulo subtitulo; do
   echo "ok: $saida"
 done <<'LISTA'
 01-agente.png|00-agente.png|É só escrever o que aconteceu|O assistente prepara o registro, e você confirma.
+02-agente-consulta.png|00-agente-consulta.png|Pergunte sobre o consultório|Agenda, pagamentos e pacientes, respondidos na hora.
 LISTA
