@@ -477,6 +477,9 @@ Início (plano completo em `docs/agente-plano.md`). **Fase 1: só consultas.**
   semana de 7 dias corridos, contados na `agente_auditoria` (só `ok` e `erro`).
   Ao estourar, a função responde 200 com a frase do limite, que até a 5.0.2
   mostra como resposta do agente. Substituiu o limite de 20 por hora em memória.
+- **Cache de prompt**: marcador nas instruções (guarda ferramentas +
+  instruções) e na última mensagem (a 2ª rodada reaproveita a 1ª). A auditoria
+  separa tokens normais, gravados (1,25×) e lidos do cache (0,1×) no custo.
 - **Auditoria** (`agente_auditoria`, migration 0016): uma linha por pergunta,
   com o texto, resultado, tokens e custo estimado. Tabela de sistema: RLS sem
   policy; só a Edge Function grava, com service_role e só nela. O texto NÃO vai

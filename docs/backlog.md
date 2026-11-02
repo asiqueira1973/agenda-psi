@@ -41,11 +41,9 @@ Iowa, conta reviewer@apple.com), que digitou letras aleatórias:
 
 ## Depois
 
-- **Custo do agente.** Cerca de US$ 0,03 por pergunta, quase todo das
-  definições de ferramentas reenviadas a cada chamada. Cache de prompt da
-  Anthropic corta boa parte. Conferir também o preço real do Sonnet 5 em
+- **Preço do Sonnet 5.** Conferir o preço real em
   `supabase/functions/agente/auditoria.ts` (hoje US$ 3 / US$ 15 por milhão,
-  valor de gerações anteriores).
+  valor de gerações anteriores). O cache de prompt entrou em 02/11/2026.
 - **Esqueleto infinito** quando uma aba é aberta sem sessão (link direto que
   passa por fora da proteção de rota).
 - **Sessões com data futura** (~25% das registradas) contam como realizadas e

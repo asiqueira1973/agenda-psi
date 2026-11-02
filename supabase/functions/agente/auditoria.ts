@@ -21,9 +21,28 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
  */
 export const PRECO_POR_MILHAO = { entrada: 3, saida: 15 } as const;
 
-/** Custo estimado em dólar de uma pergunta. */
-export function custoEstimado(tokensEntrada: number, tokensSaida: number): number {
-  const custo = (tokensEntrada * PRECO_POR_MILHAO.entrada + tokensSaida * PRECO_POR_MILHAO.saida) / 1_000_000;
+/**
+ * Multiplicadores do cache de prompt sobre o preço de entrada (tabela da
+ * Anthropic): gravar no cache custa 1,25×; ler do cache, 0,1×.
+ */
+export const FATOR_CACHE = { gravacao: 1.25, leitura: 0.1 } as const;
+
+/**
+ * Custo estimado em dólar de uma pergunta.
+ *
+ * Recebe os tokens de entrada normais, os gravados no cache, os lidos do cache
+ * e os de saída — a API devolve os três de entrada separados, e somá-los pelo
+ * preço cheio superestimaria o custo depois do cache.
+ */
+export function custoEstimado(
+  tokensEntrada: number,
+  tokensSaida: number,
+  cacheGravado = 0,
+  cacheLido = 0,
+): number {
+  const entrada = (tokensEntrada + cacheGravado * FATOR_CACHE.gravacao + cacheLido * FATOR_CACHE.leitura) *
+    PRECO_POR_MILHAO.entrada;
+  const custo = (entrada + tokensSaida * PRECO_POR_MILHAO.saida) / 1_000_000;
   return Math.round(custo * 1_000_000) / 1_000_000;
 }
 
@@ -33,8 +52,12 @@ export type LinhaDeAuditoria = {
   resultado: 'ok' | 'erro' | 'limite_excedido' | 'conversa_invalida' | 'desligado';
   modelo: string | null;
   rodadas: number;
+  /** Todos os tokens de entrada (normais + cache), para o volume. */
   tokensEntrada: number;
   tokensSaida: number;
+  /** Partes da entrada que passaram pelo cache — só para o custo. */
+  cacheGravado: number;
+  cacheLido: number;
   ferramentas: string[];
   rascunhos: number;
   duracaoMs: number;
@@ -62,7 +85,12 @@ export async function registrarAuditoria(l: LinhaDeAuditoria): Promise<void> {
       tokens_saida: l.tokensSaida,
       preco_entrada_por_mi: PRECO_POR_MILHAO.entrada,
       preco_saida_por_mi: PRECO_POR_MILHAO.saida,
-      custo_estimado_usd: custoEstimado(l.tokensEntrada, l.tokensSaida),
+      custo_estimado_usd: custoEstimado(
+        l.tokensEntrada - l.cacheGravado - l.cacheLido,
+        l.tokensSaida,
+        l.cacheGravado,
+        l.cacheLido,
+      ),
       ferramentas: l.ferramentas,
       rascunhos: l.rascunhos,
       duracao_ms: l.duracaoMs,

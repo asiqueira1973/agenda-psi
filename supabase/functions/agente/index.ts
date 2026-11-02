@@ -112,6 +112,24 @@ const instrucoesDeRegistro = [
   'Se a pessoa relatar um problema, erro ou bug no app, sugerir uma melhoria ou elogiar o app, chame propor_feedback com as palavras dela (elogio também vai para a equipe). Se não ficar claro o que aconteceu, pergunte antes em uma frase. Não prometa prazo nem correção.',
 ];
 
+/**
+ * Cópia das mensagens com o marcador de cache no último bloco da última
+ * mensagem. Não mexe no array original, que continua crescendo a cada rodada.
+ */
+function comMarcaDeCache(
+  mensagens: Array<{ role: 'user' | 'assistant'; content: unknown }>,
+): Array<{ role: 'user' | 'assistant'; content: unknown }> {
+  if (mensagens.length === 0) return mensagens;
+  const copia = mensagens.slice();
+  const ultima = copia[copia.length - 1];
+  const blocos = typeof ultima.content === 'string'
+    ? [{ type: 'text', text: ultima.content }]
+    : (ultima.content as Array<Record<string, unknown>>).slice();
+  blocos[blocos.length - 1] = { ...blocos[blocos.length - 1], cache_control: { type: 'ephemeral' } };
+  copia[copia.length - 1] = { ...ultima, content: blocos };
+  return copia;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -131,7 +149,7 @@ Deno.serve(async (req) => {
   const ultima = (corpo as { mensagens?: Array<{ texto?: unknown }> } | null)?.mensagens?.at(-1)?.texto;
 
   // Contadores da pergunta, somados a cada rodada, para a auditoria.
-  const uso = { rodadas: 0, entrada: 0, saida: 0 };
+  const uso = { rodadas: 0, entrada: 0, saida: 0, cacheGravado: 0, cacheLido: 0 };
   const usadas: string[] = [];
   const rascunhos: Rascunho[] = [];
 
@@ -150,6 +168,8 @@ Deno.serve(async (req) => {
       modelo: uso.rodadas > 0 ? MODELO : null,
       rodadas: uso.rodadas,
       tokensEntrada: uso.entrada,
+      cacheGravado: uso.cacheGravado,
+      cacheLido: uso.cacheLido,
       tokensSaida: uso.saida,
       ferramentas: usadas,
       rascunhos: rascunhos.length,
@@ -221,10 +241,16 @@ Deno.serve(async (req) => {
           model: MODELO,
           // Folga para um lote grande de propostas numa chamada só.
           max_tokens: 2000,
-          system: instrucoes(registros),
+          // Cache de prompt: as ferramentas e as instruções são iguais em toda
+          // chamada (mudam só com a data, os sinalizadores e a versão do app),
+          // e são a maior parte dos ~14 mil tokens de entrada. O marcador na
+          // instrução guarda ferramentas + instruções; o da última mensagem
+          // guarda a conversa, para a 2ª rodada da mesma pergunta reaproveitar
+          // a 1ª. Leitura do cache custa 10% do preço de entrada.
+          system: [{ type: 'text', text: instrucoes(registros), cache_control: { type: 'ephemeral' } }],
           // Sem o sinalizador, as propostas nem são oferecidas ao modelo.
           tools: registros ? [...definicoesDeFerramentas, ...propostasOferecidas] : definicoesDeFerramentas,
-          messages: mensagens,
+          messages: comMarcaDeCache(mensagens),
         }),
         signal: AbortSignal.timeout(25_000),
       });
@@ -238,7 +264,12 @@ Deno.serve(async (req) => {
 
       const dados = await resposta.json() as {
         stop_reason: string;
-        usage?: { input_tokens?: number; output_tokens?: number };
+        usage?: {
+          input_tokens?: number;
+          output_tokens?: number;
+          cache_creation_input_tokens?: number;
+          cache_read_input_tokens?: number;
+        };
         content: Array<
           | { type: 'text'; text: string }
           | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
@@ -246,7 +277,13 @@ Deno.serve(async (req) => {
       };
 
       uso.rodadas++;
-      uso.entrada += dados.usage?.input_tokens ?? 0;
+      const gravado = dados.usage?.cache_creation_input_tokens ?? 0;
+      const lido = dados.usage?.cache_read_input_tokens ?? 0;
+      uso.cacheGravado += gravado;
+      uso.cacheLido += lido;
+      // `input_tokens` não inclui o que passou pelo cache: soma tudo para o
+      // volume, e a auditoria separa de novo para o custo.
+      uso.entrada += (dados.usage?.input_tokens ?? 0) + gravado + lido;
       uso.saida += dados.usage?.output_tokens ?? 0;
 
       if (dados.stop_reason !== 'tool_use') {
