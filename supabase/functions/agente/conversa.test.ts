@@ -1,5 +1,5 @@
 import { assertEquals } from 'jsr:@std/assert@1';
-import { falaDeCartao, limparNotasImitadas, validarConversa } from './conversa.ts';
+import { falaDeCartao, limparNotasImitadas, semNotasDoApp, validarConversa } from './conversa.ts';
 
 const u = (texto: string) => ({ papel: 'usuario', texto });
 const a = (texto: string) => ({ papel: 'agente', texto });
@@ -44,4 +44,12 @@ Deno.test('resposta que promete cartão é reconhecida; consulta não', () => {
   assertEquals(falaDeCartao('Montei o cadastro de Pedro Cardoso'), true);
   assertEquals(falaDeCartao('Confira o cartão da sessão'), true);
   assertEquals(falaDeCartao('O Roberto tem horário às segundas, das 8h às 9h.'), false);
+});
+
+Deno.test('auditoria guarda só o que a pessoa escreveu', () => {
+  assertEquals(
+    semNotasDoApp('(nota do app sobre a resposta anterior: cartão de paciente novo confirmado e gravado)\nMuito legal o app'),
+    'Muito legal o app',
+  );
+  assertEquals(semNotasDoApp('quem não pagou?'), 'quem não pagou?');
 });

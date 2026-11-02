@@ -74,7 +74,7 @@ export type Rascunho =
   | { tipo: 'paciente'; paciente: DadosDePacienteNovo; horarios: Omit<ItemDeHorario, 'paciente'>[] }
   | { tipo: 'horarios'; itens: ItemDeHorario[] }
   | { tipo: 'despesas'; itens: ItemDeDespesa[] }
-  | { tipo: 'feedback'; categoria: 'problema' | 'sugestao'; mensagem: string };
+  | { tipo: 'feedback'; categoria: 'problema' | 'sugestao' | 'elogio'; mensagem: string };
 
 /** Estado de um cartão na conversa. */
 export type EstadoDoCartao = 'aberto' | 'confirmado' | 'cancelado';
@@ -121,7 +121,7 @@ export function problemasDoRascunho(r: Rascunho): string[][] {
       ]);
     case 'feedback':
       // Mesma regra da tela de feedback: mensagem obrigatória (spec 8.10).
-      return [r.mensagem.trim() ? [] : ['Escreva o que aconteceu ou a sugestão']];
+      return [r.mensagem.trim() ? [] : ['Escreva a mensagem']];
     case 'paciente': {
       const nome = validarNome(r.paciente.nome);
       const telefone = validarTelefone(r.paciente.telefone ?? '');
@@ -176,7 +176,7 @@ export function ofertaDePagamento(sessoes: ItemDeSessao[]): Rascunho | null {
 }
 
 /** Rótulo da categoria do feedback, como aparece no cartão e no texto enviado. */
-export const rotuloDaCategoria = { problema: 'Problema', sugestao: 'Sugestão' } as const;
+export const rotuloDaCategoria = { problema: 'Problema', sugestao: 'Sugestão', elogio: 'Elogio' } as const;
 
 /**
  * O texto que vai para a tabela `feedback`. A tabela não tem coluna de tipo,

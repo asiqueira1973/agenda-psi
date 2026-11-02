@@ -2,7 +2,7 @@ import { identificarUsuario } from '../_shared/auth.ts';
 import { corsHeaders, json } from '../_shared/cors.ts';
 import { sinalizadorLigado } from '../_shared/feature-flag.ts';
 import { definicoesDeFerramentas, executarFerramenta } from './ferramentas.ts';
-import { falaDeCartao, limparNotasImitadas, validarConversa } from './conversa.ts';
+import { falaDeCartao, limparNotasImitadas, semNotasDoApp, validarConversa } from './conversa.ts';
 import { definicoesDePropostas, executarProposta, nomesDePropostas, type Rascunho } from './propostas.ts';
 import { registrarAuditoria, type LinhaDeAuditoria } from './auditoria.ts';
 
@@ -109,7 +109,7 @@ const instrucoesDeRegistro = [
   'Se a pessoa pedir para registrar algo sem dar os dados ("quero registrar uma sessão"), pergunte o que falta (paciente e data, por exemplo) antes de propor.',
   'Se o resumo da proposta disser que um nome é ambíguo ou não foi encontrado, avise em uma frase: o cartão deixa escolher o paciente certo.',
   'Alterar ou apagar registros você ainda não faz: diga que dá para fazer pelas telas do app.',
-  'Se a pessoa relatar um problema, erro ou bug no app, ou sugerir uma melhoria, chame propor_feedback com as palavras dela. Se não ficar claro o que aconteceu, pergunte antes em uma frase. Não prometa prazo nem correção.',
+  'Se a pessoa relatar um problema, erro ou bug no app, sugerir uma melhoria ou elogiar o app, chame propor_feedback com as palavras dela (elogio também vai para a equipe). Se não ficar claro o que aconteceu, pergunte antes em uma frase. Não prometa prazo nem correção.',
 ];
 
 Deno.serve(async (req) => {
@@ -143,7 +143,9 @@ Deno.serve(async (req) => {
   async function responder(resultado: LinhaDeAuditoria['resultado'], resposta: Response) {
     await registrarAuditoria({
       usuarioId,
-      pergunta: typeof ultima === 'string' ? ultima : '',
+      // Só o que a pessoa escreveu: a nota do app sobre cartões anteriores,
+      // que vai no começo da fala dela, não é pergunta.
+      pergunta: typeof ultima === 'string' ? semNotasDoApp(ultima) : '',
       resultado,
       modelo: uso.rodadas > 0 ? MODELO : null,
       rodadas: uso.rodadas,

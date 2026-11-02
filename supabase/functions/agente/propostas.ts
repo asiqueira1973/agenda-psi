@@ -87,7 +87,7 @@ export type Rascunho =
   }
   | { tipo: 'horarios'; itens: ItemDeHorario[] }
   | { tipo: 'despesas'; itens: ItemDeDespesa[] }
-  | { tipo: 'feedback'; categoria: 'problema' | 'sugestao'; mensagem: string };
+  | { tipo: 'feedback'; categoria: 'problema' | 'sugestao' | 'elogio'; mensagem: string };
 
 // ---------------------------------------------------------------------------
 // Definições para a API
@@ -243,14 +243,14 @@ export const definicoesDePropostas = [
   {
     name: 'propor_feedback',
     description:
-      'Monta o rascunho de um feedback para a equipe do Agenda Psi: um problema, erro ou bug no app, ou uma sugestão de melhoria. Não envia nada: a pessoa confere o texto num cartão e confirma. Use quando a pessoa reclamar de algo que não funciona, relatar um erro ou sugerir uma melhoria no app.',
+      'Monta o rascunho de um feedback para a equipe do Agenda Psi: um problema, erro ou bug no app, uma sugestão de melhoria, ou um elogio. Não envia nada: a pessoa confere o texto num cartão e confirma. Use quando a pessoa reclamar de algo que não funciona, relatar um erro, sugerir uma melhoria ou elogiar o app.',
     input_schema: {
       type: 'object',
       properties: {
         categoria: {
           type: 'string',
-          enum: ['problema', 'sugestao'],
-          description: 'problema para erro, bug ou algo que não funciona; sugestao para melhoria ou ideia.',
+          enum: ['problema', 'sugestao', 'elogio'],
+          description: 'problema para erro, bug ou algo que não funciona; sugestao para melhoria ou ideia; elogio para quando a pessoa diz que gostou.',
         },
         mensagem: {
           type: 'string',
@@ -526,7 +526,7 @@ function proporPaciente(e: Entrada): ResultadoDeProposta {
 export function proporFeedback(e: Entrada): ResultadoDeProposta {
   const mensagem = typeof e.mensagem === 'string' ? e.mensagem.trim() : '';
   if (!mensagem) return { erro: 'mensagem vazia' };
-  const categoria = e.categoria === 'sugestao' ? 'sugestao' : 'problema';
+  const categoria = e.categoria === 'sugestao' || e.categoria === 'elogio' ? e.categoria : 'problema';
   return {
     rascunho: { tipo: 'feedback', categoria, mensagem: mensagem.slice(0, 2000) },
     resumo: { categoria, mensagem },

@@ -205,9 +205,12 @@ export function CartaoDeConfirmacao({
               opcoes={[
                 { valor: 'problema', rotulo: rotuloDaCategoria.problema },
                 { valor: 'sugestao', rotulo: rotuloDaCategoria.sugestao },
+                { valor: 'elogio', rotulo: rotuloDaCategoria.elogio },
               ]}
               valor={rascunho.categoria}
-              onChange={(categoria) => setRascunho({ ...rascunho, categoria: categoria as 'problema' | 'sugestao' })}
+              onChange={(categoria) =>
+                setRascunho({ ...rascunho, categoria: categoria as 'problema' | 'sugestao' | 'elogio' })
+              }
               accessibilityLabel={c.titulo.feedback}
             />
           </SegmentedGroupContent>

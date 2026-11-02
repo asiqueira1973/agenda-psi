@@ -40,3 +40,8 @@ export function limparNotasImitadas(texto: string): string {
 export function falaDeCartao(texto: string): boolean {
   return /cart[ãa]o|montei|preparei|registrei|cadastrei|gravei/i.test(texto);
 }
+
+/** Tira as linhas "(nota do app …)" do começo de uma fala da pessoa. */
+export function semNotasDoApp(texto: string): string {
+  return texto.replace(/^\(nota do app[^\n]*\)\n?/gm, '').trim();
+}

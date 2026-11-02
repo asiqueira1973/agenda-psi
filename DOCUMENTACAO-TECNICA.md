@@ -454,7 +454,7 @@ Início (plano completo em `docs/agente-plano.md`). **Fase 1: só consultas.**
   cartão de confirmação e grava pelos mesmos hooks das telas de cadastro
   (`use-confirmar.ts`). Paciente ambíguo nunca é escolhido sozinho. Sessão paga
   não cria pagamento: o app oferece o pagamento num cartão próprio.
-- **Feedback pelo agente** (`propor_feedback`): problema ou sugestão vira um
+- **Feedback pelo agente** (`propor_feedback`): problema, sugestão ou elogio vira um
   cartão com o texto editável; o envio usa o mesmo `useEnviarFeedback` da tela
   de Ajustes (grava em `feedback` e chama `notifica-admin`). A tabela não tem
   coluna de tipo: a mensagem vai como `[Problema · via assistente] …`.
