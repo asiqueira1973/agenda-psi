@@ -1,7 +1,6 @@
 import { useRef, useState, type ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   TextInput,
@@ -35,9 +34,10 @@ import { copyAgente } from './copy';
  * Só aparece com o sinalizador `agente` ligado; desligado, o Início mostra o
  * resumo de sempre. Quem decide é a tela `(tabs)/index.tsx`.
  *
- * Teclado: no iOS o KeyboardAvoidingView empurra o campo para cima. No Android
- * não precisa — a janela já se redimensiona sozinha com o teclado (modo
- * `resize`, o padrão do Expo), e somar os dois faria o campo pular em dobro.
+ * Teclado: o KeyboardAvoidingView empurra o campo para cima NAS DUAS
+ * plataformas. No Android 15 (API 35) o app é obrigatoriamente edge-to-edge, e
+ * o `adjustResize` do manifesto deixa de encolher a janela: sem isto, o campo
+ * ficava escondido atrás do teclado (teste no emulador, 02/11/2026).
  *
  * Recebe: `aviso`, o aviso de limite de SMS que a tela já monta.
  */
@@ -75,7 +75,7 @@ export function InicioComAgente({ aviso }: { aviso: ReactNode }) {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.groupedBackground }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior="padding"
     >
       <View style={[colunaCentral, { flex: 1 }]}>
         <View
