@@ -114,6 +114,9 @@ export function InicioComAgente({ aviso }: { aviso: ReactNode }) {
               // Mensagens.
               onContentSizeChange={() => rolagem.current?.scrollToEnd({ animated: true })}
               keyboardShouldPersistTaps="handled"
+              // Arrastar a conversa para baixo recolhe o teclado, como no
+              // Mensagens — sem isso, com o teclado aberto sobra pouca conversa.
+              keyboardDismissMode="interactive"
             >
               {mensagens.map((m) => (
                 <Balao key={m.id} daPessoa={m.papel === 'usuario'} texto={m.texto} />
@@ -169,9 +172,8 @@ function Balao({
       }}
     >
       <Text
-        // A resposta pode ser copiada — um valor, um nome — para colar em
-        // outro lugar.
-        selectable
+        // Sem `selectable`: no iOS o texto selecionável captura o arrasto, e a
+        // conversa parava de rolar quando o dedo começava em cima de um balão.
         color={discreto ? 'secondaryLabel' : 'label'}
         style={daPessoa ? { color: colors.onAccent } : undefined}
       >
