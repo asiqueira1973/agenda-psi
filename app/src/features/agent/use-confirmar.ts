@@ -1,10 +1,10 @@
-import { useCriarSessao } from '@/features/sessions/use-sessions';
-import { useCriarPagamento } from '@/features/payments/use-payments';
+import { useCriarSessao, useEditarSessao, useExcluirSessao } from '@/features/sessions/use-sessions';
+import { useCriarPagamento, useEditarPagamento, useExcluirPagamento } from '@/features/payments/use-payments';
 import { useAtualizarPreco, useCriarPaciente, useEditarPaciente } from '@/features/patients/use-patients';
 import { useCriarAgendamento, useExcluirAgendamento } from '@/features/schedule/use-schedule';
-import { useCriarDespesa } from '@/features/expenses/use-expenses';
+import { useCriarDespesa, useEditarDespesa, useExcluirDespesa } from '@/features/expenses/use-expenses';
 import { useEnviarFeedback } from '@/features/settings/use-settings';
-import { textoDoFeedback, type Rascunho } from './rascunhos';
+import { comMudancas, textoDoFeedback, type Rascunho } from './rascunhos';
 
 /**
  * Grava um rascunho confirmado — o único lugar do agente que escreve no banco.
@@ -27,14 +27,16 @@ import { textoDoFeedback, type Rascunho } from './rascunhos';
  * fica sem horário. Se só a saída do antigo falhar, o restante vira o cartão
  * de tirar o antigo da agenda.
  *
- * Edição de cadastro: os hooks da tela de editar e do preço recebem o id do
- * paciente na criação, então quem chama passa `pacienteDaEdicao` (vazio quando
- * o cartão não é de edição — o hook existe, mas nunca é acionado).
+ * Edições (cadastro, sessão, pagamento, despesa): os hooks das telas de
+ * detalhe recebem o id do registro na criação, então quem chama passa
+ * `idDoRegistro` — o do paciente, da sessão, do pagamento ou da despesa que o
+ * cartão altera. Vazio quando o cartão não é de edição: os hooks existem, mas
+ * nunca são acionados.
  *
  * Chame só com `podeConfirmar(rascunho)` verdadeiro: as validações da tela
  * moram em `rascunhos.ts`, e este arquivo confia nelas.
  */
-export function useConfirmarRascunho(pacienteDaEdicao: string) {
+export function useConfirmarRascunho(idDoRegistro: string) {
   const criarSessao = useCriarSessao();
   const criarPagamento = useCriarPagamento();
   const criarPaciente = useCriarPaciente();
@@ -44,8 +46,14 @@ export function useConfirmarRascunho(pacienteDaEdicao: string) {
   // avisa o administrador pela `notifica-admin`, que lê o texto pelo id.
   const enviarFeedback = useEnviarFeedback();
   const excluirAgendamento = useExcluirAgendamento();
-  const editarPaciente = useEditarPaciente(pacienteDaEdicao);
-  const atualizarPreco = useAtualizarPreco(pacienteDaEdicao);
+  const editarPaciente = useEditarPaciente(idDoRegistro);
+  const atualizarPreco = useAtualizarPreco(idDoRegistro);
+  const editarSessao = useEditarSessao(idDoRegistro);
+  const excluirSessao = useExcluirSessao();
+  const editarPagamento = useEditarPagamento(idDoRegistro);
+  const excluirPagamento = useExcluirPagamento();
+  const editarDespesa = useEditarDespesa(idDoRegistro);
+  const excluirDespesa = useExcluirDespesa();
 
   /**
    * Recebe o rascunho já editado e válido. Devolve quantos registros foram
@@ -189,6 +197,20 @@ export function useConfirmarRascunho(pacienteDaEdicao: string) {
         }
         return { gravados: 1, restante: null };
       }
+      case 'edicao_sessao':
+      case 'exclusao_sessao':
+      case 'edicao_pagamento':
+      case 'exclusao_pagamento':
+      case 'edicao_despesa':
+      case 'exclusao_despesa': {
+        if (r.alvo.situacao !== 'ok') return { gravados: 0, restante: r };
+        try {
+          await gravarRegistro(r);
+          return { gravados: 1, restante: null };
+        } catch {
+          return { gravados: 0, restante: r };
+        }
+      }
       case 'feedback': {
         try {
           await enviarFeedback.mutateAsync(textoDoFeedback(r));
@@ -237,6 +259,66 @@ export function useConfirmarRascunho(pacienteDaEdicao: string) {
             : null,
         };
       }
+    }
+  }
+
+  /**
+   * Altera ou apaga um registro existente. Os campos que a tela não deixa
+   * mudar (data da sessão, competência) nem estão nos parâmetros dos hooks.
+   * Alteração manda o registro inteiro com as mudanças por cima: o update da
+   * tela grava todos os campos, e omitir um o apagaria.
+   */
+  async function gravarRegistro(r: Rascunho): Promise<void> {
+    switch (r.tipo) {
+      case 'edicao_sessao': {
+        const s = comMudancas(r.alvo, r.mudancas);
+        if (!s) throw new Error('sem registro');
+        await editarSessao.mutateAsync({
+          pacienteId: s.paciente_id,
+          modalidade: s.modalidade,
+          duracaoMinutos: s.duracao_minutos,
+          pagamento: s.pagamento,
+          deveSerCobrada: s.cobrada,
+          observacoes: s.observacoes,
+        });
+        return;
+      }
+      case 'exclusao_sessao':
+        if (r.alvo.situacao !== 'ok') throw new Error('sem registro');
+        await excluirSessao.mutateAsync({ sessaoId: r.alvo.registro.id, pacienteId: r.alvo.registro.paciente_id });
+        return;
+      case 'edicao_pagamento': {
+        const g = comMudancas(r.alvo, r.mudancas);
+        if (!g) throw new Error('sem registro');
+        await editarPagamento.mutateAsync({
+          pacienteId: g.paciente_id,
+          valorPagamento: g.valor,
+          tipo: g.tipo,
+          observacoes: g.observacoes,
+        });
+        return;
+      }
+      case 'exclusao_pagamento':
+        if (r.alvo.situacao !== 'ok') throw new Error('sem registro');
+        await excluirPagamento.mutateAsync({ pagamentoId: r.alvo.registro.id, pacienteId: r.alvo.registro.paciente_id });
+        return;
+      case 'edicao_despesa': {
+        const d = comMudancas(r.alvo, r.mudancas);
+        if (!d) throw new Error('sem registro');
+        await editarDespesa.mutateAsync({
+          tipoDespesaId: d.tipo_despesa_id,
+          valorDespesa: d.valor,
+          descricao: d.descricao,
+          observacoes: d.observacoes,
+        });
+        return;
+      }
+      case 'exclusao_despesa':
+        if (r.alvo.situacao !== 'ok') throw new Error('sem registro');
+        await excluirDespesa.mutateAsync(r.alvo.registro.id);
+        return;
+      default:
+        throw new Error('não é registro existente');
     }
   }
 

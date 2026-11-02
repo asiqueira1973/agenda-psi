@@ -31,6 +31,12 @@ const nomeDoCartao: Record<Rascunho['tipo'], string> = {
   troca_horario: 'troca de horário',
   remocao_horario: 'saída da agenda',
   edicao_paciente: 'alteração de cadastro',
+  edicao_sessao: 'alteração de sessão',
+  exclusao_sessao: 'exclusão de sessão',
+  edicao_pagamento: 'alteração de pagamento',
+  exclusao_pagamento: 'exclusão de pagamento',
+  edicao_despesa: 'alteração de despesa',
+  exclusao_despesa: 'exclusão de despesa',
 };
 
 const nomeDoEstado: Record<EstadoDoCartao, string> = {

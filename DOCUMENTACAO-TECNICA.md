@@ -465,6 +465,12 @@ Início (plano completo em `docs/agente-plano.md`). **Fase 1: só consultas.**
   da tela de editar, com o cadastro inteiro para não apagar observações; preço
   como linha nova em `precos_paciente`). Conflito de horário é aviso, calculado
   no app.
+- **Alterar e apagar sessão, pagamento e despesa** (`registros.ts`, só para
+  `versao_cartoes` >= 3): o cartão mostra o registro achado (ou a lista, se
+  houver mais de um possível) e grava pelos hooks das telas de detalhe. A data
+  da sessão e a competência do pagamento e da despesa não se alteram, como nas
+  telas. **Apagar paciente não existe no agente** (decisão de 02/11/2026): é
+  exclusão em cascata e fica na ficha, com a confirmação nominal.
 - **Auditoria** (`agente_auditoria`, migration 0016): uma linha por pergunta,
   com o texto, resultado, tokens e custo estimado. Tabela de sistema: RLS sem
   policy; só a Edge Function grava, com service_role e só nela. O texto NÃO vai

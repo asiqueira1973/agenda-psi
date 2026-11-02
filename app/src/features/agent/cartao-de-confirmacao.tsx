@@ -38,6 +38,11 @@ import {
   type CadastroDoPaciente,
   type HorarioExistente,
   type HorarioResolvido,
+  type Alvo,
+  type RegistroDeDespesa,
+  type RegistroDePagamento,
+  type RegistroDeSessao,
+  comMudancas,
   quantidadeDeItens,
   type EstadoDoCartao,
   type ItemDeDespesa,
@@ -93,7 +98,7 @@ export function CartaoDeConfirmacao({
   const [gravadosAteAqui, setGravadosAteAqui] = useState(0);
   // Os hooks da edição de cadastro precisam do id na criação; nos outros
   // cartões vai vazio e eles nunca são acionados.
-  const { confirmar } = useConfirmarRascunho(rascunho.tipo === 'edicao_paciente' ? rascunho.paciente.id : '');
+  const { confirmar } = useConfirmarRascunho(idDoRegistroEditado(rascunho));
 
   const problemas = problemasDoRascunho(rascunho);
   const liberado = podeConfirmar(rascunho) && !gravando;
@@ -247,6 +252,16 @@ export function CartaoDeConfirmacao({
         </ListGroup>
       )}
 
+      {(rascunho.tipo === 'edicao_sessao' || rascunho.tipo === 'exclusao_sessao') && (
+        <CartaoDeSessaoExistente rascunho={rascunho} problemas={problemas[0]} aoMudar={setRascunho} />
+      )}
+      {(rascunho.tipo === 'edicao_pagamento' || rascunho.tipo === 'exclusao_pagamento') && (
+        <CartaoDePagamentoExistente rascunho={rascunho} problemas={problemas[0]} aoMudar={setRascunho} />
+      )}
+      {(rascunho.tipo === 'edicao_despesa' || rascunho.tipo === 'exclusao_despesa') && (
+        <CartaoDeDespesaExistente rascunho={rascunho} problemas={problemas[0]} aoMudar={setRascunho} />
+      )}
+
       {rascunho.tipo === 'edicao_paciente' && (
         <CamposDaEdicao rascunho={rascunho} problemas={problemas[0]} aoMudar={setRascunho} />
       )}
@@ -268,12 +283,14 @@ export function CartaoDeConfirmacao({
                 ? c.enviarFeedback
                 : rascunho.tipo === 'remocao_horario'
                   ? c.tirarDaAgenda
-                  : c.confirmar(total)
+                  : rascunho.tipo.startsWith('exclusao')
+                    ? c.apagar
+                    : c.confirmar(total)
           }
           onPress={() => void aoConfirmar()}
           disabled={!liberado}
-          // Tirar da agenda apaga: vermelho, como toda ação destrutiva do app.
-          destructive={rascunho.tipo === 'remocao_horario'}
+          // Tirar da agenda e apagar são destrutivos: vermelho, como no app.
+          destructive={rascunho.tipo === 'remocao_horario' || rascunho.tipo.startsWith('exclusao')}
         />
         <RowSeparator />
         <ActionRow
@@ -600,6 +617,217 @@ function CamposDePacienteNovo({
   );
 }
 
+/** O id que os hooks de edição precisam receber na criação. */
+function idDoRegistroEditado(r: Rascunho): string {
+  if (r.tipo === 'edicao_paciente') return r.paciente.id;
+  if ((r.tipo === 'edicao_sessao' || r.tipo === 'edicao_pagamento' || r.tipo === 'edicao_despesa') && r.alvo.situacao === 'ok') {
+    return r.alvo.registro.id;
+  }
+  return '';
+}
+
+const rotuloPagamentoDaSessao = (v: string) => pagamentoDaSessao.find((o) => o.valor === v)?.rotulo ?? v;
+const rotuloDaSessao = (s: RegistroDeSessao) =>
+  `${formatarData(s.data)} · ${rotuloPagamentoDaSessao(s.pagamento)}`;
+const rotuloDoPagamento = (g: RegistroDePagamento) => `${formatarData(g.data)} · ${formatarDinheiro(g.valor)}`;
+const rotuloDaDespesa = (d: RegistroDeDespesa) => `${d.tipo_nome} · ${formatarData(d.data)} · ${formatarDinheiro(d.valor)}`;
+
+/**
+ * O registro existente: texto quando o agente achou qual é; lista, em
+ * vermelho, quando há mais de um possível. Nunca escolhe sozinho.
+ */
+function SeletorDeRegistro<T extends { id: string }>({
+  alvo,
+  rotulo,
+  aoMudar,
+}: {
+  alvo: Alvo<T>;
+  rotulo: (t: T) => string;
+  aoMudar: (a: Alvo<T>) => void;
+}) {
+  if (alvo.situacao === 'ok') return <ValueRow label={c.registro} value={rotulo(alvo.registro)} />;
+  return (
+    <PickerRow
+      label={c.registro}
+      opcoes={alvo.opcoes.map((t) => ({ id: t.id, rotulo: rotulo(t) }))}
+      valorSelecionado={null}
+      placeholder={c.escolher}
+      tituloDaFolha={c.registro}
+      hasError
+      onSelecionar={(id) => {
+        const t = alvo.opcoes.find((o) => o.id === id);
+        if (t) aoMudar({ situacao: 'ok', registro: t });
+      }}
+    />
+  );
+}
+
+/** Rodapé comum: problema em vermelho, senão o aviso de data ou de exclusão. */
+function rodapeDeRegistro(problemas: string[], exclusao: boolean, extra?: string) {
+  if (problemas.length) return { footer: problemas.join(' · '), footerIsError: true };
+  return { footer: exclusao ? c.avisoDeExclusao : (extra ?? c.avisoDeData), footerIsError: false };
+}
+
+function CartaoDeSessaoExistente({
+  rascunho,
+  problemas,
+  aoMudar,
+}: {
+  rascunho: Extract<Rascunho, { tipo: 'edicao_sessao' | 'exclusao_sessao' }>;
+  problemas: string[];
+  aoMudar: (r: Rascunho) => void;
+}) {
+  const exclusao = rascunho.tipo === 'exclusao_sessao';
+  const nome = rascunho.alvo.situacao === 'ok' ? rascunho.alvo.registro.paciente_nome : rascunho.alvo.opcoes[0]?.paciente_nome;
+  const s = rascunho.tipo === 'edicao_sessao' ? comMudancas(rascunho.alvo, rascunho.mudancas) : null;
+  const mudar = (m: Partial<RegistroDeSessao>) =>
+    rascunho.tipo === 'edicao_sessao' && aoMudar({ ...rascunho, mudancas: { ...rascunho.mudancas, ...m } });
+
+  return (
+    <ListGroup title={c.titulo[rascunho.tipo]} {...rodapeDeRegistro(problemas, exclusao)}>
+      <ValueRow label={c.paciente} value={nome ?? ''} />
+      <RowSeparator />
+      <SeletorDeRegistro alvo={rascunho.alvo} rotulo={rotuloDaSessao} aoMudar={(alvo) => aoMudar({ ...rascunho, alvo })} />
+      {s ? (
+        <>
+          <SegmentedGroupContent>
+            <SegmentedControl
+              opcoes={pagamentoDaSessao}
+              valor={s.pagamento}
+              onChange={(v) => mudar({ pagamento: v as RegistroDeSessao['pagamento'] })}
+              accessibilityLabel={c.pagamento}
+            />
+          </SegmentedGroupContent>
+          <SegmentedGroupContent>
+            <SegmentedControl
+              opcoes={modalidadeDaSessao}
+              valor={s.modalidade}
+              onChange={(v) => mudar({ modalidade: v as RegistroDeSessao['modalidade'] })}
+              accessibilityLabel={c.modalidade}
+            />
+          </SegmentedGroupContent>
+          <FormRow
+            label={c.duracao}
+            value={s.duracao_minutos === null ? '' : String(s.duracao_minutos)}
+            onChangeText={(t) => mudar({ duracao_minutos: /^\d+$/.test(t) ? Number(t) : null })}
+            keyboardType="number-pad"
+            placeholder={c.opcional}
+          />
+          <RowSeparator />
+          <ToggleRow label={c.cobrada} value={s.cobrada} onValueChange={(cobrada) => mudar({ cobrada })} />
+          <RowSeparator />
+          <MultilineRow
+            value={s.observacoes ?? ''}
+            onChangeText={(t) => mudar({ observacoes: t.trim() ? t : null })}
+            placeholder={c.observacoes}
+          />
+        </>
+      ) : null}
+    </ListGroup>
+  );
+}
+
+function CartaoDePagamentoExistente({
+  rascunho,
+  problemas,
+  aoMudar,
+}: {
+  rascunho: Extract<Rascunho, { tipo: 'edicao_pagamento' | 'exclusao_pagamento' }>;
+  problemas: string[];
+  aoMudar: (r: Rascunho) => void;
+}) {
+  const exclusao = rascunho.tipo === 'exclusao_pagamento';
+  const nome = rascunho.alvo.situacao === 'ok' ? rascunho.alvo.registro.paciente_nome : rascunho.alvo.opcoes[0]?.paciente_nome;
+  const g = rascunho.tipo === 'edicao_pagamento' ? comMudancas(rascunho.alvo, rascunho.mudancas) : null;
+  const mudar = (m: Partial<RegistroDePagamento>) =>
+    rascunho.tipo === 'edicao_pagamento' && aoMudar({ ...rascunho, mudancas: { ...rascunho.mudancas, ...m } });
+
+  return (
+    <ListGroup title={c.titulo[rascunho.tipo]} {...rodapeDeRegistro(problemas, exclusao)}>
+      <ValueRow label={c.paciente} value={nome ?? ''} />
+      <RowSeparator />
+      <SeletorDeRegistro alvo={rascunho.alvo} rotulo={rotuloDoPagamento} aoMudar={(alvo) => aoMudar({ ...rascunho, alvo })} />
+      {g ? (
+        <>
+          <RowSeparator />
+          <CampoDeValor
+            key={g.id}
+            label={c.valor}
+            valor={g.valor}
+            comErro={problemas.some((p) => p.includes('valor'))}
+            aoMudar={(valor) => mudar({ valor: valor as number })}
+          />
+          <SegmentedGroupContent>
+            <SegmentedControl
+              opcoes={tipoDoPagamento}
+              valor={g.tipo}
+              onChange={(v) => mudar({ tipo: v as RegistroDePagamento['tipo'] })}
+              accessibilityLabel={c.tipo}
+            />
+          </SegmentedGroupContent>
+          <MultilineRow
+            value={g.observacoes ?? ''}
+            onChangeText={(t) => mudar({ observacoes: t.trim() ? t : null })}
+            placeholder={c.observacoes}
+          />
+        </>
+      ) : null}
+    </ListGroup>
+  );
+}
+
+function CartaoDeDespesaExistente({
+  rascunho,
+  problemas,
+  aoMudar,
+}: {
+  rascunho: Extract<Rascunho, { tipo: 'edicao_despesa' | 'exclusao_despesa' }>;
+  problemas: string[];
+  aoMudar: (r: Rascunho) => void;
+}) {
+  const tipos = useTiposDeDespesa();
+  const exclusao = rascunho.tipo === 'exclusao_despesa';
+  const d = rascunho.tipo === 'edicao_despesa' ? comMudancas(rascunho.alvo, rascunho.mudancas) : null;
+  const mudar = (m: Partial<RegistroDeDespesa>) =>
+    rascunho.tipo === 'edicao_despesa' && aoMudar({ ...rascunho, mudancas: { ...rascunho.mudancas, ...m } });
+
+  return (
+    <ListGroup title={c.titulo[rascunho.tipo]} {...rodapeDeRegistro(problemas, exclusao)}>
+      <SeletorDeRegistro alvo={rascunho.alvo} rotulo={rotuloDaDespesa} aoMudar={(alvo) => aoMudar({ ...rascunho, alvo })} />
+      {d ? (
+        <>
+          <RowSeparator />
+          <PickerRow
+            label={c.tipoDeDespesa}
+            opcoes={(tipos.data ?? []).map((t) => ({ id: t.id, rotulo: t.nome }))}
+            valorSelecionado={d.tipo_despesa_id}
+            tituloDaFolha={c.tipoDeDespesa}
+            onSelecionar={(id) => {
+              const t = (tipos.data ?? []).find((x) => x.id === id);
+              if (t) mudar({ tipo_despesa_id: t.id, tipo_nome: t.nome });
+            }}
+          />
+          <RowSeparator />
+          <CampoDeValor
+            key={d.id}
+            label={c.valor}
+            valor={d.valor}
+            comErro={problemas.some((p) => p.includes('valor'))}
+            aoMudar={(valor) => mudar({ valor: valor as number })}
+          />
+          <RowSeparator />
+          <FormRow
+            label={c.descricao}
+            placeholder={c.opcional}
+            value={d.descricao ?? ''}
+            onChangeText={(t) => mudar({ descricao: t.trim() ? t : null })}
+          />
+        </>
+      ) : null}
+    </ListGroup>
+  );
+}
+
 /** "Quarta, 09:00–09:50" — um horário fixo como a pessoa lê. */
 function rotuloDoHorario(h: { dia_semana: number; hora_inicio: string; hora_fim: string }): string {
   return `${nomeDoDiaDaSemana(h.dia_semana)}, ${h.hora_inicio}–${h.hora_fim}`;
@@ -789,7 +1017,13 @@ function CartaoEncerrado({
       >
         {confirmado ? <Icon name="check" color={colors.positive} size={17} /> : null}
         <Text variant="footnote" color={confirmado ? 'positive' : 'secondaryLabel'}>
-          {confirmado ? (rascunho.tipo === 'feedback' ? c.feedbackEnviado : c.registrado(gravados)) : c.cancelado}
+          {confirmado
+            ? rascunho.tipo === 'feedback'
+              ? c.feedbackEnviado
+              : rascunho.tipo.startsWith('exclusao')
+                ? c.apagado
+                : c.registrado(gravados)
+            : c.cancelado}
         </Text>
       </View>
     </ListGroup>
@@ -829,6 +1063,21 @@ function resumoDoRascunho(r: Rascunho): { rotulo: string; valor: string }[] {
         rotulo: `${r.paciente.nome} · ${rotuloDoCampo[k]}`,
         valor: valorDoCampo(r.novo, k),
       }));
+    case 'edicao_sessao':
+    case 'exclusao_sessao': {
+      const s = r.tipo === 'edicao_sessao' ? comMudancas(r.alvo, r.mudancas) : r.alvo.situacao === 'ok' ? r.alvo.registro : null;
+      return s ? [{ rotulo: s.paciente_nome, valor: rotuloDaSessao(s) }] : [];
+    }
+    case 'edicao_pagamento':
+    case 'exclusao_pagamento': {
+      const g = r.tipo === 'edicao_pagamento' ? comMudancas(r.alvo, r.mudancas) : r.alvo.situacao === 'ok' ? r.alvo.registro : null;
+      return g ? [{ rotulo: g.paciente_nome, valor: rotuloDoPagamento(g) }] : [];
+    }
+    case 'edicao_despesa':
+    case 'exclusao_despesa': {
+      const d = r.tipo === 'edicao_despesa' ? comMudancas(r.alvo, r.mudancas) : r.alvo.situacao === 'ok' ? r.alvo.registro : null;
+      return d ? [{ rotulo: d.tipo_nome, valor: `${formatarData(d.data)} · ${formatarDinheiro(d.valor)}` }] : [];
+    }
     case 'feedback':
       return [{ rotulo: rotuloDaCategoria[r.categoria], valor: r.mensagem.length > 40 ? `${r.mensagem.slice(0, 40)}…` : r.mensagem }];
     case 'paciente':

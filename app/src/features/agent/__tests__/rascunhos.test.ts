@@ -154,3 +154,26 @@ describe('edição de cadastro', () => {
     expect(podeConfirmar({ tipo: 'edicao_paciente', paciente: tomas, atual, novo })).toBe(true);
   });
 });
+
+describe('alterar e apagar registros', () => {
+  const sessao = {
+    id: 's1', paciente_id: 'h', paciente_nome: 'Helena Sampaio', data: '2026-11-03',
+    pagamento: 'nao pagou' as const, modalidade: 'presencial' as const, duracao_minutos: 50, cobrada: true, observacoes: null,
+  };
+  it('marcar a sessão como paga confirma; mudança igual ao gravado não', () => {
+    const r: Rascunho = { tipo: 'edicao_sessao', alvo: { situacao: 'ok', registro: sessao }, mudancas: { pagamento: 'pagou' } };
+    expect(podeConfirmar(r)).toBe(true);
+    expect(podeConfirmar({ ...r, mudancas: { pagamento: 'nao pagou' } })).toBe(false);
+  });
+  it('registro ambíguo trava até a escolha, também para apagar', () => {
+    const r: Rascunho = { tipo: 'exclusao_sessao', alvo: { situacao: 'ambiguo', opcoes: [sessao, { ...sessao, id: 's2' }] } };
+    expect(podeConfirmar(r)).toBe(false);
+    expect(podeConfirmar({ tipo: 'exclusao_sessao', alvo: { situacao: 'ok', registro: sessao } })).toBe(true);
+  });
+  it('valor novo de pagamento segue a regra da tela (inteiro)', () => {
+    const pagamento = { id: 'p', paciente_id: 'b', paciente_nome: 'Beatriz', data: '2026-11-01', valor: 280, tipo: 'mensal' as const, observacoes: null };
+    const r: Rascunho = { tipo: 'edicao_pagamento', alvo: { situacao: 'ok', registro: pagamento }, mudancas: { valor: 300 } };
+    expect(podeConfirmar(r)).toBe(true);
+    expect(podeConfirmar({ ...r, mudancas: { valor: 300.5 } })).toBe(false);
+  });
+});

@@ -77,14 +77,69 @@ export type Rascunho =
   | { tipo: 'feedback'; categoria: 'problema' | 'sugestao' | 'elogio'; mensagem: string }
   | { tipo: 'troca_horario'; paciente: PacienteOk; atual: HorarioResolvido; novo: HorarioNovo }
   | { tipo: 'remocao_horario'; paciente: PacienteOk; atual: HorarioResolvido }
-  | { tipo: 'edicao_paciente'; paciente: PacienteOk; atual: CadastroDoPaciente; novo: CadastroDoPaciente };
+  | { tipo: 'edicao_paciente'; paciente: PacienteOk; atual: CadastroDoPaciente; novo: CadastroDoPaciente }
+  | { tipo: 'edicao_sessao'; alvo: Alvo<RegistroDeSessao>; mudancas: MudancasDeSessao }
+  | { tipo: 'exclusao_sessao'; alvo: Alvo<RegistroDeSessao> }
+  | { tipo: 'edicao_pagamento'; alvo: Alvo<RegistroDePagamento>; mudancas: MudancasDePagamento }
+  | { tipo: 'exclusao_pagamento'; alvo: Alvo<RegistroDePagamento> }
+  | { tipo: 'edicao_despesa'; alvo: Alvo<RegistroDeDespesa>; mudancas: MudancasDeDespesa }
+  | { tipo: 'exclusao_despesa'; alvo: Alvo<RegistroDeDespesa> };
+
+/** Registros que já existem, como a função os manda (registros.ts). */
+export type RegistroDeSessao = {
+  id: string;
+  paciente_id: string;
+  paciente_nome: string;
+  data: string;
+  pagamento: 'pagou' | 'nao pagou' | 'pagamento mensal';
+  modalidade: 'presencial' | 'remota';
+  duracao_minutos: number | null;
+  cobrada: boolean;
+  observacoes: string | null;
+};
+export type RegistroDePagamento = {
+  id: string;
+  paciente_id: string;
+  paciente_nome: string;
+  data: string;
+  valor: number;
+  tipo: 'mensal' | 'por sessão';
+  observacoes: string | null;
+};
+export type RegistroDeDespesa = {
+  id: string;
+  tipo_despesa_id: string;
+  tipo_nome: string;
+  data: string;
+  valor: number;
+  descricao: string | null;
+  observacoes: string | null;
+};
+export type MudancasDeSessao = Partial<Pick<RegistroDeSessao, 'pagamento' | 'modalidade' | 'duracao_minutos' | 'cobrada' | 'observacoes'>>;
+export type MudancasDePagamento = Partial<Pick<RegistroDePagamento, 'valor' | 'tipo' | 'observacoes'>>;
+export type MudancasDeDespesa = Partial<Pick<RegistroDeDespesa, 'tipo_despesa_id' | 'tipo_nome' | 'valor' | 'descricao' | 'observacoes'>>;
+
+/** O registro que a frase quis dizer; ambíguo, a pessoa escolhe na lista. */
+export type Alvo<T> = { situacao: 'ok'; registro: T } | { situacao: 'ambiguo'; opcoes: T[] };
+
+/** O registro como ficará: o atual com as mudanças por cima. */
+export function comMudancas<T, M extends Partial<T>>(alvo: Alvo<T>, mudancas: M): T | null {
+  return alvo.situacao === 'ok' ? { ...alvo.registro, ...mudancas } : null;
+}
+
+/** Alguma mudança difere do que está gravado? Sem isso, não há o que confirmar. */
+function mudaAlgo<T extends object>(alvo: Alvo<T>, mudancas: Partial<T>): boolean {
+  if (alvo.situacao !== 'ok') return true;
+  return (Object.keys(mudancas) as (keyof T)[]).some((k) => mudancas[k] !== alvo.registro[k]);
+}
 
 /**
  * Versão dos cartões que este app sabe mostrar, mandada à Edge Function a cada
- * pergunta. 2 = troca e remoção de horário e edição de cadastro (5.0.3). Sem
+ * pergunta. 2 = troca e remoção de horário e edição de cadastro; 3 = alterar e
+ * apagar sessão, pagamento e despesa (build 2 da 5.0.2). Sem
  * isso, a função não oferece essas ferramentas — a 5.0.2 descartaria o cartão.
  */
-export const VERSAO_DOS_CARTOES = 2;
+export const VERSAO_DOS_CARTOES = 3;
 
 type PacienteOk = Extract<PacienteResolvido, { situacao: 'ok' }>;
 
@@ -113,9 +168,7 @@ export type EstadoDoCartao = 'aberto' | 'confirmado' | 'cancelado';
 
 /** Quantos registros o cartão grava — o que vai no evento de analytics. */
 export function quantidadeDeItens(r: Rascunho): number {
-  if (r.tipo === 'feedback' || r.tipo === 'troca_horario' || r.tipo === 'remocao_horario' || r.tipo === 'edicao_paciente') {
-    return 1;
-  }
+  if (!('itens' in r) && r.tipo !== 'paciente') return 1;
   return r.tipo === 'paciente' ? 1 + r.horarios.length : r.itens.length;
 }
 
@@ -179,6 +232,19 @@ export function problemasDoRascunho(r: Rascunho): string[][] {
         ...problemasDoValor(r.novo.preco),
         ...(camposAlterados(r.atual, r.novo).length === 0 ? ['Nada mudou no cadastro'] : []),
       ]];
+    }
+    case 'edicao_sessao':
+    case 'exclusao_sessao':
+    case 'edicao_pagamento':
+    case 'exclusao_pagamento':
+    case 'edicao_despesa':
+    case 'exclusao_despesa': {
+      const escolher = r.alvo.situacao === 'ok' ? [] : ['Escolha qual registro'];
+      if (r.tipo.startsWith('exclusao')) return [escolher];
+      const m = (r as { mudancas: Record<string, unknown> }).mudancas;
+      const valor = 'valor' in m ? problemasDoValor((m.valor as number | null) ?? null) : [];
+      const nada = mudaAlgo(r.alvo as Alvo<object>, m) ? [] : ['Nada mudou no registro'];
+      return [[...escolher, ...valor, ...nada]];
     }
     case 'feedback':
       // Mesma regra da tela de feedback: mensagem obrigatória (spec 8.10).
@@ -278,11 +344,16 @@ export function rascunhosDaResposta(bruto: unknown): Rascunho[] {
   const tipos = [
     'sessoes', 'pagamentos', 'paciente', 'horarios', 'despesas', 'feedback',
     'troca_horario', 'remocao_horario', 'edicao_paciente',
+    'edicao_sessao', 'exclusao_sessao', 'edicao_pagamento', 'exclusao_pagamento', 'edicao_despesa', 'exclusao_despesa',
   ];
   return bruto.filter((r): r is Rascunho => {
     if (!r || typeof r !== 'object' || !tipos.includes((r as { tipo?: string }).tipo ?? '')) return false;
     const x = r as { tipo: string; itens?: unknown; paciente?: unknown; horarios?: unknown; mensagem?: unknown };
     if (x.tipo === 'feedback') return typeof x.mensagem === 'string';
+    if (/^(edicao|exclusao)_(sessao|pagamento|despesa)$/.test(x.tipo)) {
+      const y = r as { alvo?: { situacao?: string } };
+      return y.alvo?.situacao === 'ok' || y.alvo?.situacao === 'ambiguo';
+    }
     if (x.tipo === 'troca_horario' || x.tipo === 'remocao_horario' || x.tipo === 'edicao_paciente') {
       const y = r as { paciente?: { situacao?: string }; atual?: unknown };
       return y.paciente?.situacao === 'ok' && !!y.atual;
