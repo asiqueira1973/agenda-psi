@@ -87,7 +87,46 @@ export type Rascunho =
   }
   | { tipo: 'horarios'; itens: ItemDeHorario[] }
   | { tipo: 'despesas'; itens: ItemDeDespesa[] }
-  | { tipo: 'feedback'; categoria: 'problema' | 'sugestao' | 'elogio'; mensagem: string };
+  | { tipo: 'feedback'; categoria: 'problema' | 'sugestao' | 'elogio'; mensagem: string }
+  | {
+    tipo: 'troca_horario';
+    paciente: Extract<PacienteResolvido, { situacao: 'ok' }>;
+    atual: HorarioResolvido;
+    novo: { dia_semana: number; hora_inicio: string; hora_fim: string };
+  }
+  | { tipo: 'remocao_horario'; paciente: Extract<PacienteResolvido, { situacao: 'ok' }>; atual: HorarioResolvido }
+  | {
+    tipo: 'edicao_paciente';
+    paciente: Extract<PacienteResolvido, { situacao: 'ok' }>;
+    /** O cadastro como está, para o cartão mostrar o "antes". */
+    atual: CadastroDoPaciente;
+    /** O cadastro com o que a frase pediu para mudar. */
+    novo: CadastroDoPaciente;
+  };
+
+/**
+ * Os campos do cadastro que o agente pode alterar — os da tela de editar
+ * paciente, mais o preço (que é gravado como linha nova, regra 11.2).
+ * As observações vão junto mesmo quando não mudam: a edição grava o cadastro
+ * inteiro, e omiti-las as apagaria.
+ */
+export type CadastroDoPaciente = {
+  nome: string;
+  telefone: string;
+  email: string | null;
+  observacoes: string | null;
+  status: 'ativo' | 'inativo';
+  receber_sms: boolean;
+  preco: number | null;
+};
+
+/** Um horário fixo que já existe na agenda. */
+export type HorarioExistente = { id: string; dia_semana: number; hora_inicio: string; hora_fim: string };
+
+/** Qual horário do paciente a frase quis dizer. Ambíguo: o cartão pergunta. */
+export type HorarioResolvido =
+  | ({ situacao: 'ok' } & HorarioExistente)
+  | { situacao: 'ambiguo'; opcoes: HorarioExistente[] };
 
 // ---------------------------------------------------------------------------
 // Definições para a API
@@ -261,7 +300,69 @@ export const definicoesDePropostas = [
       required: ['categoria', 'mensagem'],
     },
   },
+  {
+    name: 'propor_troca_de_horario',
+    description:
+      'Monta o rascunho da TROCA de um horário fixo da agenda semanal de um paciente já cadastrado: de um dia/hora para outro. Não grava nada. Use para "o Tomás passou de quarta às 9h para quarta às 10h" ou "muda a Laura para quinta". Informe o horário atual se a pessoa disser; o servidor procura entre os horários do paciente.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        paciente: campoPaciente,
+        dia_atual: { ...campoDia, description: 'Dia do horário que vai mudar, se a pessoa disser.' },
+        hora_atual: { ...campoHora, description: 'Hora de início atual, se a pessoa disser.' },
+        novo_dia: { ...campoDia, description: 'Dia novo. Omita se continuar o mesmo dia.' },
+        nova_hora_inicio: { ...campoHora, description: 'Hora de início nova. Omita se só mudar o dia.' },
+        nova_hora_fim: { ...campoHora, description: 'Só se a pessoa disser. Padrão: mantém a duração atual.' },
+      },
+      required: ['paciente'],
+    },
+  },
+  {
+    name: 'propor_remocao_de_horario',
+    description:
+      'Monta o rascunho para TIRAR um horário fixo da agenda semanal de um paciente (ele parou de vir naquele horário). Não apaga nada: a pessoa confirma num cartão. Use para "o Tomás parou de vir às quartas" ou "tira a Laura da agenda de quinta". Não apaga o paciente nem as sessões dele.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        paciente: campoPaciente,
+        dia: { ...campoDia, description: 'Dia do horário a tirar, se a pessoa disser.' },
+        hora: { ...campoHora, description: 'Hora de início, se a pessoa disser.' },
+      },
+      required: ['paciente'],
+    },
+  },
+  {
+    name: 'propor_edicao_de_paciente',
+    description:
+      'Monta o rascunho de uma ALTERAÇÃO no cadastro de um paciente já cadastrado: nome, telefone, e-mail, observações, se recebe lembrete por SMS, se está ativo ou inativo, e o preço por sessão. Não grava nada. Preencha SÓ os campos que a pessoa pediu para mudar.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        paciente: campoPaciente,
+        nome: { type: 'string', description: 'Nome completo novo.' },
+        telefone: { type: 'string', description: 'Telefone novo.' },
+        email: { type: 'string', description: 'E-mail novo. String vazia para apagar o e-mail.' },
+        observacoes: { type: 'string', description: 'Observações novas, substituindo as atuais.' },
+        receber_sms: { type: 'boolean', description: 'true liga o lembrete por SMS, false desliga.' },
+        status: { type: 'string', enum: ['ativo', 'inativo'] },
+        preco: { type: 'number', description: 'Preço novo por sessão, em reais. Vale a partir de hoje.' },
+      },
+      required: ['paciente'],
+    },
+  },
 ] as const;
+
+/**
+ * Ferramentas que só entram para o app que avisou entender os cartões novos
+ * (`versao_cartoes` >= 2 no pedido). A 5.0.2 não avisa: se recebesse um destes
+ * cartões, o descartaria em silêncio e o agente diria "confira o cartão" sobre
+ * um cartão que não aparece.
+ */
+export const propostasDaVersao2: readonly string[] = [
+  'propor_troca_de_horario',
+  'propor_remocao_de_horario',
+  'propor_edicao_de_paciente',
+];
 
 export const nomesDePropostas: readonly string[] = definicoesDePropostas.map((d) => d.name);
 
@@ -354,6 +455,41 @@ export function pagamentoDaSessao(v: unknown): ItemDeSessao['pagamento'] {
   if (v === 'pagou') return 'pagou';
   if (v === 'nao pagou') return 'nao pagou';
   return 'pagamento mensal';
+}
+
+/**
+ * Qual horário do paciente a frase quis dizer.
+ *
+ * Filtra pelo dia e pela hora ditos. Um que casa é `ok`; vários é `ambiguo`;
+ * nenhum que case com o que foi dito também vira `ambiguo` com TODOS os
+ * horários dele — o cartão mostra e a pessoa escolhe, em vez de o agente
+ * adivinhar. Devolve `null` só se o paciente não tem horário nenhum.
+ */
+export function resolverHorario(
+  horarios: HorarioExistente[],
+  dia: number | null,
+  hora: string | null,
+): HorarioResolvido | null {
+  if (horarios.length === 0) return null;
+  const casam = horarios.filter((h) =>
+    (dia === null || h.dia_semana === dia) && (hora === null || h.hora_inicio === hora)
+  );
+  if (casam.length === 1) return { situacao: 'ok', ...casam[0] };
+  return { situacao: 'ambiguo', opcoes: casam.length > 1 ? casam : horarios };
+}
+
+/** Soma minutos a uma hora HH:MM, sem passar de 23:59. */
+export function somarMinutos(hora: string, minutos: number): string {
+  const [h, m] = hora.split(':').map(Number);
+  const total = Math.min(h * 60 + m + minutos, 23 * 60 + 59);
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
+
+/** Duração em minutos entre duas horas HH:MM. */
+export function duracaoEmMinutos(inicio: string, fim: string): number {
+  const [hi, mi] = inicio.split(':').map(Number);
+  const [hf, mf] = fim.split(':').map(Number);
+  return hf * 60 + mf - (hi * 60 + mi);
 }
 
 // ---------------------------------------------------------------------------
@@ -457,6 +593,12 @@ export async function executarProposta(
     };
   }
 
+  if (nome === 'propor_edicao_de_paciente') return await proporEdicaoDePaciente(entrada, pacientes, cliente, usuarioId);
+
+  if (nome === 'propor_troca_de_horario' || nome === 'propor_remocao_de_horario') {
+    return await proporMudancaDeHorario(nome, entrada, pacientes, cliente, usuarioId);
+  }
+
   if (nome === 'propor_horarios') {
     const itens: ItemDeHorario[] = [];
     for (const i of itensDe(entrada)) {
@@ -485,6 +627,149 @@ export async function executarProposta(
   }
 
   return { erro: `proposta desconhecida: ${nome}` };
+}
+
+/**
+ * Aplica ao cadastro atual só o que a IA preencheu. Puro, para teste.
+ * Campo ausente fica como está; e-mail vazio apaga o e-mail.
+ */
+export function aplicarEdicao(atual: CadastroDoPaciente, e: Entrada): CadastroDoPaciente {
+  const texto = (v: unknown) => (typeof v === 'string' ? v.trim() : undefined);
+  const nome = texto(e.nome);
+  const telefone = texto(e.telefone);
+  const email = texto(e.email);
+  const observacoes = texto(e.observacoes);
+  return {
+    nome: nome || atual.nome,
+    telefone: telefone || atual.telefone,
+    email: email === undefined ? atual.email : email || null,
+    observacoes: observacoes === undefined ? atual.observacoes : observacoes || null,
+    status: e.status === 'ativo' || e.status === 'inativo' ? e.status : atual.status,
+    receber_sms: typeof e.receber_sms === 'boolean' ? e.receber_sms : atual.receber_sms,
+    preco: valorValido(e.preco) ?? atual.preco,
+  };
+}
+
+/** Quais campos mudaram, pelo nome que aparece no cartão. */
+export function camposAlterados(a: CadastroDoPaciente, b: CadastroDoPaciente): string[] {
+  return (Object.keys(a) as (keyof CadastroDoPaciente)[]).filter((k) => a[k] !== b[k]);
+}
+
+/** Alteração de cadastro: lê o cadastro atual e aplica o que foi pedido. */
+async function proporEdicaoDePaciente(
+  e: Entrada,
+  pacientes: Array<OpcaoDePaciente & { ativo: boolean }>,
+  cliente: SupabaseClient,
+  usuarioId: string,
+): Promise<ResultadoDeProposta> {
+  const p = resolverPaciente(String(e.paciente ?? ''), pacientes);
+  if (p.situacao === 'nao_encontrado') return { erro: `"${p.termo}" não está no cadastro` };
+  if (p.situacao === 'ambiguo') {
+    return { erro: `"${p.termo}" é ambíguo, pergunte qual: ${p.opcoes.map((o) => o.nome).join(', ')}` };
+  }
+
+  const { data, error } = await cliente
+    .from('v_pacientes_cartao')
+    .select('nome_completo, telefone, email, observacoes, status, receber_sms, preco_vigente')
+    .eq('usuario_id', usuarioId)
+    .eq('paciente_id', p.id)
+    .maybeSingle();
+  if (error || !data) return { erro: 'falha ao ler o cadastro' };
+
+  const atual: CadastroDoPaciente = {
+    nome: data.nome_completo ?? p.nome,
+    telefone: data.telefone ?? '',
+    email: data.email ?? null,
+    observacoes: data.observacoes ?? null,
+    status: data.status === 'inativo' ? 'inativo' : 'ativo',
+    receber_sms: data.receber_sms ?? true,
+    preco: data.preco_vigente ? Number(data.preco_vigente) : null,
+  };
+  const novo = aplicarEdicao(atual, e);
+  const mudou = camposAlterados(atual, novo);
+  if (mudou.length === 0) return { erro: 'nada a mudar: os dados pedidos já são os do cadastro' };
+
+  return {
+    rascunho: { tipo: 'edicao_paciente', paciente: p, atual, novo },
+    resumo: { paciente: p.nome, campos_alterados: mudou },
+  };
+}
+
+/**
+ * Troca ou remoção de um horário fixo.
+ *
+ * O paciente PRECISA estar resolvido aqui: se o nome for ambíguo, a IA recebe
+ * as opções e pergunta — os horários dependem de quem é o paciente, e um cartão
+ * que troca o horário da Ana errada é exatamente o que não pode acontecer.
+ */
+async function proporMudancaDeHorario(
+  nome: string,
+  e: Entrada,
+  pacientes: Array<OpcaoDePaciente & { ativo: boolean }>,
+  cliente: SupabaseClient,
+  usuarioId: string,
+): Promise<ResultadoDeProposta> {
+  const p = resolverPaciente(String(e.paciente ?? ''), pacientes);
+  if (p.situacao === 'nao_encontrado') return { erro: `"${p.termo}" não está no cadastro` };
+  if (p.situacao === 'ambiguo') {
+    return { erro: `"${p.termo}" é ambíguo, pergunte qual: ${p.opcoes.map((o) => o.nome).join(', ')}` };
+  }
+
+  const { data, error } = await cliente
+    .from('view_agenda_semana_padrao')
+    .select('id, dia_semana, hora_inicio, hora_fim')
+    .eq('usuario_id', usuarioId)
+    .eq('paciente_id', p.id)
+    .order('dia_semana', { ascending: true })
+    .order('hora_inicio', { ascending: true });
+  if (error) return { erro: 'falha ao ler a agenda' };
+  const horarios: HorarioExistente[] = (data ?? []).map((h) => ({
+    id: h.id as string,
+    dia_semana: h.dia_semana as number,
+    hora_inicio: String(h.hora_inicio).slice(0, 5),
+    hora_fim: String(h.hora_fim).slice(0, 5),
+  }));
+
+  const remocao = nome === 'propor_remocao_de_horario';
+  const atual = resolverHorario(
+    horarios,
+    diaDoNome(remocao ? e.dia : e.dia_atual),
+    horaValida(remocao ? e.hora : e.hora_atual),
+  );
+  if (!atual) return { erro: `${p.nome} não tem horário fixo na agenda` };
+
+  const resumoAtual = atual.situacao === 'ok'
+    ? `${DIAS[atual.dia_semana - 1]} ${atual.hora_inicio}–${atual.hora_fim}`
+    : `ambíguo, a pessoa escolhe no cartão entre: ${atual.opcoes.map((h) => `${DIAS[h.dia_semana - 1]} ${h.hora_inicio}`).join(', ')}`;
+
+  if (remocao) {
+    return {
+      rascunho: { tipo: 'remocao_horario', paciente: p, atual },
+      resumo: { paciente: p.nome, horario_a_tirar: resumoAtual },
+    };
+  }
+
+  // O novo herda do atual o que a frase não disse: o dia e a duração.
+  const base = atual.situacao === 'ok' ? atual : atual.opcoes[0];
+  const novoDia = diaDoNome(e.novo_dia) ?? base.dia_semana;
+  const novoInicio = horaValida(e.nova_hora_inicio) ?? base.hora_inicio;
+  const novoFim = horaValida(e.nova_hora_fim) ??
+    somarMinutos(novoInicio, duracaoEmMinutos(base.hora_inicio, base.hora_fim));
+  if (novoFim <= novoInicio) return { erro: 'hora de fim antes do início' };
+
+  return {
+    rascunho: {
+      tipo: 'troca_horario',
+      paciente: p,
+      atual,
+      novo: { dia_semana: novoDia, hora_inicio: novoInicio, hora_fim: novoFim },
+    },
+    resumo: {
+      paciente: p.nome,
+      de: resumoAtual,
+      para: `${DIAS[novoDia - 1]} ${novoInicio}–${novoFim}`,
+    },
+  };
 }
 
 /** Paciente novo, com os horários fixos que vierem na mesma frase. */

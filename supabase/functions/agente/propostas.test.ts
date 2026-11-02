@@ -5,6 +5,11 @@ import {
   horaFimPadrao,
   horaValida,
   proporFeedback,
+  aplicarEdicao,
+  camposAlterados,
+  resolverHorario,
+  somarMinutos,
+  duracaoEmMinutos,
   nomesDePropostas,
   pagamentoDaSessao,
   resolverPaciente,
@@ -88,4 +93,56 @@ Deno.test('feedback vira rascunho com categoria; mensagem vazia é recusada', ()
   const semCategoria = proporFeedback({ mensagem: 'O app fechou' });
   assertEquals('rascunho' in semCategoria && semCategoria.rascunho.tipo === 'feedback' && semCategoria.rascunho.categoria, 'problema');
   assertEquals('erro' in proporFeedback({ categoria: 'problema', mensagem: '  ' }), true);
+});
+
+const horariosDoTomas = [
+  { id: 'h1', dia_semana: 3, hora_inicio: '09:00', hora_fim: '09:50' },
+  { id: 'h2', dia_semana: 5, hora_inicio: '09:00', hora_fim: '09:50' },
+];
+
+Deno.test('horário atual pelo dia dito', () => {
+  const r = resolverHorario(horariosDoTomas, 3, null);
+  assertEquals(r?.situacao === 'ok' && r.id, 'h1');
+});
+
+Deno.test('dois horários e a frase não diz qual: ambíguo, o cartão pergunta', () => {
+  const r = resolverHorario(horariosDoTomas, null, '09:00');
+  assertEquals(r?.situacao, 'ambiguo');
+});
+
+Deno.test('o que foi dito não casa com nenhum: mostra todos para escolher', () => {
+  const r = resolverHorario(horariosDoTomas, 1, null);
+  assertEquals(r?.situacao === 'ambiguo' && r.opcoes.length, 2);
+});
+
+Deno.test('paciente sem horário: nada a trocar', () => {
+  assertEquals(resolverHorario([], 3, null), null);
+});
+
+Deno.test('a troca mantém a duração atual', () => {
+  assertEquals(duracaoEmMinutos('09:00', '09:50'), 50);
+  assertEquals(somarMinutos('10:00', 50), '10:50');
+});
+
+const cadastro = {
+  nome: 'Tomás Ribeiro',
+  telefone: '11 90000-0000',
+  email: 'tomas@x.com',
+  observacoes: 'prefere manhã',
+  status: 'ativo' as const,
+  receber_sms: true,
+  preco: 250,
+};
+
+Deno.test('edição muda só o que foi pedido e preserva as observações', () => {
+  const novo = aplicarEdicao(cadastro, { telefone: '11 98888-7777', receber_sms: false });
+  assertEquals(novo.observacoes, 'prefere manhã');
+  assertEquals(novo.email, 'tomas@x.com');
+  assertEquals(camposAlterados(cadastro, novo), ['telefone', 'receber_sms']);
+});
+
+Deno.test('e-mail vazio apaga; preço novo entra', () => {
+  const novo = aplicarEdicao(cadastro, { email: '', preco: 300 });
+  assertEquals(novo.email, null);
+  assertEquals(novo.preco, 300);
 });

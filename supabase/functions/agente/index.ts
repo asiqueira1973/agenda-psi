@@ -3,7 +3,13 @@ import { corsHeaders, json } from '../_shared/cors.ts';
 import { sinalizadorLigado } from '../_shared/feature-flag.ts';
 import { definicoesDeFerramentas, executarFerramenta } from './ferramentas.ts';
 import { falaDeCartao, limparNotasImitadas, semNotasDoApp, validarConversa } from './conversa.ts';
-import { definicoesDePropostas, executarProposta, nomesDePropostas, type Rascunho } from './propostas.ts';
+import {
+  definicoesDePropostas,
+  executarProposta,
+  nomesDePropostas,
+  propostasDaVersao2,
+  type Rascunho,
+} from './propostas.ts';
 import { registrarAuditoria, type LinhaDeAuditoria } from './auditoria.ts';
 
 /**
@@ -108,7 +114,10 @@ const instrucoesDeRegistro = [
   'Várias pessoas na mesma frase vão numa chamada só, com vários itens.',
   'Se a pessoa pedir para registrar algo sem dar os dados ("quero registrar uma sessão"), pergunte o que falta (paciente e data, por exemplo) antes de propor.',
   'Se o resumo da proposta disser que um nome é ambíguo ou não foi encontrado, avise em uma frase: o cartão deixa escolher o paciente certo.',
-  'Alterar ou apagar registros você ainda não faz: diga que dá para fazer pelas telas do app.',
+  'Para alterar o cadastro de um paciente (nome, telefone, e-mail, observações, SMS, ativo/inativo, preço), use propor_edicao_de_paciente, só com os campos pedidos. Se essa ferramenta não estiver disponível, diga que dá para fazer na ficha do paciente.',
+  'Para mudar o dia ou a hora fixa de um paciente na agenda, use propor_troca_de_horario. Para tirar um horário da agenda (o paciente parou de vir naquele horário), use propor_remocao_de_horario. Tirar da agenda não apaga o paciente nem as sessões.',
+  'Se a ferramenta de troca ou de remoção de horário não estiver disponível, diga que dá para fazer pela Agenda do app.',
+  'Alterar ou apagar sessão, pagamento ou despesa, e apagar paciente, você ainda não faz: diga que dá para fazer pelas telas do app.',
   'Se a pessoa relatar um problema, erro ou bug no app, sugerir uma melhoria ou elogiar o app, chame propor_feedback com as palavras dela (elogio também vai para a equipe). Se não ficar claro o que aconteceu, pergunte antes em uma frase. Não prometa prazo nem correção.',
 ];
 
@@ -170,6 +179,12 @@ Deno.serve(async (req) => {
     return responder('limite_excedido', json({ error: 'limite_excedido' }, 429));
   }
 
+  // Quais cartões o app sabe mostrar. A 5.0.2 não manda o campo: vale 1.
+  const versaoCartoes = Number((corpo as { versao_cartoes?: unknown } | null)?.versao_cartoes) || 1;
+  const propostasOferecidas = definicoesDePropostas.filter(
+    (d) => versaoCartoes >= 2 || !propostasDaVersao2.includes(d.name),
+  );
+
   const conversa = validarConversa(corpo);
   if (!conversa) return responder('conversa_invalida', json({ error: 'conversa_invalida' }, 400));
 
@@ -208,7 +223,7 @@ Deno.serve(async (req) => {
           max_tokens: 2000,
           system: instrucoes(registros),
           // Sem o sinalizador, as propostas nem são oferecidas ao modelo.
-          tools: registros ? [...definicoesDeFerramentas, ...definicoesDePropostas] : definicoesDeFerramentas,
+          tools: registros ? [...definicoesDeFerramentas, ...propostasOferecidas] : definicoesDeFerramentas,
           messages: mensagens,
         }),
         signal: AbortSignal.timeout(25_000),
@@ -275,6 +290,9 @@ Deno.serve(async (req) => {
           // modelo tenha inventado a chamada.
           if (!registros) {
             saida = { erro: 'registros desligados' };
+          } else if (versaoCartoes < 2 && propostasDaVersao2.includes(bloco.name)) {
+            // Esta versão do app não mostraria o cartão.
+            saida = { erro: 'esta versão do app ainda não faz isso; diga que dá para fazer pelas telas do app' };
           } else {
             const resultado = await executarProposta(bloco.name, bloco.input, cliente, usuarioId);
             if ('rascunho' in resultado) {
