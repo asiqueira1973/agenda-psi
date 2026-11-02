@@ -1,5 +1,6 @@
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { diaDaSemanaDoBanco, normalizar } from './ferramentas.ts';
+import type { RascunhoDeRegistro } from './registros.ts';
 
 /**
  * As ferramentas de PROPOSTA do agente — fase 2 de docs/agente-plano.md.
@@ -95,6 +96,7 @@ export type Rascunho =
     novo: { dia_semana: number; hora_inicio: string; hora_fim: string };
   }
   | { tipo: 'remocao_horario'; paciente: Extract<PacienteResolvido, { situacao: 'ok' }>; atual: HorarioResolvido }
+  | RascunhoDeRegistro
   | {
     tipo: 'edicao_paciente';
     paciente: Extract<PacienteResolvido, { situacao: 'ok' }>;
@@ -353,16 +355,28 @@ export const definicoesDePropostas = [
 ] as const;
 
 /**
- * Ferramentas que só entram para o app que avisou entender os cartões novos
- * (`versao_cartoes` >= 2 no pedido). A 5.0.2 não avisa: se recebesse um destes
+ * Versão mínima de cartões que o app precisa avisar (`versao_cartoes` no
+ * pedido) para receber cada ferramenta. A 5.0.2 não avisa: se recebesse um destes
  * cartões, o descartaria em silêncio e o agente diria "confira o cartão" sobre
  * um cartão que não aparece.
  */
-export const propostasDaVersao2: readonly string[] = [
-  'propor_troca_de_horario',
-  'propor_remocao_de_horario',
-  'propor_edicao_de_paciente',
-];
+export const versaoMinimaDosCartoes: Record<string, number> = {
+  propor_troca_de_horario: 2,
+  propor_remocao_de_horario: 2,
+  propor_edicao_de_paciente: 2,
+  // Alterar e apagar sessão, pagamento e despesa: build 2 da 5.0.2 em diante.
+  propor_edicao_de_sessao: 3,
+  propor_exclusao_de_sessao: 3,
+  propor_edicao_de_pagamento: 3,
+  propor_exclusao_de_pagamento: 3,
+  propor_edicao_de_despesa: 3,
+  propor_exclusao_de_despesa: 3,
+};
+
+/** O app com esta versão de cartões sabe mostrar o cartão desta ferramenta? */
+export function appMostra(ferramenta: string, versaoCartoes: number): boolean {
+  return versaoCartoes >= (versaoMinimaDosCartoes[ferramenta] ?? 1);
+}
 
 export const nomesDePropostas: readonly string[] = definicoesDePropostas.map((d) => d.name);
 
@@ -502,7 +516,7 @@ export type ResultadoDeProposta =
   | { erro: string };
 
 /** Pacientes do usuário, uma leitura por proposta. */
-async function lerPacientes(cliente: SupabaseClient, usuarioId: string) {
+export async function lerPacientes(cliente: SupabaseClient, usuarioId: string) {
   const { data, error } = await cliente
     .from('v_pacientes_cartao')
     .select('paciente_id, nome_completo, preco_vigente, status')

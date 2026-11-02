@@ -7,9 +7,11 @@ import {
   definicoesDePropostas,
   executarProposta,
   nomesDePropostas,
-  propostasDaVersao2,
+  appMostra,
+  lerPacientes,
   type Rascunho,
 } from './propostas.ts';
+import { definicoesDeRegistros, executarRegistro, nomesDeRegistros } from './registros.ts';
 import { registrarAuditoria, type LinhaDeAuditoria } from './auditoria.ts';
 
 /**
@@ -117,7 +119,8 @@ const instrucoesDeRegistro = [
   'Para alterar o cadastro de um paciente (nome, telefone, e-mail, observações, SMS, ativo/inativo, preço), use propor_edicao_de_paciente, só com os campos pedidos. Se essa ferramenta não estiver disponível, diga que dá para fazer na ficha do paciente.',
   'Para mudar o dia ou a hora fixa de um paciente na agenda, use propor_troca_de_horario. Para tirar um horário da agenda (o paciente parou de vir naquele horário), use propor_remocao_de_horario. Tirar da agenda não apaga o paciente nem as sessões.',
   'Se a ferramenta de troca ou de remoção de horário não estiver disponível, diga que dá para fazer pela Agenda do app.',
-  'Alterar ou apagar sessão, pagamento ou despesa, e apagar paciente, você ainda não faz: diga que dá para fazer pelas telas do app.',
+  'Para corrigir uma sessão, um pagamento ou uma despesa já registrados, use propor_edicao_de_* (só o que muda); para apagar um registrado por engano, propor_exclusao_de_*. A data da sessão e a competência do pagamento e da despesa não se alteram: para isso, proponha apagar e registrar de novo. Se a ferramenta não estiver disponível, diga que dá para fazer pela tela do registro.',
+  'Apagar paciente você NÃO faz: diga que é na ficha do paciente, porque apaga junto todas as sessões e pagamentos. Se o paciente teve alta ou parou de vir, sugira marcar como inativo.',
   'Se a pessoa relatar um problema, erro ou bug no app, sugerir uma melhoria ou elogiar o app, chame propor_feedback com as palavras dela (elogio também vai para a equipe). Se não ficar claro o que aconteceu, pergunte antes em uma frase. Não prometa prazo nem correção.',
 ];
 
@@ -181,8 +184,8 @@ Deno.serve(async (req) => {
 
   // Quais cartões o app sabe mostrar. A 5.0.2 não manda o campo: vale 1.
   const versaoCartoes = Number((corpo as { versao_cartoes?: unknown } | null)?.versao_cartoes) || 1;
-  const propostasOferecidas = definicoesDePropostas.filter(
-    (d) => versaoCartoes >= 2 || !propostasDaVersao2.includes(d.name),
+  const propostasOferecidas = [...definicoesDePropostas, ...definicoesDeRegistros].filter((d) =>
+    appMostra(d.name, versaoCartoes)
   );
 
   const conversa = validarConversa(corpo);
@@ -202,6 +205,11 @@ Deno.serve(async (req) => {
   const mensagens: Array<{ role: 'user' | 'assistant'; content: unknown }> = conversa.map(
     (m) => ({ role: m.papel === 'usuario' ? 'user' : 'assistant', content: m.texto }),
   );
+  // Cadastro do usuário, lido uma vez por pergunta e só se uma proposta de
+  // alterar ou apagar precisar dele.
+  let cachePacientes: Awaited<ReturnType<typeof lerPacientes>> = null;
+  const pacientesDoUsuario = async () => (cachePacientes ??= await lerPacientes(cliente, usuarioId)) ?? [];
+
   // Já pediu uma vez ao modelo para chamar a ferramenta que ele pulou.
   let cobrouFerramenta = false;
   // Em que passo a falha aconteceu, para o log. Nunca a mensagem do erro: a de
@@ -285,16 +293,18 @@ Deno.serve(async (req) => {
         if (bloco.type !== 'tool_use') continue;
         usadas.push(bloco.name);
         let saida: unknown;
-        if (nomesDePropostas.includes(bloco.name)) {
+        if (nomesDePropostas.includes(bloco.name) || nomesDeRegistros.includes(bloco.name)) {
           // Proposta pedida com o sinalizador desligado: recusa, mesmo que o
           // modelo tenha inventado a chamada.
           if (!registros) {
             saida = { erro: 'registros desligados' };
-          } else if (versaoCartoes < 2 && propostasDaVersao2.includes(bloco.name)) {
+          } else if (!appMostra(bloco.name, versaoCartoes)) {
             // Esta versão do app não mostraria o cartão.
             saida = { erro: 'esta versão do app ainda não faz isso; diga que dá para fazer pelas telas do app' };
           } else {
-            const resultado = await executarProposta(bloco.name, bloco.input, cliente, usuarioId);
+            const resultado = nomesDeRegistros.includes(bloco.name)
+              ? await executarRegistro(bloco.name, bloco.input, await pacientesDoUsuario(), cliente, usuarioId)
+              : await executarProposta(bloco.name, bloco.input, cliente, usuarioId);
             if ('rascunho' in resultado) {
               rascunhos.push(resultado.rascunho);
               // A IA lê o resumo, sem ids: ela não precisa deles.
