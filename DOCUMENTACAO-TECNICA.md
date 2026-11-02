@@ -279,8 +279,7 @@ por qual policy passa. Onde a coluna de policy diz "própria", leia
 | 2 | Nova conta | `profissionais` (verificação de existência) | `profissionais` | `profissionais_select_own`, `profissionais_insert_own` |
 | 3 | Confirme seu e-mail | — | — | — |
 | 4 | Nova senha | — | `auth.users` (via GoTrue) | — |
-| 5 | Início | `v_dashboard_resumo`, `v_meu_plano`, `pacientes` (contagem) | — | própria em todas |
-| 5h | Análise com IA | via Edge Function `analise-financeira` | — | a função lê `v_dashboard_payload_json` com o JWT |
+| 5 | Início | `v_dashboard_resumo`, `v_meu_plano`, `pacientes` (contagem), `feature_flags` | — | própria em todas; `feature_flags_leitura` |
 | 6 | Agenda | `view_agenda_semana_padrao`, `v_meu_plano` | — | `select agenda via view` |
 | 7 | Novo agendamento | `v_pacientes_cartao`, `view_agenda_semana_padrao` | `agenda_semana_padrao` | `Insert only own rows` |
 | 8 | Detalhe do agendamento | `agenda_semana_padrao` + join com `pacientes` | `agenda_semana_padrao` (**só `observacoes`**) | `Update only own rows`, `Delete only own rows` |
@@ -304,7 +303,7 @@ por qual policy passa. Onde a coluna de policy diz "própria", leia
 | 26 | Feedback | — | `feedback` + Edge Function `notifica-admin` | `feedback_insert_public` |
 | 27 | Apagar minha conta | — | `profissionais` (`ativo = false`) | `profissionais_update_own` |
 | 28 | Política de privacidade | — | — | — |
-| 29 | Agente Psi | via Edge Function `agente-psi` | via as funções `agentpsi_*` | a função valida o JWT |
+| 29 | Agente (no Início) | via Edge Function `agente`: `v_pacientes_cartao`, `v_financeiro_mensal`, `v_pendencias_por_paciente`, `sessoes` (contagem) | — (fase 1) | a função usa o JWT; RLS das views `security_invoker` |
 
 **Nenhuma tela lê ou escreve `locais_atendimento` ou
 `comentarios_locais_atendimento`.** O corte do módulo é limpo: não há rota, query
@@ -364,11 +363,11 @@ Sem paciente nenhum, mostra o estado de boas-vindas com um caminho só.
 O aviso de limite de SMS aparece em laranja a partir de 80% do limite e em
 vermelho quando estoura. Os números vêm de `v_meu_plano`.
 
-### 5h. Análise com IA
+**Com o sinalizador `agente` ligado** (tabela `feature_flags`, migration 0014),
+quem tem paciente vê o agente no lugar dos indicadores — ver 29. Desligado, ainda
+carregando, ou com erro na leitura do sinalizador, o Início é o resumo acima.
 
-Chama a Edge Function com corpo vazio; a função lê a view com o JWT. Exibe as
-quatro seções, **incluindo riscos e oportunidades**. Falha mostra erro com botão
-de tentar de novo, e **preserva a análise anterior**.
+A Análise com IA (5h) saiu do produto em 14/09/2026.
 
 ### 6. Agenda
 
@@ -431,11 +430,26 @@ Meu perfil lê do banco. Feedback exige mensagem não vazia. Apagar conta tem
 campo **editável**, botão que só habilita com `QUERO DELETAR` exato, e **logout
 imediato**. Sair pede confirmação.
 
-### 29. Agente Psi
+### 29. Agente (no Início)
 
-Conversa com histórico da sessão, campo limpo ao enviar, resposta em Markdown.
-O corpo da requisição leva **só o texto**. O evento de analytics leva o
-comprimento e o sucesso, **nunca o texto**.
+O Agente Psi antigo saiu em 14/09/2026. O atual nasceu em 02/11/2026 e mora no
+Início (plano completo em `docs/agente-plano.md`). **Fase 1: só consultas.**
+
+- Ao abrir: campo no topo, três sugestões de consulta e o aviso de SMS. Depois
+  da primeira pergunta, o Início vira a conversa e o campo desce para o rodapé.
+- A conversa vive só na memória do app. "Nova conversa" e fechar o app apagam.
+- O app manda `{ mensagens: [{ papel, texto }] }` para a Edge Function `agente`.
+  **Sem `usuario_id`** (pegadinha 3).
+- A função confere o sinalizador `agente` a cada chamada (403 se desligado) e
+  roda com o JWT do usuário. O modelo (Claude Haiku 4.5) só escolhe entre três
+  ferramentas de leitura: `buscar_paciente` (`v_pacientes_cartao`),
+  `consultar_mes` (`v_financeiro_mensal` e contagem de `sessoes`) e
+  `listar_pendencias` (`v_pendencias_por_paciente` e `v_pacientes_cartao`). A IA
+  não escreve SQL e não grava nada.
+- Segredo: `ANTHROPIC_API_KEY`.
+- Analytics: `agenda_psi_perguntou_assistente`, com comprimento da pergunta,
+  sucesso e as ferramentas usadas. **Nunca o texto.**
+- Desligar em produção: `update feature_flags set ativo = false where chave = 'agente';`
 
 ---
 

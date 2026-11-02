@@ -75,4 +75,10 @@ export type PropriedadesDeEvento = {
   tamanho_do_texto?: number;
   /** Se a operação deu certo. */
   sucesso?: boolean;
+  /**
+   * Ferramentas que o agente usou para responder, separadas por vírgula —
+   * `consultar_mes`, `listar_pendencias`. São nomes fixos do código, não texto
+   * da pessoa. Dizem que tipo de pergunta o agente recebe.
+   */
+  ferramentas?: string;
 };

@@ -26,6 +26,8 @@ import {
 import { gruposDoDashboard } from '@/features/home/indicadores';
 import { track, eventos, telas } from '@/lib/analytics';
 import { useSession } from '@/features/auth/session-provider';
+import { useSinalizador } from '@/lib/feature-flags';
+import { InicioComAgente } from '@/features/agent/inicio-com-agente';
 
 /**
  * Tela 5 — Início, o dashboard.
@@ -45,6 +47,13 @@ import { useSession } from '@/features/auth/session-provider';
  * decisão do Alexandre depois do primeiro teste em aparelho. Some com eles o
  * defeito 11.9.16 do spec — a tela órfã do agente deixou de existir em vez de
  * ganhar entrada.
+ *
+ * O agente VOLTOU em 02/11/2026, de outro jeito: ele é o próprio Início
+ * (docs/agente-plano.md, "Interface"). Com o sinalizador `agente` ligado, quem
+ * tem paciente vê a conversa no lugar dos indicadores. Desligado — ou enquanto
+ * o sinalizador ainda não respondeu, ou se a leitura falhar — o Início é o
+ * resumo abaixo, sem mudança nenhuma. É isso que permite desligar o agente em
+ * produção sem deixar ninguém com tela vazia.
  */
 export default function InicioScreen() {
   const colors = useColors();
@@ -52,7 +61,15 @@ export default function InicioScreen() {
   const plano = useMeuPlano();
   const temPacientes = useTemPacientes();
 
+  const agenteLigado = useSinalizador('agente');
+
   const carregando = resumo.isPending || temPacientes.isPending;
+
+  // Quem ainda não tem paciente continua vendo o convite para cadastrar o
+  // primeiro: sem dado, o agente não teria o que responder.
+  if (agenteLigado && temPacientes.data === true) {
+    return <InicioComAgente aviso={<AvisoDeLimiteDeSms plano={plano.data} />} />;
+  }
 
   return (
     <Screen>

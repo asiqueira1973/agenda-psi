@@ -47,7 +47,7 @@ anterior: o webhook do Agente Psi recebia o `usuario_id` no corpo, sem
 autenticação nenhuma, e quem tivesse a URL lia e escrevia dado de qualquer
 psicólogo trocando um uuid.
 
-O corpo de `agente-psi` tem **um** campo. O de `analise-financeira` é **vazio**.
+O corpo de `agente` tem **um** campo, `mensagens`.
 
 ### 4. Nenhuma chave secreta no bundle
 
@@ -141,7 +141,7 @@ app/                          # projeto Expo
     (auth)/                   # login, nova conta, confirme e-mail, nova senha
     (tabs)/                   # as CINCO abas
     patients/ sessions/ payments/ expenses/ schedule/
-    settings/ paywall/ agent/
+    settings/ paywall/
   src/
     features/<feature>/       # hooks, copy e componentes, juntos
     components/ui/            # design system
@@ -151,7 +151,7 @@ app/                          # projeto Expo
 supabase/
   migrations/                 # aplicadas, em ordem de timestamp
   migrations-pendentes/       # escritas e retidas, com o porquê no README
-  functions/                  # agente-psi, analise-financeira, notifica-admin,
+  functions/                  # agente, notifica-admin,
                               # apple-notificacoes, play-notificacoes
   tests/                      # pgTAP
 docs/

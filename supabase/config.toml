@@ -436,3 +436,6 @@ verify_jwt = false
 
 [functions.play-notificacoes]
 verify_jwt = false
+
+[functions.agente]
+verify_jwt = true

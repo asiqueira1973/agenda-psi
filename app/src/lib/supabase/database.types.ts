@@ -288,6 +288,27 @@ export type Database = {
           },
         ]
       }
+      feature_flags: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          chave: string
+          descricao: string
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          chave: string
+          descricao: string
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          chave?: string
+          descricao?: string
+        }
+        Relationships: []
+      }
       feedback: {
         Row: {
           app_name: string | null
@@ -662,6 +683,8 @@ export type Database = {
         Row: {
           ativo: boolean | null
           criado_em: string
+          descadastro_email_em: string | null
+          descadastro_email_origem: string | null
           email: string
           fcm_token: string | null
           id: string
@@ -675,6 +698,8 @@ export type Database = {
         Insert: {
           ativo?: boolean | null
           criado_em?: string
+          descadastro_email_em?: string | null
+          descadastro_email_origem?: string | null
           email: string
           fcm_token?: string | null
           id?: string
@@ -688,6 +713,8 @@ export type Database = {
         Update: {
           ativo?: boolean | null
           criado_em?: string
+          descadastro_email_em?: string | null
+          descadastro_email_origem?: string | null
           email?: string
           fcm_token?: string | null
           id?: string
