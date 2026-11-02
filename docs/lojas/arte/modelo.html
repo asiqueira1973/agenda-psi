@@ -1,0 +1,67 @@
+<!doctype html>
+<!--
+  Print da App Store (iPhone com Dynamic Island, 1206 x 2622 — o tamanho que a
+  App Store Connect pede desde a 5.0.2; o 1242 x 2688 do guia antigo não entra mais) — o agente no Início.
+  Mesmo estilo dos seis atuais, feitos no Claude Design: fundo quase branco,
+  título e subtítulo à esquerda, o aparelho entrando pela base.
+  Diferença pedida em 02/11/2026: mais espaço entre o texto e o aparelho.
+
+  Gerar o PNG:
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless \
+      --screenshot=docs/lojas/telas-iphone-final/00-agente.png \
+      --window-size=1206,2622 --hide-scrollbars docs/lojas/arte/print-agente.html
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; width: 1206px; height: 2622px; overflow: hidden; }
+  body {
+    background: linear-gradient(180deg, #e9edf3 0%, #f7f8fa 45%, #ffffff 100%);
+    font-family: Inter, -apple-system, Helvetica, sans-serif;
+    position: relative;
+  }
+  .texto { position: absolute; left: 120px; right: 120px; top: 185px; }
+  h1 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 90px;
+    line-height: 1.08;
+    letter-spacing: -1.5px;
+    color: #1c1c1e;
+  }
+  p {
+    margin: 30px 0 0;
+    font-weight: 400;
+    font-size: 45px;
+    line-height: 1.3;
+    color: #6b6f76;
+  }
+  /* O aparelho começa bem abaixo do texto — o espaço pedido. */
+  .aparelho {
+    position: absolute;
+    left: 120px;
+    top: 740px;
+    width: 966px;
+    padding: 18px;
+    box-sizing: border-box;
+    background: #111;
+    border-radius: 120px;
+    box-shadow: 0 40px 90px rgba(20, 30, 50, 0.18), 0 8px 24px rgba(20, 30, 50, 0.10);
+  }
+  .tela {
+    display: block;
+    width: 100%;
+    border-radius: 102px;
+  }
+</style>
+</head>
+<body>
+  <div class="texto">
+    <h1>{{titulo}}</h1>
+    <p>{{subtitulo}}</p>
+  </div>
+  <div class="aparelho"><img class="tela" src="../telas-iphone/{{captura}}" alt=""></div>
+</body>
+</html>
