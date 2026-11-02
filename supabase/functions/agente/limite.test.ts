@@ -1,5 +1,5 @@
 import { assertEquals } from 'jsr:@std/assert@1';
-import { estourou, mensagemDoTeto, TETOS } from './limite.ts';
+import { estourou, mensagemDoTeto, SEM_TETO, TETOS } from './limite.ts';
 
 Deno.test('tetos decididos em 02/11/2026', () => {
   assertEquals(TETOS, { free: { dia: 10, semana: 30 }, pro: { dia: 20, semana: 60 } });
@@ -30,4 +30,9 @@ Deno.test('a mensagem do gratuito convida para o Pro; a do Pro não', () => {
     mensagemDoTeto({ tipo: 'semana', limite: 60, plano: 'pro', voltaEm: '09/11' }),
     'Você chegou ao limite de 60 perguntas por semana do plano Pro. O assistente volta em 09/11.',
   );
+});
+
+Deno.test('as contas de revisão das lojas não têm teto', () => {
+  assertEquals(SEM_TETO.has('0bbc0244-9fc4-42d7-bb4d-47878202311b'), true); // a da Apple
+  assertEquals(SEM_TETO.has('1446571c-849b-4dc9-ad58-1894c194e7ba'), true); // a do Play
 });

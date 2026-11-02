@@ -22,6 +22,21 @@ export const TETOS = {
 
 export type Plano = keyof typeof TETOS;
 
+/**
+ * Contas SEM teto: as de revisão das lojas e as de teste do Alexandre.
+ *
+ * Sem isto, o revisor da Apple bateria no limite na primeira pergunta — em
+ * 02/11/2026, antes de qualquer revisão humana, a conta da Apple já tinha 22
+ * perguntas e a usada pelo robô do Play, 51 — e "a função não funciona" é
+ * recusa certa. São ids, não e-mails: o id vem do JWT, que não se falsifica.
+ */
+export const SEM_TETO: ReadonlySet<string> = new Set([
+  '0bbc0244-9fc4-42d7-bb4d-47878202311b', // alexandre.silva.siqueira+psiteste@gmail.com — conta dada à Apple
+  '1446571c-849b-4dc9-ad58-1894c194e7ba', // reviewer@apple.com — usada pelo robô de pré-lançamento do Play
+  '2484a44a-180b-4161-ae29-ffe446f33b96', // alexandre.siqueira@outlook.com — conta de teste
+  'e3606b51-5c1c-4e4a-8e71-5390120daf35', // alexandre.silva.siqueira@gmail.com — o administrador
+]);
+
 export type Estouro = { tipo: 'dia' | 'semana'; limite: number; plano: Plano; voltaEm: string | null };
 
 /**
@@ -80,6 +95,7 @@ function inicioDoDiaEmBrasilia(): string {
  * pior que algumas perguntas a mais, e a auditoria continua registrando.
  */
 export async function conferirTeto(cliente: SupabaseClient, usuarioId: string): Promise<Estouro | null> {
+  if (SEM_TETO.has(usuarioId)) return null;
   const { data: meuPlano } = await cliente.from('v_meu_plano').select('plano').maybeSingle();
   const plano: Plano = meuPlano?.plano === 'pro' ? 'pro' : 'free';
 
