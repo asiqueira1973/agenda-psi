@@ -80,7 +80,8 @@ estado válido do app) e o cartão diz o que faltou.
 Beatriz e ela pagou" grava **só a sessão**, com o campo de pagamento da sessão
 marcado como pago. Não cria registro em `pagamentos`. Depois de confirmada a
 sessão, o agente pode oferecer, numa linha, "Registrar também o pagamento de
-R$ 280?" — e só cria o pagamento se a pessoa aceitar, com cartão próprio.
+R$ 280?" — e só cria o pagamento se a pessoa aceitar, com cartão próprio, em que
+o valor já vem preenchido e pode ser alterado.
 
 No sentido inverso, "a Beatriz pagou 280" é pagamento, não sessão: o agente não
 cria sessão por conta própria.
@@ -100,8 +101,11 @@ pessoa ver. Um "Helena pagou" gravado na Helena errada é pior que nenhum agente
   mesma invalidação de cache.
 - Tudo roda com o JWT do usuário, nunca com service_role. A RLS garante que o
   agente só enxerga e altera os dados de quem está usando.
-- Valores vêm do banco (regra P2): o preço vigente sai de `precos_paciente`, não
-  da IA.
+- O valor sugerido vem do banco, não da IA: é o preço vigente em
+  `precos_paciente`. Ele é **referência, não regra** — o campo de valor é sempre
+  editável no cartão, porque a pessoa pode ter cobrado diferente naquela sessão.
+  Se a frase já diz o valor ("pagou 250"), vale o da frase, e o cartão mostra o
+  preço de cadastro ao lado só para a pessoa notar a diferença.
 - Nomes resolvidos no banco com o `unaccent` que já existe. Duas "Ana", o cartão
   pergunta qual.
 
