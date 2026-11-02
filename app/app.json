@@ -3,7 +3,7 @@
     "name": "Agenda Psi",
     "slug": "agenda-psi",
     "owner": "alexsiq",
-    "version": "5.0.1",
+    "version": "5.0.2",
     "orientation": "portrait",
     "scheme": "agendapsi",
     "userInterfaceStyle": "automatic",
@@ -20,7 +20,7 @@
     },
     "android": {
       "package": "com.dablab.agendapsi",
-      "versionCode": 21,
+      "versionCode": 22,
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
