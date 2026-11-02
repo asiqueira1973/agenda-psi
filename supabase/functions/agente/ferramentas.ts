@@ -21,11 +21,25 @@ export const definicoesDeFerramentas = [
   {
     name: 'buscar_paciente',
     description:
-      'Procura pacientes pelo nome (aceita parte do nome, sem acento). Devolve até 5, com status, se recebe lembrete por SMS, preço atual de referência, sessões realizadas, sessões não pagas, última sessão, primeira consulta, total pago e TODOS os horários fixos do paciente na agenda semanal (dia da semana, início e fim). Use sempre que a pergunta citar um paciente pelo nome, inclusive "quais os horários do fulano".',
+      'Procura pacientes pelo nome (aceita parte do nome, sem acento). Devolve até 5, com o cadastro completo (telefone, e-mail, observações), status, se recebe lembrete por SMS, preço atual de referência, sessões realizadas, sessões não pagas, última sessão, primeira consulta, total pago e TODOS os horários fixos do paciente na agenda semanal (dia da semana, início e fim). Use sempre que a pergunta citar um paciente pelo nome, inclusive "quais os horários do fulano".',
     input_schema: {
       type: 'object',
       properties: {
         nome: { type: 'string', description: 'Nome ou parte do nome do paciente.' },
+      },
+      required: ['nome'],
+    },
+  },
+  {
+    name: 'historico_do_paciente',
+    description:
+      'Histórico de UM paciente: as sessões registradas (data, se pagou, modalidade, duração) e os pagamentos (data de competência, valor, tipo), do mais recente para o mais antigo. Aceita um intervalo de datas opcional. Use para "quando o fulano pagou da última vez?", "quais sessões da fulana em outubro?" ou "quanto o fulano já me pagou este ano?". Se o nome trouxer mais de um paciente, devolve as opções.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        nome: { type: 'string', description: 'Nome ou parte do nome do paciente.' },
+        desde: { type: 'string', description: 'Data inicial AAAA-MM-DD, opcional.' },
+        ate: { type: 'string', description: 'Data final AAAA-MM-DD, opcional.' },
       },
       required: ['nome'],
     },
@@ -102,6 +116,8 @@ export async function executarFerramenta(
   switch (nome) {
     case 'buscar_paciente':
       return await buscarPaciente(String(entrada.nome ?? ''), cliente, usuarioId);
+    case 'historico_do_paciente':
+      return await historicoDoPaciente(entrada, cliente, usuarioId);
     case 'listar_pacientes':
       return await listarPacientes(entrada, cliente, usuarioId);
     case 'consultar_mes':
@@ -123,7 +139,7 @@ async function buscarPaciente(termo: string, cliente: SupabaseClient, usuarioId:
   const { data, error } = await cliente
     .from('v_pacientes_cartao')
     .select(
-      'paciente_id, nome_completo, status, receber_sms, preco_vigente, sessoes_realizadas, sessoes_nao_pagas, ultima_sessao, primeira_consulta, valor_total_pago_ate_hoje',
+      'paciente_id, nome_completo, telefone, email, observacoes, status, receber_sms, preco_vigente, sessoes_realizadas, sessoes_nao_pagas, ultima_sessao, primeira_consulta, valor_total_pago_ate_hoje',
     )
     .eq('usuario_id', usuarioId);
   if (error) return { erro: 'falha ao ler pacientes' };
@@ -160,6 +176,74 @@ async function buscarPaciente(termo: string, cliente: SupabaseClient, usuarioId:
         .filter((h) => h.paciente_id === paciente_id)
         .map((h) => ({ dia: h.dia_semana_label, inicio: h.hora_inicio?.slice(0, 5), fim: h.hora_fim?.slice(0, 5) })),
     })),
+  };
+}
+
+/** Quantas linhas de cada histórico voltam, no máximo. */
+const MAX_HISTORICO = 30;
+
+/**
+ * Sessões e pagamentos de um paciente, mais recentes primeiro.
+ *
+ * Só procede com UM paciente: se o nome casar com vários, devolve os nomes
+ * para a IA perguntar de qual se trata — histórico do paciente errado é pior
+ * que nenhum.
+ */
+async function historicoDoPaciente(
+  entrada: Record<string, unknown>,
+  cliente: SupabaseClient,
+  usuarioId: string,
+) {
+  const procurado = normalizar(String(entrada.nome ?? ''));
+  if (procurado.length === 0) return { erro: 'nome vazio' };
+  const data = (v: unknown) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
+  const desde = data(entrada.desde);
+  const ate = data(entrada.ate);
+
+  const pacientes = await cliente
+    .from('pacientes')
+    .select('id, nome_completo')
+    .eq('usuario_id', usuarioId);
+  if (pacientes.error) return { erro: 'falha ao ler pacientes' };
+  const palavras = procurado.split(/\s+/);
+  const achados = (pacientes.data ?? []).filter((p) =>
+    palavras.every((w) => normalizar(p.nome_completo ?? '').includes(w))
+  );
+  if (achados.length === 0) return { erro: 'nenhum paciente com esse nome' };
+  if (achados.length > 1) {
+    return { varios_pacientes: achados.map((p) => p.nome_completo) };
+  }
+  const paciente = achados[0];
+
+  let sessoes = cliente
+    .from('sessoes')
+    .select('ocorreu_em_dia, status, pagamento, modalidade, duracao_minutos')
+    .eq('usuario_id', usuarioId)
+    .eq('paciente_id', paciente.id)
+    .order('ocorreu_em_dia', { ascending: false })
+    .limit(MAX_HISTORICO);
+  if (desde) sessoes = sessoes.gte('ocorreu_em_dia', desde);
+  if (ate) sessoes = sessoes.lte('ocorreu_em_dia', ate);
+
+  let pagamentos = cliente
+    .from('pagamentos')
+    .select('data_competencia, valor_pagamento, tipo, status')
+    .eq('usuario_id', usuarioId)
+    .eq('paciente_id', paciente.id)
+    .order('data_competencia', { ascending: false })
+    .limit(MAX_HISTORICO);
+  if (desde) pagamentos = pagamentos.gte('data_competencia', desde);
+  if (ate) pagamentos = pagamentos.lte('data_competencia', ate);
+
+  const [s, p] = await Promise.all([sessoes, pagamentos]);
+  if (s.error || p.error) return { erro: 'falha ao ler o histórico' };
+
+  return {
+    paciente: paciente.nome_completo,
+    sessoes: s.data ?? [],
+    pagamentos: p.data ?? [],
+    // Avisa a IA quando o corte de linhas pode esconder registro antigo.
+    pode_haver_mais: (s.data?.length ?? 0) === MAX_HISTORICO || (p.data?.length ?? 0) === MAX_HISTORICO,
   };
 }
 

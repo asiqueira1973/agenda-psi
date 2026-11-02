@@ -1,6 +1,6 @@
 -- Teste — feature_flags: leitura para autenticado, escrita para ninguém.
 begin;
-select plan(4);
+select plan(5);
 
 insert into auth.users (instance_id, id, aud, role, email, created_at, updated_at) values
   ('00000000-0000-0000-0000-000000000000','abab0001-0000-4000-8000-000000000001',
@@ -8,6 +8,9 @@ insert into auth.users (instance_id, id, aud, role, email, created_at, updated_a
 
 select is((select ativo from public.feature_flags where chave = 'agente'), false,
   'o agente nasce desligado');
+
+select is((select ativo from public.feature_flags where chave = 'agente_registros'), false,
+  'as inclusoes do agente nascem desligadas');
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"abab0001-0000-4000-8000-000000000001"}', true);
