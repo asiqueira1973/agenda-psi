@@ -73,6 +73,7 @@ function instrucoes(): string {
     // modelo erra.
     `Hoje é ${hojeEmBrasilia()}, ${new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long' }).format(new Date())} (horário de Brasília).`,
     'Responda em português do Brasil, em texto simples, sem Markdown, sem emoji, em no máximo três frases curtas, ou numa lista curta com um item por linha.',
+    'Você consulta pacientes (cadastro completo e histórico), agenda semanal, sessões, pagamentos e despesas. Antes de dizer que não tem acesso a algo, veja se alguma ferramenta cobre.',
     'Dinheiro sempre no formato R$ 1.234,56. Datas no formato dd/mm quando forem do ano corrente, e dd/mm/aaaa quando forem de outro ano.',
     'Use SOMENTE os números devolvidos pelas ferramentas. Nunca invente nem estime valores, e nunca faça conta com eles (não multiplique preço por quantidade de sessões). Se a ferramenta não trouxer o dado, diga que não encontrou.',
     'O preço de um paciente é só a referência do cadastro; o valor de cada sessão pode ter sido outro. Nunca apresente o preço como valor devido ou pago.',

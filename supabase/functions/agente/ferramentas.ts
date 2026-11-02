@@ -45,6 +45,19 @@ export const definicoesDeFerramentas = [
     },
   },
   {
+    name: 'consultar_despesas',
+    description:
+      'Despesas do consultório num período (aluguel de sala, supervisão, impostos etc.), com o total geral e o total por tipo já calculados. Filtro opcional por tipo (parte do nome, sem acento). Use para "quanto gastei de aluguel este ano?" ou "quais despesas tive em outubro?". Sem período, considera tudo.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        desde: { type: 'string', description: 'Data inicial AAAA-MM-DD, opcional.' },
+        ate: { type: 'string', description: 'Data final AAAA-MM-DD, opcional.' },
+        tipo: { type: 'string', description: 'Parte do nome do tipo de despesa, por exemplo "aluguel". Opcional.' },
+      },
+    },
+  },
+  {
     name: 'listar_pacientes',
     description:
       'Lista os nomes dos pacientes, com filtros opcionais: status (ativo ou inativo) e se recebe lembrete por SMS. Use para "quantos pacientes ativos eu tenho?", "quem tem aviso de SMS ligado?" ou "quais pacientes estão inativos?".',
@@ -118,6 +131,8 @@ export async function executarFerramenta(
       return await buscarPaciente(String(entrada.nome ?? ''), cliente, usuarioId);
     case 'historico_do_paciente':
       return await historicoDoPaciente(entrada, cliente, usuarioId);
+    case 'consultar_despesas':
+      return await consultarDespesas(entrada, cliente, usuarioId);
     case 'listar_pacientes':
       return await listarPacientes(entrada, cliente, usuarioId);
     case 'consultar_mes':
@@ -244,6 +259,53 @@ async function historicoDoPaciente(
     pagamentos: p.data ?? [],
     // Avisa a IA quando o corte de linhas pode esconder registro antigo.
     pode_haver_mais: (s.data?.length ?? 0) === MAX_HISTORICO || (p.data?.length ?? 0) === MAX_HISTORICO,
+  };
+}
+
+/**
+ * Despesas de um período, com totais.
+ *
+ * A soma é feita aqui, sobre as linhas que a RLS devolveu, e não pela IA: o
+ * modelo é instruído a nunca fazer conta, então quem responde "quanto gastei"
+ * precisa receber o total pronto. É a mesma soma que um `sum()` faria.
+ */
+async function consultarDespesas(
+  entrada: Record<string, unknown>,
+  cliente: SupabaseClient,
+  usuarioId: string,
+) {
+  const data = (v: unknown) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
+  const desde = data(entrada.desde);
+  const ate = data(entrada.ate);
+  const tipo = typeof entrada.tipo === 'string' ? normalizar(entrada.tipo) : '';
+
+  let consulta = cliente
+    .from('despesas')
+    .select('valor_despesa, data_competencia, descricao, tipos_despesa(nome)')
+    .eq('usuario_id', usuarioId)
+    .order('data_competencia', { ascending: false });
+  if (desde) consulta = consulta.gte('data_competencia', desde);
+  if (ate) consulta = consulta.lte('data_competencia', ate);
+  const { data: linhas, error } = await consulta;
+  if (error) return { erro: 'falha ao ler despesas' };
+
+  const despesas = (linhas ?? [])
+    .map((d) => ({
+      tipo: (d.tipos_despesa as { nome?: string } | null)?.nome ?? 'sem tipo',
+      valor: Number(d.valor_despesa ?? 0),
+      data: d.data_competencia,
+      descricao: d.descricao,
+    }))
+    .filter((d) => !tipo || normalizar(d.tipo).includes(tipo) || normalizar(d.descricao ?? '').includes(tipo));
+
+  const porTipo: Record<string, number> = {};
+  for (const d of despesas) porTipo[d.tipo] = (porTipo[d.tipo] ?? 0) + d.valor;
+
+  return {
+    quantidade: despesas.length,
+    total: despesas.reduce((soma, d) => soma + d.valor, 0),
+    total_por_tipo: porTipo,
+    despesas: despesas.slice(0, MAX_HISTORICO),
   };
 }
 
