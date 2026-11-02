@@ -30,6 +30,10 @@ sessões gravadas em 30/10, 76 em 05/10, 32 em 28/10 com sessões desde julho.
 segunda Beatriz e Caio pagaram, terça Helena não pagou, quarta todos no mensal"
 substitui dezenas de toques.
 
+Mas o lote não é o único caso. O registro unitário — uma sessão, um pagamento, um
+paciente novo, um horário fixo na agenda — tem de funcionar tão bem quanto,
+porque é o que acontece no dia a dia de quem registra na hora.
+
 ### 3. Achado à parte: sessões com data futura
 
 Cerca de 25% das sessões são registradas antes de acontecer. Algumas pessoas usam
@@ -47,8 +51,10 @@ aluguel" é a frase mais fácil de traduzir e a que mais destrava esses números
 
 **O cartão de confirmação é a regra para toda escrita.** A IA traduz a frase e
 monta um cartão com o que vai gravar — paciente, data, valor, se pagou. A pessoa
-confere e confirma. Campo ambíguo vem destacado e editável no próprio cartão. Num
-lote, o cartão vira uma tabela com N linhas e um único Confirmar.
+confere e confirma. Campo ambíguo vem destacado e editável no próprio cartão.
+
+O mesmo cartão serve aos dois casos: num registro unitário, uma linha; num lote,
+uma tabela com N linhas e um único Confirmar.
 
 A tradução é o caminho principal; o cartão só garante que nada é gravado sem a
 pessoa ver. Um "Helena pagou" gravado na Helena errada é pior que nenhum agente.
@@ -57,8 +63,9 @@ pessoa ver. Um "Helena pagou" gravado na Helena errada é pior que nenhum agente
 
 - Uma Edge Function `agente`, com Claude usando ferramentas. A IA nunca escreve
   SQL; chama um conjunto fechado: `buscar_paciente`, `propor_sessoes`,
-  `propor_pagamentos`, `propor_despesa`, `propor_paciente`, `consultar_resumo`,
-  `listar_nao_pagas`.
+  `propor_pagamentos`, `propor_despesa`, `propor_paciente`, `propor_horario`,
+  `consultar_resumo`, `listar_nao_pagas`. As ferramentas `propor_*` aceitam uma
+  lista — um item é só uma lista de tamanho um, sem caminho separado.
 - As ferramentas `propor_*` não gravam: devolvem um rascunho. Quem grava é o app,
   quando a pessoa confirma, pelos mesmos hooks das telas — mesmas validações,
   mesma invalidação de cache.
@@ -74,9 +81,8 @@ pessoa ver. Um "Helena pagou" gravado na Helena errada é pior que nenhum agente
 | Fase | O que entra | Por quê |
 |---|---|---|
 | 1 | Só consultas: "quem não pagou este mês?", "quanto recebi em outubro?" — com os eventos de uso do agente | Risco zero de escrita; valida se as pessoas usam |
-| 2 | Lote de sessões e pagamentos, com cartão de confirmação | O ganho maior: ataca o lançamento atrasado |
-| 3 | Despesas, novo paciente, horário fixo | Alimenta o lucro e a margem do Início |
-| 4 | Voz | Entre atendimentos, falar é mais natural; o ditado do teclado já resolve boa parte sem código |
+| 2 | Escrita, unitária e em lote, com cartão de confirmação: sessão, pagamento, paciente, horário fixo, despesa | Cobre tanto quem registra na hora quanto quem lança atrasado |
+| 3 | Voz | Entre atendimentos, falar é mais natural; o ditado do teclado já resolve boa parte sem código |
 
 ## Como medir
 
@@ -85,10 +91,3 @@ pessoa ver. Um "Helena pagou" gravado na Helena errada é pior que nenhum agente
 - taxa de cartões confirmados contra cancelados;
 - quanto do que o agente gravou é editado ou apagado depois — a medida de que a
   tradução está certa.
-
-## Antes da fase 2
-
-Conversar com as cinco pessoas que fazem 88% do uso, começando pela de 240
-sessões, e perguntar como lançam hoje. Se o lote atrasado for mesmo o padrão
-delas, o agente resolve um problema real; se não for, descobre-se antes de gastar
-o esforço.
