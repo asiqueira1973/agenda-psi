@@ -1,6 +1,6 @@
 -- Teste — agente_auditoria: tabela de sistema, ninguém da API lê nem escreve.
 begin;
-select plan(3);
+select plan(4);
 
 insert into auth.users (instance_id, id, aud, role, email, created_at, updated_at) values
   ('00000000-0000-0000-0000-000000000000','abab0002-0000-4000-8000-000000000002',
@@ -24,6 +24,8 @@ select throws_ok(
 reset role;
 select is((select count(*)::int from public.agente_auditoria), 1,
   'a linha gravada pela funcao continua la');
+
+select has_column('public', 'agente_auditoria', 'resposta', 'a auditoria guarda a resposta');
 
 select * from finish();
 rollback;

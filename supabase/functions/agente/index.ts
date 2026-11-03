@@ -158,12 +158,13 @@ Deno.serve(async (req) => {
    * auditoria (0016) e devolve a resposta. A auditoria é aguardada para não
    * ser cortada quando a função encerra, mas nunca lança.
    */
-  async function responder(resultado: LinhaDeAuditoria['resultado'], resposta: Response) {
+  async function responder(resultado: LinhaDeAuditoria['resultado'], resposta: Response, texto: string | null = null) {
     await registrarAuditoria({
       usuarioId,
       // Só o que a pessoa escreveu: a nota do app sobre cartões anteriores,
       // que vai no começo da fala dela, não é pergunta.
       pergunta: typeof ultima === 'string' ? semNotasDoApp(ultima) : '',
+      resposta: texto,
       resultado,
       modelo: uso.rodadas > 0 ? MODELO : null,
       rodadas: uso.rodadas,
@@ -191,7 +192,8 @@ Deno.serve(async (req) => {
   // certa em vez de um erro genérico.
   const estouro = await conferirTeto(cliente, usuarioId);
   if (estouro) {
-    return responder('limite_excedido', json({ resposta: mensagemDoTeto(estouro), ferramentas: [], rascunhos: [] }));
+    const frase = mensagemDoTeto(estouro);
+    return responder('limite_excedido', json({ resposta: frase, ferramentas: [], rascunhos: [] }), frase);
   }
 
   // Quais cartões o app sabe mostrar. A 5.0.2 não manda o campo: vale 1.
@@ -311,7 +313,7 @@ Deno.serve(async (req) => {
           return responder('erro', json({ error: 'agente_indisponivel' }, 502));
         }
         if (!texto) return responder('erro', json({ error: 'agente_indisponivel' }, 502));
-        return responder('ok', json({ resposta: texto, ferramentas: usadas, rascunhos }));
+        return responder('ok', json({ resposta: texto, ferramentas: usadas, rascunhos }), texto);
       }
 
       // A IA pediu ferramentas: executa todas e devolve os resultados.

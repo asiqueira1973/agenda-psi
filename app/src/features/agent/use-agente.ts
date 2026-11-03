@@ -44,6 +44,7 @@ export function useAgente() {
       });
 
       if (error) {
+        console.warn('agente: invoke devolveu erro', `${error.name}: ${error.message}`, (error as { context?: unknown }).context ? 'com context' : 'sem context');
         // A função manda o motivo no corpo do erro. Se não vier, texto genérico
         // — nunca o erro cru do servidor (spec 20.5).
         let codigo = '';
@@ -108,6 +109,10 @@ export function useAgente() {
       // A pergunta fica na tela e o erro aparece embaixo: perguntar de novo
       // não obriga a redigitar.
       onError: (e) => {
+        // Diagnóstico da falha que só aparece no Android de release (backlog,
+        // 02/11/2026): o servidor responde 200 e o app cai aqui. Vai para o
+        // logcat; leva o tipo e a mensagem do erro, nunca o texto da pergunta.
+        console.warn('agente: falha', e instanceof Error ? `${e.name}: ${e.message}` : String(e), (e as { cause?: unknown })?.cause);
         setErro(e instanceof Error ? e.message : copyAgente.erros.agente_indisponivel);
         track({
           nome: eventos.perguntouAssistente,

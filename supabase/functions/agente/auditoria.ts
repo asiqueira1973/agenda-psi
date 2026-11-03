@@ -49,6 +49,8 @@ export function custoEstimado(
 export type LinhaDeAuditoria = {
   usuarioId: string;
   pergunta: string;
+  /** O texto devolvido ao app; nulo quando não houve resposta. */
+  resposta: string | null;
   resultado: 'ok' | 'erro' | 'limite_excedido' | 'conversa_invalida' | 'desligado';
   modelo: string | null;
   rodadas: number;
@@ -78,6 +80,7 @@ export async function registrarAuditoria(l: LinhaDeAuditoria): Promise<void> {
       // Teto de tamanho: a conversa já é limitada, mas a auditoria não deve
       // depender disso.
       pergunta: l.pergunta.slice(0, 2000),
+      resposta: l.resposta?.slice(0, 4000) ?? null,
       resultado: l.resultado,
       modelo: l.modelo,
       rodadas: l.rodadas,
