@@ -25,19 +25,18 @@ campos do fim do formulário e o botão do rodapé ficam atrás do teclado.
 - Não é regressão: o defeito já estava na versão 5.0.1. Decidido em 02/11/2026
   deixar fora da 5.0.2 porque exige testar as 17 telas.
 
-### Agente no Android: "falha" com resposta certa, e envio duplicado
+### Agente: envio duplicado com toques muito rápidos
 
-Visto em 02/11/2026 no robô de pré-lançamento do Play (okhttp, IP do Google em
-Iowa, conta reviewer@apple.com), que digitou letras aleatórias:
+Dois toques quase simultâneos mandam a mesma pergunta duas vezes (visto com o
+robô de pré-lançamento do Play, 02/11/2026). `enviar` em
+`app/src/features/agent/use-agente.ts` confere `perguntar.isPending`, que ainda
+não mudou no segundo toque. Trocar por uma ref marcada na hora. Gasta uma
+pergunta do teto à toa; não grava nada em dobro (consultas só leem, e os
+cartões pedem confirmação).
 
-- O servidor respondeu 200 com resposta válida (179–241 bytes), mas o app
-  registrou `agenda_psi_perguntou_assistente` com `sucesso: false`. No emulador,
-  com o build de desenvolvimento, funciona. Reproduzir com o build de RELEASE
-  do Android no emulador digitando texto aleatório.
-- Dois toques rápidos mandam a mesma pergunta duas vezes (mesmo texto, ms de
-  diferença). `enviar` em `app/src/features/agent/use-agente.ts` confere
-  `perguntar.isPending`, que ainda não mudou no segundo toque. Trocar por uma
-  ref marcada na hora.
+Obs.: a "falha ao perguntar ao agente" que aparecia no Visão do Produto NÃO era
+defeito. Os eventos chegam com `sucesso: true`; a tela mostrava a descrição do
+catálogo, criada em 15/09 a partir de uma falha do agente antigo.
 
 ## Depois
 
