@@ -38,6 +38,21 @@ Obs.: a "falha ao perguntar ao agente" que aparecia no Visão do Produto NÃO er
 defeito. Os eventos chegam com `sucesso: true`; a tela mostrava a descrição do
 catálogo, criada em 15/09 a partir de uma falha do agente antigo.
 
+### Telefone: validar e formatar no cadastro
+
+A 0019 normaliza o telefone só na hora de mandar à Bird. O cadastro continua
+aceitando qualquer coisa (`validarTelefone` só exige que não esteja vazio). O
+app deve formatar para +55 ao salvar e avisar quando faltar o DDD — 17
+pacientes com SMS ligado tinham número impossível de corrigir em 07/11/2026.
+
+### Segurança: `v_sms_lembretes_pendentes` legível pela chave pública
+
+A view é SECURITY DEFINER e tem SELECT para `anon` e `authenticated`: quem tem
+a chave pública do app lê nome e telefone dos pacientes de todos os
+profissionais com lembrete na próxima meia hora. Antes de revogar, confirmar
+com que credencial o nó "Recupera pacientes" do n8n lê a view — se for a chave
+pública, revogar para o SMS.
+
 ## Depois
 
 - **Preço do Sonnet 5.** Conferir o preço real em
