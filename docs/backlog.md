@@ -54,3 +54,23 @@ catálogo, criada em 15/09 a partir de uma falha do agente antigo.
 - **Imagem de destaque do Play** (1024 × 500).
 - **Funções `agentpsi_*`** estão fechadas à API desde a 0017, mas existem.
   Apagar de vez quando tiver certeza de que nenhum fluxo do n8n as usa.
+
+## Em avaliação
+
+### Horário quinzenal (dois pacientes alternando no mesmo horário)
+
+Sugestão de nicolletoigo@hotmail.com via assistente, 05/11/2026. Alexandre vai
+decidir se vale: a dúvida é a usabilidade da tela da Agenda.
+
+- Dois pacientes no mesmo horário JÁ é possível: não há trava no banco, e
+  `schedule/novo` só avisa ("Já existe um horário marcado nesse dia e nessa
+  hora"), sem bloquear.
+- O que falta é a alternância. Hoje os dois apareceriam toda semana e — o
+  problema sério — `v_sms_lembretes_pendentes` mandaria lembrete aos dois toda
+  semana, inclusive na que não têm sessão.
+- Desenho levantado: `agenda_semana_padrao` ganha `frequencia` (semanal |
+  quinzenal) e a data de uma semana em que o horário acontece; a paridade da
+  semana decide se vale. Servidor sozinho resolve SMS e agente; marcar como
+  quinzenal e mostrar "quem é desta semana" na Agenda exigem versão nova (a
+  Agenda hoje é uma semana-padrão sem datas).
+
