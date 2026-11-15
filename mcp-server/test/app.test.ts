@@ -70,7 +70,7 @@ function toolsListCom(capacidades?: Record<string, unknown>) {
   });
 }
 
-type ToolListada = { name: string; annotations?: { readOnlyHint?: boolean }; _meta?: { ui?: { visibility?: string[]; resourceUri?: string } } };
+type ToolListada = { name: string; annotations?: { readOnlyHint?: boolean; destructiveHint?: boolean }; _meta?: { ui?: { visibility?: string[]; resourceUri?: string } } };
 async function listar(capacidades?: Record<string, unknown>) {
   const r = await app.fetch(toolsListCom(capacidades));
   expect(r.status).toBe(200);
@@ -123,6 +123,14 @@ describe('tools/list conforme o cliente (13.1 e 13.4)', () => {
   it('cliente de 2025, que não repete as capacidades: os dois caminhos', async () => {
     const t = await listar();
     expect(Object.keys(t).sort()).toEqual(ordenar([...LEITURAS, ...FORM_MODELO, ...FORM_APP, ...FALLBACKS]));
+  });
+
+  it('o que apaga é marcado como destrutivo para o host (13.1); editar não', async () => {
+    const t = await listar();
+    const apagam = ['exclusao_sessao', 'exclusao_pagamento', 'exclusao_despesa', 'remocao_horario', 'troca_horario'];
+    for (const a of REGISTROS) {
+      for (const n of [`salvar_${a}`, `registrar_${a}`]) expect(t[n]?.annotations?.destructiveHint, n).toBe(apagam.includes(a));
+    }
   });
 });
 

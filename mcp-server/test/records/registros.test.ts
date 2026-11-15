@@ -135,3 +135,32 @@ describe('troca e remoção de horário', () => {
     expect(chamadas.filter((c) => c.metodo === 'delete').map((c) => c.tabela)).toEqual(['agenda_semana_padrao']);
   });
 });
+
+describe('correções do verifier (épico 6)', () => {
+  const h = { id: 'h1', paciente_id: BEA, paciente_nome: 'Beatriz Nogueira', dia_semana: 3, hora_inicio: '10:00:00', hora_fim: '10:50:00' };
+  const novo = { id: 'novo', paciente_id: BEA, paciente_nome: 'Beatriz Nogueira', dia_semana: 4, hora_inicio: '11:30:00', hora_fim: '12:20:00' };
+  const valores = { dia_semana: '4', hora_inicio: '11:30', hora_fim: '12:20' };
+  it('troca repetida (fallback, ou o formulário sem o continuar) reaproveita o horário novo, sem duplicar', async () => {
+    const g = dbPorTabela({ view_agenda_semana_padrao: [{ data: h, error: null }, { data: [h, novo], error: null }], agenda_semana_padrao: { data: [{ id: 'h1' }], error: null } });
+    const r = await salvarRegistro(trocaHorario, 'h1', valores, {}, ctxDeTeste(g.db));
+    expect(r).toMatchObject({ ok: true, ids: ['novo'] });
+    expect(g.chamadas.filter((c) => c.metodo === 'insert')).toHaveLength(0);
+  });
+  it('conta demo não tira nem troca horário (8.6), e nada é gravado', async () => {
+    const demo = () => dbPorTabela({ view_agenda_semana_padrao: [{ data: h, error: null }, { data: [h], error: null }], agenda_semana_padrao: { data: [{ id: 'x' }], error: null }, 'rpc:demo_uid': { data: 'u-demo', error: null } });
+    const msg = { ok: false, erros: [{ campo: null, mensagem: 'Esta conta de demonstração não permite excluir registros.' }] };
+    const a = demo();
+    expect(await salvarRegistro(remocaoHorario, 'h1', {}, {}, ctxDeTeste(a.db, { sub: 'u-demo' }))).toEqual(msg);
+    const b = demo();
+    expect(await salvarRegistro(trocaHorario, 'h1', valores, {}, ctxDeTeste(b.db, { sub: 'u-demo' }))).toEqual(msg);
+    expect([...a.chamadas, ...b.chamadas].some((c) => c.metodo === 'delete' || c.metodo === 'insert')).toBe(false);
+  });
+  it('paciente sem preço vigente edita o telefone sem inventar preço', async () => {
+    const cartao = { data: { paciente_id: BEA, nome_completo: 'Beatriz Nogueira', telefone: '11 9', email: '', status: 'ativo', receber_sms: true, preco_vigente: null }, error: null };
+    const { db, chamadas } = dbPorTabela({ v_pacientes_cartao: cartao, pacientes: { data: [{ id: BEA }], error: null } });
+    const r = await salvarRegistro(edicaoPaciente, BEA, { telefone: '11 8', preco: '' }, {}, ctxDeTeste(db));
+    expect(r).toMatchObject({ ok: true });
+    expect(chamadas.some((c) => c.tabela === 'precos_paciente')).toBe(false);
+  });
+});
+

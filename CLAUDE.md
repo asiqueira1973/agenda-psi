@@ -154,6 +154,7 @@ supabase/
   functions/                  # agente, notifica-admin,
                               # apple-notificacoes, play-notificacoes
   tests/                      # pgTAP
+mcp-server/                   # conector MCP (Claude/ChatGPT); teste: cd mcp-server && npm test
 docs/
   spec.md  schema.md  decisoes-e-divergencias.md
 CLAUDE.md  README.md  DOCUMENTACAO-TECNICA.md

@@ -51,3 +51,21 @@ Do cartão do agente: "Antes: …", o aviso da data, o aviso do preço, "Horári
 Do spec: "Excluir definitivamente", "Horário alterado." (15, com ponto, como no épico 5), "Nada mudou no registro" e os erros da 12.
 
 **Novos, para aprovação no fechamento:** "Nenhuma despesa registrada ainda." e "Nenhum horário fixo na agenda." (no padrão dos dois do app), mais os textos lidos só pelo modelo.
+
+## Registro (15/11/2026)
+
+### Verifier: NÃO PRONTO, depois corrigido (teste primeiro)
+1. Faltava `destructiveHint`. Agora exclusões, remoção e troca de horário são marcadas como destrutivas, com teste no `tools/list`.
+2. A troca de horário duplicava o horário novo quando o fallback repetia a chamada. Agora é idempotente: reaproveita o horário novo se ele já estiver na agenda.
+3. A conta demo conseguia tirar e trocar horário, porque a policy da agenda não a barra. Agora o servidor confere `demo_uid()` antes de apagar.
+4. Um paciente sem preço vigente não conseguia editar o cadastro. Agora preço vazio, nesse caso, quer dizer "não muda".
+5. Menores:
+   - `listar_registros` ganhou `.describe()`;
+   - as respostas do motor passam por `semCamposClinicos`;
+   - o README tem caso de erro em todas as linhas e uma tabela por `registrar_*`;
+   - a 7.6 da documentação técnica registra as divergências que faltavam.
+6. Achado pelo teste da máquina de estado: Cancelar depois do sucesso mudava o estado para cancelado. Corrigido.
+
+### Diferenças em relação ao plano acima
+- O aviso de data somente leitura é o rodapé de cada tela do app (`rodapeData`, `rodapeCompetencia`), não o do cartão do agente: o texto do app vence.
+- Os candidatos são lidos até 40 em sessão e pagamento, até 60 em despesa (como o agente), e todos os horários do paciente.

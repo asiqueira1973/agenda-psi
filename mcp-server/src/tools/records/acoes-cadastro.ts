@@ -11,7 +11,7 @@ import { validarPaciente } from '../patient/model.js';
 import { inserirHorario, lerAgenda } from '../schedule/index.js';
 import { conflitosDoHorario, DIAS_DO_MODELO, diaDoNome, horaValida, resumoDoHorario, validarHorario, type HorarioDaAgenda } from '../schedule/model.js';
 import { campoEscolha, campoLeitura, campoMarcar, nadaMudou } from './acoes-financeiras.js';
-import { excluirPorId, linhaQueMudou, type DefDeRegistro, type Mudancas } from './motor.js';
+import { ehContaDemo, excluirPorId, linhaQueMudou, type DefDeRegistro, type Mudancas } from './motor.js';
 import type { Campo, ErroDeRegistro } from './tipos.js';
 
 /**
@@ -83,7 +83,10 @@ export const edicaoPaciente: DefDeRegistro<Cadastro> = {
   ],
   validar: (c, v) => {
     const campos = edicaoPaciente.campos(c, {}, null);
-    const f = { nome: v.nome ?? c.nome, telefone: v.telefone ?? c.telefone, email: v.email ?? c.email, preco: v.preco ?? (c.preco === null ? '' : String(c.preco)), receber_sms: (v.receber_sms ?? String(c.receber_sms)) === 'true', horarios: [] };
+    const precoDigitado = (v.preco ?? (c.preco === null ? '' : String(c.preco))).trim();
+    // Paciente que nunca teve preço edita o resto sem inventar um: vazio = preço não muda.
+    const semPreco = c.preco === null && precoDigitado === '';
+    const f = { nome: v.nome ?? c.nome, telefone: v.telefone ?? c.telefone, email: v.email ?? c.email, preco: semPreco ? '1' : precoDigitado, receber_sms: (v.receber_sms ?? String(c.receber_sms)) === 'true', horarios: [] };
     const status = v.status ?? c.status;
     // Mesmas regras do cadastro (validarNome, validarTelefone, validarEmailOpcional, 11.1).
     const r = validarPaciente(f);
@@ -98,14 +101,15 @@ export const edicaoPaciente: DefDeRegistro<Cadastro> = {
     if (status !== c.status) linhas.push(...linhaQueMudou(achar(campos, 'status'), statusDoPaciente.find((o) => o.valor === status)?.rotulo ?? status));
     if (d.receber_sms !== c.receber_sms) linhas.push(...linhaQueMudou(achar(campos, 'receber_sms'), d.receber_sms ? 'sim' : 'não'));
     const cadastroMudou = linhas.length > 0;
-    if (d.preco !== c.preco) linhas.push(...linhaQueMudou(achar(campos, 'preco'), formatarDinheiro(d.preco)));
+    const precoMudou = !semPreco && d.preco !== c.preco;
+    if (precoMudou) linhas.push(...linhaQueMudou(achar(campos, 'preco'), formatarDinheiro(d.preco)));
     if (!linhas.length) return nadaMudou();
     return {
       ok: true,
       mudancas: {
         colunas: {
           ...(cadastroMudou ? { cadastro: { nome_completo: d.nome_completo, telefone: d.telefone, email: d.email, status, receber_sms: d.receber_sms } } : {}),
-          ...(d.preco !== c.preco ? { preco: d.preco } : {}),
+          ...(precoMudou ? { preco: d.preco } : {}),
         },
         linhas,
       },
@@ -149,7 +153,7 @@ const horarioDaLinha = (l: LinhaDoHorario): Horario => ({
 async function lerHorarios(ctx: ToolContext, pacienteId: string | null): Promise<Horario[] | null> {
   if (!pacienteId) return [];
   const r = await ctx.db.from('view_agenda_semana_padrao').select(COLUNAS_DO_HORARIO).eq('usuario_id', ctx.sub).eq('paciente_id', pacienteId).order('dia_semana').order('hora_inicio');
-  return r.error ? null : ((r.data ?? []) as LinhaDoHorario[]).map(horarioDaLinha);
+  return r.error ? null : (Array.isArray(r.data) ? (r.data as LinhaDoHorario[]) : []).map(horarioDaLinha);
 }
 
 async function lerHorario(ctx: ToolContext, id: string): Promise<Horario | null> {
@@ -226,7 +230,14 @@ export const trocaHorario: DefDeRegistro<Horario> = {
     const n = m!.colunas as { dia_semana: number; hora_inicio: string; hora_fim: string };
     // O novo primeiro, o antigo depois, como o cartão do agente: falhar no meio deixa os
     // dois na agenda (visível e reversível), nunca nenhum.
-    const novoId = continuar.novo_id || (await inserirHorario({ ...n, paciente_id: h.paciente_id }, ctx, 'mcp_troca_horario'));
+    // A troca apaga o antigo: a conta demo não exclui (8.6), então nem começa.
+    if (await ehContaDemo(ctx)) return { ok: false, erros: [{ campo: null, mensagem: erros.contaDemoNaoExclui }] };
+    // Idempotente: se o horário novo já está na agenda (uma tentativa anterior gravou e
+    // falhou ao tirar o antigo), reaproveita em vez de inserir de novo. Vale para o
+    // fallback, que repete a chamada com o mesmo token, e para o formulário.
+    const iguais = (await lerHorarios(ctx, h.paciente_id)) ?? [];
+    const jaGravado = iguais.find((x) => x.id !== h.id && x.dia_semana === n.dia_semana && x.hora_inicio === n.hora_inicio && x.hora_fim === n.hora_fim)?.id;
+    const novoId = continuar.novo_id || jaGravado || (await inserirHorario({ ...n, paciente_id: h.paciente_id }, ctx, 'mcp_troca_horario'));
     if (!novoId) return { ok: false, erros: [{ campo: null, mensagem: erros.inesperado }] };
     const erro = await excluirPorId(ctx, 'agenda_semana_padrao', h.id);
     if (erro) return { ok: false, erros: [{ campo: null, mensagem: doAgente.trocaParcial }], continuar: { novo_id: novoId } };

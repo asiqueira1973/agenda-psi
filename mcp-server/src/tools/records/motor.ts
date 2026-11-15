@@ -6,7 +6,7 @@ import { logarChamada } from '../../log.js';
 import { textosNovosEpico5 } from '../../rules/copy-app.js';
 import { erros, textosParaOModelo } from '../../rules/messages.js';
 import { FORMULARIOS_HTML } from '../../ui/generated.js';
-import type { ToolContext } from '../context.js';
+import { semCamposClinicos, type ToolContext } from '../context.js';
 import { lerPacientesOpcoes, pacienteParaFormulario, type PacienteDaLinha } from '../shared/pacientes.js';
 import { fluxoComPrevia, resposta, type Normalizado } from '../shared/previa.js';
 import { registrarRecurso, uriVersionada } from '../shared/recurso.js';
@@ -193,6 +193,12 @@ const camposDoFallback = {
   token_previa: z.string().optional().describe('O token_previa devolvido pela primeira chamada.'),
 };
 
+/**
+ * Dicas para o host (13.1): exclusão e troca de horário apagam um registro, então são
+ * destrutivas; editar sobrescreve, mas não apaga. Nenhuma é idempotente para o host.
+ */
+const anotacoes = (def: DefDeRegistro<unknown>) => ({ destructiveHint: def.modo === 'exclusao' || def.acao === 'troca_horario', idempotentHint: false });
+
 /** Registra as ferramentas de uma ação conforme o cliente (13.4). */
 export function registrarAcaoDeRegistro<R>(server: McpServer, ctx: ToolContext, def: DefDeRegistro<R>): void {
   if (ctx.ui !== 'nao') {
@@ -207,11 +213,13 @@ export function registrarAcaoDeRegistro<R>(server: McpServer, ctx: ToolContext, 
       logarChamada(`abrir_formulario_${def.acao}`, inicio, true, ctx.sub);
       const vazio = p.candidatos.length || (def.porPaciente && !p.paciente?.paciente_id) ? '' : ` ${def.vazio}`;
       const avisos = p.avisos.length ? ` Avisos: ${p.avisos.join('; ')}.` : '';
-      return { content: [{ type: 'text', text: `${textosNovosEpico5.formularioAberto(def.qual)}${avisos}${vazio}` }], structuredContent: p };
+      // Segunda tranca de P5: mesmo que uma ação um dia leia a coluna, ela não sai.
+      return { content: [{ type: 'text', text: `${textosNovosEpico5.formularioAberto(def.qual)}${avisos}${vazio}` }], structuredContent: semCamposClinicos(p) };
     });
     registerAppTool(server, `salvar_${def.acao}`, {
       description: `Grava a ${def.qual} conferida pela pessoa no formulário. Chamada só pelo formulário.`,
       inputSchema: entradaSalvar,
+      annotations: anotacoes(def),
       _meta: { ui: { resourceUri: REGISTRO_RESOURCE_URI, visibility: ['app'] } },
     }, async (args) => {
       const inicio = performance.now();
@@ -223,7 +231,7 @@ export function registrarAcaoDeRegistro<R>(server: McpServer, ctx: ToolContext, 
   }
   if (ctx.ui === 'sim') return;
   const entrada = def.entrada.extend(camposDoFallback);
-  server.registerTool(`registrar_${def.acao}`, { description: def.descricaoFallback, inputSchema: entrada, _meta: { ui: { visibility: ['model'] } } }, async (args: unknown) => {
+  server.registerTool(`registrar_${def.acao}`, { description: def.descricaoFallback, inputSchema: entrada, annotations: anotacoes(def), _meta: { ui: { visibility: ['model'] } } }, async (args: unknown) => {
     const inicio = performance.now();
     const r = await registrarRegistro(def, args as Args, ctx);
     logarChamada(`registrar_${def.acao}`, inicio, !r.isError, ctx.sub);
@@ -240,7 +248,11 @@ export function registrarComunsDeRegistro(server: McpServer, ctx: ToolContext, d
   registrarRecurso(server, 'Formulário de edição e exclusão', REGISTRO_RESOURCE_URI, HTML);
   server.registerTool('listar_registros', {
     description: 'Os registros candidatos de um paciente para uma edição ou exclusão. Usada pelo formulário.',
-    inputSchema: z.object({ acao: z.string(), paciente_id: z.string(), pedido: z.string().optional() }),
+    inputSchema: z.object({
+      acao: z.string().describe('A ação do formulário, por exemplo edicao_sessao.'),
+      paciente_id: z.string().describe('O paciente escolhido no formulário.'),
+      pedido: z.string().optional().describe('Os argumentos do modelo, em JSON, como vieram no pré-preenchimento.'),
+    }),
     annotations: { readOnlyHint: true },
     _meta: { ui: { visibility: ['app'] } },
   }, async ({ acao, paciente_id, pedido }) => {
@@ -253,7 +265,7 @@ export function registrarComunsDeRegistro(server: McpServer, ctx: ToolContext, d
     }
     const c = def ? await candidatosDe(def, ctx, args, paciente_id) : null;
     if (!c) return { content: [{ type: 'text', text: 'falha ao ler os registros' }], isError: true };
-    return { content: [{ type: 'text', text: `${c.candidatos.length} registros.` }], structuredContent: c };
+    return { content: [{ type: 'text', text: `${c.candidatos.length} registros.` }], structuredContent: semCamposClinicos(c) };
   });
 }
 
@@ -263,11 +275,19 @@ export function registrarComunsDeRegistro(server: McpServer, ctx: ToolContext, d
  * a conta demo (12); zero linhas sem ser a demo, registro não encontrado.
  */
 export async function excluirPorId(ctx: ToolContext, tabela: 'sessoes' | 'pagamentos' | 'despesas' | 'agenda_semana_padrao', id: string): Promise<ErroDeRegistro | null> {
+  // A policy de DELETE da agenda NÃO barra a conta demo (só as de sessão, pagamento e
+  // despesa barram); o servidor barra antes, para a 8.6 valer em toda exclusão.
+  if (await ehContaDemo(ctx)) return { campo: null, mensagem: erros.contaDemoNaoExclui };
   const r = await ctx.db.from(tabela).delete().eq('id', id).select('id');
   if (r.error) return { campo: null, mensagem: erros.inesperado };
   if ((r.data ?? []).length > 0) return null;
+  return { campo: null, mensagem: (await ehContaDemo(ctx)) ? erros.contaDemoNaoExclui : erros.semPermissao };
+}
+
+/** A pessoa é a conta de demonstração? `demo_uid()` é a mesma RPC que as policies usam. */
+export async function ehContaDemo(ctx: ToolContext): Promise<boolean> {
   const demo = await ctx.db.rpc('demo_uid').then((x) => x.data, () => null);
-  return { campo: null, mensagem: demo && demo === ctx.sub ? erros.contaDemoNaoExclui : erros.semPermissao };
+  return !!demo && demo === ctx.sub;
 }
 
 /** Linha do antes/depois quando o campo mudou. */
