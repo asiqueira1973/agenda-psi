@@ -48,7 +48,13 @@ export function criarApp(config: Config, deps: Dependencias = {}) {
 
       if (pathname === '/mcp') {
         const auth = await exigirToken(request);
-        if (auth instanceof Response) return auth;
+        if (auth instanceof Response) {
+          // Diagnóstico sem PII (18): só o motivo, que é ASCII e vem do verificador, e o
+          // método. Nunca o token. Sem isto, uma falha do OAuth no Claude não deixa rastro.
+          const motivo = /error_description="([^"]*)"/.exec(auth.headers.get('www-authenticate') ?? '')?.[1] ?? 'sem motivo';
+          console.log(JSON.stringify({ evento: 'token_recusado', motivo, metodo: request.method }));
+          return auth;
+        }
         // O corpo é lido uma vez aqui: dele sai o suporte a UI do cliente (13.4), e o
         // mesmo objeto vai ao SDK como `parsedBody`, sem segunda leitura.
         const corpo = request.method === 'POST' ? await request.clone().json().catch(() => undefined) : undefined;

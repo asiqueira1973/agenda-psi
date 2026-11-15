@@ -106,3 +106,23 @@ describe('tools/list conforme o cliente (13.1 e 13.4)', () => {
     ]);
   });
 });
+
+describe('log da recusa de token (diagnóstico do épico 3, seção 18)', () => {
+  it('o 401 registra só o motivo e o método, nunca o token', async () => {
+    const linhas: string[] = [];
+    const original = console.log;
+    console.log = (l: string) => linhas.push(String(l));
+    try {
+      await app.fetch(toolsList('adulterado'));
+      await app.fetch(toolsList());
+    } finally {
+      console.log = original;
+    }
+    const registros = linhas.map((l) => JSON.parse(l));
+    expect(registros).toEqual([
+      { evento: 'token_recusado', motivo: 'Invalid token', metodo: 'POST' },
+      { evento: 'token_recusado', motivo: 'Missing Authorization header', metodo: 'POST' },
+    ]);
+    expect(linhas.join('\n')).not.toContain('adulterado');
+  });
+});
