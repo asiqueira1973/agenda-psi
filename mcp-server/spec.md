@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Versão | 1.0 |
+| Versão | 1.1 (15/11/2026: hospedagem na Vercel; 25.1, 25.4 e 25.5 respondidas) |
 | Responsável de produto | Alexandre |
 | Status | aprovado para implementação |
 | Data | 15/11/2026 |
@@ -13,7 +13,7 @@
 
 Este é o spec de uma peça nova e isolada: um **servidor MCP remoto** que leva ao Claude (web e desktop) e ao ChatGPT a mesma experiência do agente interno do app (`supabase/functions/agente`). As consultas viram ferramentas de leitura. As gravações viram **formulários de verdade**, via MCP Apps.
 
-Ele vai ser consumido pelo Claude Code em outro computador, que já tem Supabase CLI, Deno e Docker prontos. Leia junto o `CLAUDE.md` da raiz: as sete pegadinhas valem aqui integralmente.
+Ele vai ser consumido pelo Claude Code em outro computador, que já tem Node, Supabase CLI e Vercel CLI prontos. Leia junto o `CLAUDE.md` da raiz: as sete pegadinhas valem aqui integralmente.
 
 **Antes de gerar código, revise a seção 24 (Assunções).** Assunção não revisada vira verdade no minuto em que o agente começa a codar. Diante de qualquer item da seção 25 (Perguntas abertas), **pergunte, não assuma**.
 
@@ -65,7 +65,7 @@ Segundo objetivo, tão importante quanto o primeiro: **ser o modelo de referênc
 | Formulários MCP Apps para: despesa, sessões, pagamento, paciente (com horários), horário fixo, feedback, troca e remoção de horário, edição de paciente e edição e exclusão de sessão, pagamento e despesa | 8.3 / 8.5 / 8.6 |
 | Ferramentas de fallback com prévia e confirmação, para clientes sem MCP Apps | 13.4 |
 | Eventos de analytics iguais aos do app | 21 |
-| Deploy em Supabase Edge Function | 4 |
+| Deploy na Vercel, em `app.agendapsi.app.br`, junto com a página de login | 4 |
 | README com execução local, deploy, conector no Claude e no ChatGPT e roteiro de teste manual | 8.7 |
 
 ### Fora
@@ -88,13 +88,13 @@ Segundo objetivo, tão importante quanto o primeiro: **ser o modelo de referênc
 | Peça | Versão | Por quê | Alternativa descartada |
 |---|---|---|---|
 | Spec MCP | **2026-07-28** (stateless) | Versão atual | 2025-11-25 só por compatibilidade, via o fallback do SDK |
-| `@modelcontextprotocol/server` (SDK v2) | **2.4.x** | `createMcpHandler` stateless e web-standard (`fetch`), roda em Deno, Workers e Node | `@modelcontextprotocol/sdk` 1.x, que está em modo manutenção e não cobre a 2026-07-28 |
+| `@modelcontextprotocol/server` (SDK v2) | **2.4.x** | `createMcpHandler` stateless e web-standard (`fetch`), roda em Node, Workers e Deno | `@modelcontextprotocol/sdk` 1.x, que está em modo manutenção e não cobre a 2026-07-28 |
 | `@modelcontextprotocol/ext-apps` | **2.0.x** | MCP Apps (SEP-1865, spec estável 2026-01-26): `registerAppTool`, `registerAppResource`, `App` | `window.openai`, que só funciona no ChatGPT |
 | zod | **v4** | É o peer exigido pelo SDK v2 e pelo ext-apps | — |
 | `@supabase/supabase-js` | 2.x (a mesma major do app) | Cliente com o JWT do usuário | Chamar o PostgREST na mão, o que duplicaria tratamento de erro |
 | UI dos formulários | TypeScript + Vite + `vite-plugin-singlefile`, **sem React** | Cada formulário vira um único HTML pequeno, embutido no servidor | React, que pesa no bundle e não ajuda num formulário de seis campos |
-| Testes | Vitest (Node) para as regras e handlers; Deno test para a casca | Regras são TS puro | — |
-| Hospedagem | **Supabase Edge Function** `mcp` | Mesma infra e região do banco, com guia oficial de MCP com SDK v2 | Vercel e Cloudflare: são viáveis, mas trocam de infra sem ganho para o Agenda Psi |
+| Testes | Vitest (Node) para regras, handlers e rotas | Regras são TS puro | — |
+| Hospedagem | **Vercel** (Vercel Functions, runtime Node), projeto próprio com Root Directory `mcp-server/`, domínio `app.agendapsi.app.br` | Decisão de 15/11/2026: é a infra de todos os outros projetos do Alexandre; serve HTML (a página de login) e o servidor no mesmo domínio; e deixa o servidor **totalmente fora** do Supabase Functions, onde roda o `agente` (25.4) | Supabase Edge Function `mcp`: dividiria o deploy com o `agente` e não serve a página de login |
 
 **Premissa a validar no épico 1:** confirmar no npm as versões exatas antes de fixá-las no `package.json` e conferir a API real do SDK v2 e do ext-apps. As assinaturas citadas aqui vêm da documentação de 15/11/2026.
 
@@ -121,26 +121,30 @@ mcp-server/                      # TUDO do servidor mora aqui
       sessions/ payment/ patient/ schedule/ feedback/ ...
     analytics.ts                 # eventos do Visão do Produto (pegadinha 5)
     preview-token.ts             # HMAC do fallback (13.4)
+  api/
+    mcp.ts                       # Vercel Function: só exporta o handler (casca fina)
+    oauth-protected-resource.ts  # metadata RFC 9728 (6.2)
   ui/
     shared/                      # bootstrap do App, tema do host, componentes de campo
     expense/ sessions/ ...       # um formulário por ação → dist/<acao>.html
+  site/                          # páginas estáticas do domínio (6.3)
+    index.html                   # "/" : destino dos e-mails de confirmação (6.3)
+    oauth/consent/               # página de login e consentimento do OAuth
+  vercel.json                    # rewrites: /mcp → api/mcp; /.well-known/... → api/...
   test/
   README.md
-supabase/functions/mcp/          # CASCA de deploy: só importa o bundle gerado
-  index.ts
-  deno.json
 ```
 
-**Regra de escopo:** nada em `app/` é alterado. Fora de `mcp-server/`, os únicos caminhos tocados são `supabase/functions/mcp/`, `supabase/config.toml` (bloco `[functions.mcp]`, com `verify_jwt = false`), `.claude/`, `REVIEW.md`, `plans/` e `DOCUMENTACAO-TECNICA.md`. Isso é garantido por hook (18.1).
+**Regra de escopo:** nada em `app/` nem em `supabase/` é alterado: nem funções, nem `config.toml`, nem migrations (este trabalho não muda o banco). Fora de `mcp-server/`, os únicos caminhos tocados são `.claude/`, `REVIEW.md`, `plans/`, `DOCUMENTACAO-TECNICA.md` e uma linha do `CLAUDE.md`. Isso é garantido por hook (18.1).
 
-**Empacotamento para a Edge Function:** o script `npm run build:edge` gera, com esbuild, um bundle ESM único em `supabase/functions/mcp/dist/server.js`, já com os HTMLs dos formulários embutidos como string. `supabase/functions/mcp/index.ts` só faz `export default` do handler. A alternativa descartada era importar `../../../mcp-server/src` direto: o deploy da CLI não garante empacotar arquivos de fora de `supabase/functions`. **Premissa a validar:** se a CLI atual empacotar imports relativos externos, o bundle pode ser dispensado, mas registre a decisão no plano.
+**Build na Vercel:** o `npm run build` gera os HTMLs dos formulários (Vite singlefile) e os embute no servidor como string; as páginas de `site/` saem como estáticos. `api/*.ts` só reexportam o que está em `src/`, para o código trocar de hospedagem sem reescrita (seção 1). **Premissa a validar no épico 1:** a forma atual de a Vercel servir um handler web-standard (`fetch`) em Vercel Functions Node; registre no plano.
 
 ### 4.3 Como roda
 
 ```
-Claude / ChatGPT ──HTTPS──> https://tocytpjtupbbxwgamtxq.supabase.co/functions/v1/mcp
+Claude / ChatGPT ──HTTPS──> https://app.agendapsi.app.br/mcp   (Vercel)
       │                           │  1. sem token → 401 + WWW-Authenticate (resource_metadata)
-      │                           │  2. com token → verifica JWT (JWKS do Supabase)
+      │                           │  2. com token → verifica JWT (pelo Supabase Auth)
       │                           │  3. createClient(url, publishable, { Authorization: Bearer <JWT do usuário> })
       │                           └─> PostgREST → RLS → tabelas e views
       │
@@ -148,7 +152,7 @@ Claude / ChatGPT ──HTTPS──> https://tocytpjtupbbxwgamtxq.supabase.co/fun
                         └─> página de login + consentimento (seção 6.3)
 ```
 
-O handler é **stateless**: um `McpServer` por request, sem sessão em memória. Os limites da Edge Function (2 s de CPU, 150–400 s de relógio, 256 MB) bastam para CRUD. Nenhuma ferramenta pode fazer laço sobre o banco inteiro.
+O handler é **stateless**: um `McpServer` por request, sem sessão em memória. Os limites das Vercel Functions bastam para CRUD. Nenhuma ferramenta pode fazer laço sobre o banco inteiro.
 
 ---
 
@@ -183,7 +187,7 @@ Não há primeiro administrador: a conta é a mesma do app.
 
 ### 6.2 Fluxo
 
-1. O cliente chama `/functions/v1/mcp` sem token e recebe **401** com `WWW-Authenticate: Bearer resource_metadata="<url>/.well-known/oauth-protected-resource"`.
+1. O cliente chama `https://app.agendapsi.app.br/mcp` sem token e recebe **401** com `WWW-Authenticate: Bearer resource_metadata="<url>/.well-known/oauth-protected-resource"`.
 2. Esse documento de Protected Resource Metadata (RFC 9728) declara:
    - `resource`: igual, byte a byte, à URL que a pessoa digita no conector;
    - `authorization_servers`: um único item, `https://tocytpjtupbbxwgamtxq.supabase.co/auth/v1`, porque o Claude usa só o primeiro.
@@ -194,7 +198,11 @@ Não há primeiro administrador: a conta é a mesma do app.
 
 ### 6.3 Página de login e consentimento
 
-O *authorization path* do Supabase é **relativo à Site URL do projeto**. Por isso a página precisa morar no domínio da Site URL atual de produção, que provavelmente também é usada nos e-mails de confirmação e de nova senha do app (conferir no painel). Além disso, **Edge Functions no domínio `*.supabase.co` não servem HTML renderizável em GET** (premissa a validar). Logo, a página **não** pode ser servida pela própria função `mcp`. **Isto é a pergunta aberta 25.1 e bloqueia o épico 3.**
+O *authorization path* do Supabase é **relativo à Site URL do projeto**, que é `https://app.agendapsi.app.br/` (conferida no painel em 15/11/2026). Esse domínio servia o app web antigo do FlutterFlow, que **ninguém mais usa**. Decisão 25.1: o domínio passa a apontar para o projeto da Vercel, e a página fica em `https://app.agendapsi.app.br/oauth/consent`. **A Site URL não muda**, então os e-mails do app e o login do app não são afetados.
+
+Consequência: a raiz `/` desse domínio é para onde o Supabase manda quem clica no link de confirmação de conta (o `signUp` do app não passa `emailRedirectTo`). Ela deixa de abrir o app antigo e passa a ser uma página estática curta dizendo que o e-mail foi confirmado e que a pessoa deve voltar ao app; o texto exato é aprovado pelo Alexandre (assunção 24.8). Qualquer outro caminho antigo (`/inicio` etc.) redireciona para `/`.
+
+**Premissa a validar no épico 3:** a Site URL termina com `/`. Conferir se o Supabase monta `https://app.agendapsi.app.br//oauth/consent` (barra dupla). Se montar, o `vercel.json` aceita os dois caminhos; **não** mexer na Site URL.
 
 Conteúdo da página, qualquer que seja o lugar:
 - campos de e-mail e senha, e o botão "Entrar";
@@ -206,7 +214,7 @@ Conteúdo da página, qualquer que seja o lugar:
 
 | Checagem | Como |
 |---|---|
-| Assinatura | JWKS em `https://tocytpjtupbbxwgamtxq.supabase.co/auth/v1/.well-known/jwks.json` (chaves assimétricas), com cache |
+| Assinatura | **Pelo próprio Supabase Auth**, com `supabase.auth.getClaims(token)` (ou `getUser(token)`), que funciona com o segredo HS256 legado. O projeto **não** usa chaves assimétricas e **não** vai migrar agora (decisão 25.4, 15/11/2026). Não verificar localmente com o segredo legado: ele é segredo e não entra no MCP. |
 | `iss` | Igual a `https://tocytpjtupbbxwgamtxq.supabase.co/auth/v1` |
 | `exp` | Não vencido; vira o `expiresAt` do AuthInfo |
 | `role` | `authenticated` |
@@ -217,11 +225,15 @@ Escopos OAuth (`openid`, `email`, `profile`) não controlam acesso a dado; quem 
 
 ### 6.5 Pré-requisitos no projeto de produção (feitos pelo Alexandre, nunca pelo agente)
 
-O agente de código **não altera configuração do projeto Supabase de produção**. Ele produz um checklist no README, e o Alexandre executa no painel:
+O agente de código **não altera configuração do projeto Supabase de produção, nem DNS, nem domínio, nem variáveis de ambiente de produção na Vercel**. Ele produz um checklist no README, e o Alexandre executa:
 
-1. Confirmar se o projeto já usa **JWT Signing Keys assimétricas** (RS256/ES256). Se não usar, avaliar a migração com cuidado: ela mexe no token do app em produção (pergunta 25.4).
-2. Authentication > OAuth Server: ligar, ligar o **Dynamic Client Registration** e definir o *authorization path* da página da seção 6.3.
-3. Adicionar as redirect URIs só se o painel pedir. Com DCR, o cliente registra as dele: `https://claude.ai/api/mcp/auth_callback`, as do ChatGPT e o loopback do Claude Code.
+1. ~~Migrar para JWT Signing Keys assimétricas.~~ **Não fazer** (decisão 25.4). Conferido em 15/11/2026: o JWKS do projeto está vazio, ou seja, ele usa o segredo HS256 legado. A rotação pode quebrar as funções `agente` e `notifica-admin`, que usam `verify_jwt = true`, e o `agente` é muito usado em produção.
+2. **Vercel:** criar o projeto a partir do repositório `agenda-psi`, com Root Directory `mcp-server/`, e cadastrar as variáveis da seção 18. Durante o desenvolvimento, a *Production Branch* é `feature/mcp-server`; depois do merge, volta a ser `main`. Configurar o *Ignored Build Step* para só publicar quando `mcp-server/` mudar.
+3. **Vercel → Domains:** adicionar `app.agendapsi.app.br` ao projeto e anotar o registro DNS que a Vercel pedir.
+4. **Registro.br:** trocar o registro de `app.agendapsi.app.br` (hoje um `A` para `34.136.28.237`, o app antigo do FlutterFlow) pelo que a Vercel pediu. Isso desliga o app web antigo, que não é mais usado.
+5. Conferir que `https://app.agendapsi.app.br/` abre a página nova e que `/oauth/consent` abre a página de login.
+6. **Supabase** → Authentication → OAuth Server: ligar, ligar o **Dynamic Client Registration** e definir o *authorization path* `/oauth/consent`. A Site URL **não** muda.
+7. Adicionar as redirect URIs só se o painel pedir. Com DCR, o cliente registra as dele: `https://claude.ai/api/mcp/auth_callback`, as do ChatGPT e o loopback do Claude Code.
 
 ### 6.6 Sessão e logout
 
@@ -262,7 +274,7 @@ Ordem obrigatória. **Há uma parada de aprovação depois do épico 3**: nada d
 ### 8.0 Épico 0 — Guardrails
 Objetivo: instalar o Anexo B antes de qualquer feature.
 - [ ] `.claude/settings.json`, `.claude/hooks/*.sh` (executáveis), `.claude/agents/verifier.md` e `REVIEW.md` criados com o conteúdo do Anexo B.
-- [ ] Cada hook provocado uma vez, com a saída do bloqueio colada: escrever `service_role` em `mcp-server/src/x.ts`, editar `supabase/migrations/…0001_baseline.sql`, escrever em `app/src/x.ts`, e editar um teste com `.claude/fix-mode` presente.
+- [ ] Cada hook provocado uma vez, com a saída do bloqueio colada: escrever `service_role` em `mcp-server/src/x.ts`, editar `supabase/migrations/…0001_baseline.sql`, escrever em `app/src/x.ts`, editar um teste com `.claude/fix-mode` presente, e rodar `supabase functions deploy` (sem nome) e `vercel --prod` (o hook bloqueia antes de executar).
 - [ ] `.claude/fix-mode` está no `.gitignore`.
 
 ### 8.1 Épico 1 — Esqueleto, autenticação por token e uma leitura
@@ -316,14 +328,15 @@ Critérios:
 ### 8.3 Épico 3 — OAuth e deploy em produção (conector no Claude)
 Objetivo: a despesa do épico 2 funcionando no Claude web e desktop como conector personalizado.
 
-Bloqueado por: pergunta 25.1 (onde mora a página de consentimento) e pelo checklist 6.5, que o Alexandre executa.
+Bloqueado pelo checklist 6.5, que o Alexandre executa (25.1 respondida em 15/11/2026).
 
 Critérios:
-- [ ] `supabase functions deploy mcp` sobe, e `GET /functions/v1/mcp/.well-known/oauth-protected-resource` devolve o JSON da seção 6.2.
+- [ ] O deploy na Vercel sobe, e `GET https://app.agendapsi.app.br/.well-known/oauth-protected-resource` devolve o JSON da seção 6.2.
 - [ ] No Claude, em Configurações > Conectores > Adicionar conector personalizado, a URL leva ao login, ao consentimento e ao conector ativo.
 - [ ] "Registra 120 de supervisão de ontem" abre o formulário, salva e aparece no app (lista de despesas) com os mesmos dados.
 - [ ] O token do app (sessão comum, sem `client_id`) é recusado pelo MCP em produção.
-- [ ] Os logs da função não contêm nome de paciente, valor, descrição nem token (conferido com `supabase functions logs` ou `get_logs`).
+- [ ] Os logs da Vercel não contêm nome de paciente, valor, descrição nem token (conferido no painel ou com `vercel logs`).
+- [ ] Um cadastro novo no app recebe o e-mail de confirmação, e o link termina na página `/` nova.
 
 **→ PARADA. Mostrar ao Alexandre e só seguir com a aprovação dele.**
 
@@ -538,7 +551,7 @@ Não se aplica.
 |---|---|
 | Latência de `tools/call` de leitura | p95 < 1,5 s (servidor + banco) |
 | Latência de `salvar_*` | p95 < 2 s |
-| CPU por request | < 500 ms, longe do limite de 2 s da Edge Function |
+| CPU por request | < 500 ms |
 | Tamanho de cada HTML de formulário | < 150 KB |
 | Acessibilidade | `label` em todo campo, foco visível, navegação por teclado, erro ligado ao campo por `aria-describedby` |
 | Idioma | pt-BR |
@@ -558,7 +571,7 @@ Não se aplica.
 | `SUPABASE_URL` | servidor | sim |
 | `SUPABASE_PUBLISHABLE_KEY` | servidor e página de consentimento | sim (por design) |
 | `MCP_PUBLIC_URL` | servidor (o `resource` do PRM) | sim |
-| `MCP_PREVIEW_SECRET` | servidor (secret da Edge Function) | **não** |
+| `MCP_PREVIEW_SECRET` | servidor (variável de ambiente da Vercel, marcada como *Sensitive*) | **não** |
 | `VISAODEPRODUTO_KEY`, `VISAODEPRODUTO_URL` | servidor | chave só de escrita |
 | `MCP_DEV_ALLOW_SESSION_TOKEN` | **só local** | — |
 | `TEST_EMAIL`, `TEST_PASSWORD` | **só local**, em `mcp-server/.env.local` (no `.gitignore`) | **não** |
@@ -569,8 +582,9 @@ Não se aplica.
 
 | Regra | Origem | Mecanismo |
 |---|---|---|
-| Nenhuma `service_role` ou segredo privilegiado em `mcp-server/` nem em `supabase/functions/mcp/` | P1, seção 20 | Hook `guard-secrets.sh` |
-| Não alterar `app/` nesta branch | 4.2 | Hook `guard-app-scope.sh` |
+| Nenhuma `service_role` ou segredo privilegiado em `mcp-server/` | P1, seção 20 | Hook `guard-secrets.sh` |
+| Não alterar `app/` nem `supabase/` nesta branch | 4.2, 25.4 | Hook `guard-app-scope.sh` |
+| Nada vai para produção sem o Alexandre: deploy de Edge Function, `config push`, `db push`, secrets, `vercel --prod`, env e domínios da Vercel | 6.5, 25.4 | Hook `guard-production.sh` |
 | Migration versionada não se edita | 7 | Hook `guard-migrations.sh` |
 | Teste não se edita em modo correção | 22.1 | Hook `guard-tests.sh` |
 | Advisors depois de qualquer migration | 20 | Hook `remind-advisors.sh` |
@@ -594,7 +608,7 @@ Toda mudança posterior atualiza essa seção no mesmo commit.
 - **Dado de saúde:** o servidor nunca lê nem devolve `observacoes` de `pacientes` ou `sessoes` (P5). Um teste automatizado garante isso nas 9 leituras e nas listas de opções.
 - **O que sai para o Claude ou o ChatGPT:** nome de paciente, telefone e e-mail (em `buscar_paciente`), datas, valores e agenda. É o mesmo que o agente interno já envia à Anthropic. O README avisa ao usuário que, ao conectar, esses dados passam a trafegar pelo provedor do assistente escolhido. **Pergunta 25.3:** a política de privacidade do app precisa mencionar isso?
 - **Base legal:** a mesma do app (execução de contrato / tutela da saúde pelo profissional). Este servidor não muda finalidade.
-- **Segredos:** só `MCP_PREVIEW_SECRET` e a chave do Visão do Produto, nos secrets da Edge Function.
+- **Segredos:** só `MCP_PREVIEW_SECRET` e a chave do Visão do Produto, nas variáveis de ambiente da Vercel.
 - **Autorização:** só a RLS, com o JWT do usuário. Sem `service_role` (hook).
 - **Logs:** sem PII (seção 18).
 - **Advisors:** rodar `get_advisors` (security e performance) depois de qualquer DDL. Neste trabalho não deve haver DDL.
@@ -642,14 +656,12 @@ O agente de código **não** roda testes de escrita contra produção sozinho. E
 | OAuth Server do Supabase é beta e muda de comportamento | Alto: conector para de logar | Média | Isolar a verificação em `src/auth/`; acompanhar o changelog; a opção B (AS próprio) fica documentada como plano B |
 | `aud` do token não é a URL do MCP (sem RFC 8707) | Médio: um token emitido para outro cliente OAuth do mesmo projeto seria aceito | Baixa (só há este cliente) | Exigir `client_id` presente; v2: allowlist de `client_id`s registrados ou Custom Access Token Hook |
 | Testes de escrita em produção sem staging | Alto: dado de teste misturado ou registro gravado na conta errada | Média | Conta de teste dedicada, dados fictícios, limpeza ao fim, e o agente não grava em produção sem autorização no chat |
-| Migrar para chaves JWT assimétricas afeta o app em produção | Alto: logout em massa ou app sem acesso | Baixa a média | Pergunta 25.4; fazer só com a rotação documentada pelo Supabase, num horário calmo, testando o app logo depois |
-| Página de consentimento presa à Site URL | Alto: bloqueia o épico 3 | Alta | Pergunta 25.1, decidida antes do épico 3 |
-| Edge Function não serve HTML em `*.supabase.co` | Médio | Alta | A página não mora na função `mcp` (6.3) |
+| Com HS256, o Supabase não emite ID token (`openid`); se o Claude ou o ChatGPT exigirem esse escopo, o login do conector falha | Alto: bloqueia o épico 3 | Baixa a média | Testar no épico 3. Se falhar, **parar e perguntar**: a migração de chaves exige antes trocar `verify_jwt` e verificar o token no código de `agente` e `notifica-admin`, num trabalho separado e aprovado |
+| Trocar o DNS de `app.agendapsi.app.br` muda o destino do link de confirmação de conta | Médio: quem se cadastrar vê uma página nova depois de confirmar | Certa | A página `/` diz que o e-mail foi confirmado e manda voltar ao app (6.3); testar com um cadastro novo no épico 3 |
 | Regras só no app divergem com o tempo | Médio: MCP e app gravam diferente | Média | Testes que leem os arquivos do app como texto; pergunta 25.2 (CHECKs no banco) |
 | O host não suporta algum recurso do ext-apps (ex.: ChatGPT) | Médio | Média | Fallback 13.4; testar no ChatGPT no épico 7 |
 | Modelo chama o fallback com `confirmar: true` sem mostrar a prévia | Alto | Baixa | `token_previa` obrigatório (13.4) |
 | Dado de saúde vazando por observações | Alto (LGPD) | Baixa | P5 + teste automatizado + `REVIEW.md` |
-| Limite de 2 s de CPU da Edge Function | Baixo | Baixa | Sem laços pesados; leituras com teto |
 
 ## 24. Assunções declaradas
 > Assunção não revisada vira verdade no minuto em que o agente começa a codar.
@@ -663,23 +675,25 @@ O agente de código **não** roda testes de escrita contra produção sozinho. E
 | 24.5 | Excluir horário fixo é permitido (o agente já propõe) | Paridade | Tirar do épico 6 |
 | 24.6 | Despesa aceita observações | Não é dado clínico | Tirar o campo |
 | 24.7 | O conector do Claude e o do ChatGPT apontam para a mesma URL e o mesmo servidor | Simplicidade | — |
+| 24.8 | Texto da página `/`: "E-mail confirmado. Volte ao app Agenda Psi e entre com seu e-mail e senha." | Substitui o app web antigo como destino do link de confirmação | Alexandre ajusta o texto |
 
 ## 25. Perguntas abertas
 **O agente de código deve perguntar ao cruzar com qualquer item abaixo, nunca assumir.**
 
 | # | Pergunta | Bloqueia | Quem decide |
 |---|---|---|---|
-| 25.1 | **Onde mora a página de login e consentimento?** O authorization path do Supabase é relativo à Site URL de produção. Qual é a Site URL hoje? Dá para hospedar `/oauth/consent` nesse domínio? Opções: (a) uma página estática no domínio da Site URL; (b) mudar a Site URL para um domínio novo, o que afeta os e-mails do app; (c) uma página estática num domínio próprio, se o painel aceitar URL absoluta. **Verificar no painel antes de decidir.** | Épico 3 | Alexandre |
+| 25.1 | **Respondida em 15/11/2026:** em `https://app.agendapsi.app.br/oauth/consent`, servida pela Vercel junto com o servidor MCP; o domínio do app web antigo, que não é usado, é reaproveitado e a Site URL não muda (6.3). Pergunta original: ~~Onde mora a página de login e consentimento?~~ O authorization path do Supabase é relativo à Site URL de produção. Qual é a Site URL hoje? Dá para hospedar `/oauth/consent` nesse domínio? Opções: (a) uma página estática no domínio da Site URL; (b) mudar a Site URL para um domínio novo, o que afeta os e-mails do app; (c) uma página estática num domínio próprio, se o painel aceitar URL absoluta. **Verificar no painel antes de decidir.** | Épico 3 | Alexandre |
 | 25.2 | As regras "só no app hoje" (11.4, 11.6, 11.7, 11.10, telefone) devem ganhar CHECK no banco (`NOT VALID`, sem tocar no legado)? Se sim, a migration é escrita e **mostrada** antes de aplicar. | Nada (opcional) | Alexandre |
 | 25.3 | A política de privacidade do app precisa citar que, ao conectar o Claude ou o ChatGPT, dados de pacientes trafegam por esses provedores? | Épico 7 (publicação) | Alexandre |
-| 25.4 | O projeto de produção já usa JWT Signing Keys assimétricas? Se não, autoriza a migração (afeta o app)? | Épico 3 | Alexandre |
-| 25.5 | Quem pode usar o conector: qualquer usuário do app, ou só a conta do Alexandre durante o teste? (Hoje qualquer usuário que achar a URL e logar poderia usar.) Uma allowlist por e-mail no servidor resolve na fase de teste. | Épico 3 | Alexandre |
+| 25.4 | ~~Migrar para JWT Signing Keys assimétricas?~~ **Respondida em 15/11/2026: não migrar.** O projeto usa HS256 legado e o `agente` do app, muito usado, depende de `verify_jwt`. O MCP verifica o token pelo Supabase Auth (6.4). **Nada deste trabalho pode interferir no `agente` nem nas outras Edge Functions.** | — | Alexandre |
+| 25.5 | ~~Allowlist de e-mails no conector?~~ **Respondida em 15/11/2026: não.** Qualquer usuário do app que logar pode usar; a RLS isola os dados de cada um. | — | Alexandre |
 
 ## 26. Definition of Done
 - [ ] Épicos 0–7 com os critérios cumpridos, a saída dos comandos 22.1 colada e o `verifier` dizendo PRONTO.
 - [ ] Parada do épico 3 aprovada pelo Alexandre.
 - [ ] Nenhum arquivo em `app/` alterado (`git diff main --stat -- app/` vazio).
-- [ ] Nenhuma `service_role` em `mcp-server/` ou em `supabase/functions/mcp/` (`grep -rn "service_role\|SERVICE_ROLE" mcp-server supabase/functions/mcp` vazio).
+- [ ] Nenhuma `service_role` em `mcp-server/` (`grep -rn "service_role\|SERVICE_ROLE" mcp-server` vazio).
+- [ ] Nada em `supabase/` alterado (`git diff main --stat -- supabase/` vazio).
 - [ ] Nenhuma resposta de ferramenta com `observacoes` (teste automatizado verde).
 - [ ] Toda função e ferramenta comentada em português, com a regra que implementa.
 - [ ] `mcp-server/README.md` completo, com o roteiro de teste manual de **cada** ferramenta.
@@ -694,7 +708,7 @@ O agente de código **não** roda testes de escrita contra produção sozinho. E
 1. **Neste computador:** commit e push da branch `feature/mcp-server` com este spec.
 2. **No outro computador:** `git fetch && git checkout feature/mcp-server`.
 3. Alexandre: criar a **conta de teste** no app (produção) e pôr as credenciais em `mcp-server/.env.local`, que fica fora do git.
-4. Alexandre: responder 25.1, 25.4 e 25.5 antes do épico 3. As outras podem esperar.
+4. Alexandre: executar o checklist 6.5 antes do épico 3 (25.1, 25.4 e 25.5 respondidas em 15/11/2026). As outras perguntas podem esperar.
 5. Colar o prompt do Anexo C no Claude Code.
 
 ## 28. Roadmap
@@ -739,8 +753,8 @@ Atualize DOCUMENTACAO-TECNICA.md no mesmo commit.
 - Supabase OAuth Server: https://supabase.com/docs/guides/auth/oauth-server/getting-started
 - Supabase OAuth + MCP: https://supabase.com/docs/guides/auth/oauth-server/mcp-authentication
 - Segurança de tokens no Supabase: https://supabase.com/docs/guides/auth/oauth-server/token-security
-- MCP em Edge Functions: https://supabase.com/docs/guides/getting-started/byo-mcp
-- Limites das Edge Functions: https://supabase.com/docs/guides/functions/limits
+- MCP na Vercel: https://vercel.com/docs/mcp/deploy-mcp-servers-to-vercel
+- Domínios na Vercel: https://vercel.com/docs/domains
 
 ## Anexo B — Kit de guardrails do Claude Code
 
@@ -759,6 +773,12 @@ O repositório ainda não tem `.claude/`. Os hooks dependem de `jq` (`brew insta
           { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-migrations.sh" },
           { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-tests.sh" },
           { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-tool-schema.sh" }
+        ]
+      },
+      {
+        "matcher": "Bash|mcp__.*__(deploy_edge_function|apply_migration)",
+        "hooks": [
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-production.sh" }
         ]
       }
     ],
@@ -785,7 +805,7 @@ path=$(echo "$input" | jq -r '.tool_input.file_path // empty')
 content=$(echo "$input" | jq -r '.tool_input.content // .tool_input.new_string // empty')
 
 case "$path" in
-  */app/src/*|*/app/app/*|*/mcp-server/*|*/supabase/functions/mcp/*) ;;
+  */app/src/*|*/app/app/*|*/mcp-server/*) ;;
   *) exit 0 ;;
 esac
 # O próprio spec cita os nomes para proibi-los; ele não é código.
@@ -803,8 +823,9 @@ exit 0
 ### `.claude/hooks/guard-app-scope.sh`
 ```bash
 #!/bin/bash
-# Impede alterar o app enquanto o trabalho é o servidor MCP.
-# Implementa a regra de escopo da seção 4.2 do mcp-server/spec.md.
+# Impede alterar o app e qualquer coisa do Supabase (funções, config.toml, migrations)
+# enquanto o trabalho é o servidor MCP. Protege o agente, muito usado em produção.
+# Implementa a regra de escopo da seção 4.2 e a decisão 25.4 do mcp-server/spec.md.
 command -v jq >/dev/null || { echo "Guardrail inativo: jq não está instalado. Rode brew install jq antes de continuar." >&2; exit 2; }
 input=$(cat)
 path=$(echo "$input" | jq -r '.tool_input.file_path // empty')
@@ -812,8 +833,8 @@ branch=$(git -C "$CLAUDE_PROJECT_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null)
 
 case "$branch" in feature/mcp-server*) ;; *) exit 0 ;; esac
 case "$path" in
-  */app/*|*/supabase/functions/agente/*|*/supabase/functions/notifica-admin/*|*/supabase/functions/apple-notificacoes/*|*/supabase/functions/play-notificacoes/*)
-    echo "Bloqueado: na branch $branch não se altera o app nem as outras Edge Functions (spec seção 4.2). Copie a regra para mcp-server/src/rules/ com teste, ou pare e pergunte." >&2
+  */app/*|*/supabase/*)
+    echo "Bloqueado: na branch $branch não se altera o app nem nada em supabase/ (spec 4.2 e 25.4). Copie a regra para mcp-server/src/rules/ com teste, ou pare e pergunte." >&2
     exit 2 ;;
 esac
 exit 0
@@ -881,6 +902,37 @@ fi
 exit 0
 ```
 
+### `.claude/hooks/guard-production.sh`
+```bash
+#!/bin/bash
+# Nada sai para produção sem o Alexandre. O servidor MCP mora na Vercel, então nenhuma
+# Edge Function é publicada nesta branch: `supabase functions deploy` sem nome republica
+# TODAS, inclusive o agente, que é muito usado. `supabase config push` sobrescreveria a
+# auth de produção com o config.toml local. Na Vercel, produção, variáveis e domínios
+# são do Alexandre. Implementa a regra 6.5 e a decisão 25.4 do mcp-server/spec.md.
+command -v jq >/dev/null || { echo "Guardrail inativo: jq não está instalado. Rode brew install jq antes de continuar." >&2; exit 2; }
+input=$(cat)
+tool=$(echo "$input" | jq -r '.tool_name // empty')
+
+block() { echo "Bloqueado: $1 Pare e peça ao Alexandre (spec 6.5 e 25.4)." >&2; exit 2; }
+
+case "$tool" in
+  *__deploy_edge_function) block "deploy de Edge Function. O servidor MCP roda na Vercel; nenhuma função do Supabase é publicada nesta branch." ;;
+  *__apply_migration)      block "migration via MCP do Supabase. Este trabalho não muda o banco." ;;
+esac
+
+cmd=$(echo "$input" | jq -r '.tool_input.command // empty')
+has() { echo "$cmd" | grep -qE "$1"; }
+
+has '\bsupabase[[:space:]]+functions[[:space:]]+(deploy|delete)\b' && block "'supabase functions deploy/delete'. Sem nome, o deploy republica todas as funções, inclusive o agente."
+has '\bsupabase[[:space:]]+config[[:space:]]+push\b'  && block "'supabase config push' sobrescreve a configuração de auth de produção."
+has '\bsupabase[[:space:]]+db[[:space:]]+push\b'      && block "'supabase db push' aplica migrations em produção."
+has '\bsupabase[[:space:]]+secrets[[:space:]]+(set|unset)\b' && block "'supabase secrets' altera segredos de todas as funções do projeto."
+has '\bvercel\b.*(--prod\b|[[:space:]]promote\b|[[:space:]]rollback\b)' && block "deploy de produção na Vercel. Produção sai pelo push na Production Branch, com o Alexandre."
+has '\bvercel[[:space:]]+(env|domains|dns|alias|certs|project[[:space:]]+rm|remove|rm)\b' && block "mudança de variáveis, domínio ou projeto na Vercel."
+exit 0
+```
+
 ### `.claude/hooks/remind-advisors.sh`
 ```bash
 #!/bin/bash
@@ -939,7 +991,7 @@ O que grava diferente do app, vaza dado ou viola o spec. Estilo é detalhe.
 No máximo cinco detalhes por revisão; resuma o resto como contagem.
 
 ## Não reportar
-Arquivos gerados (dist/, database.types.ts, bundle da Edge Function).
+Arquivos gerados (dist/, database.types.ts, .vercel/).
 ```
 
 ## Anexo C — Prompt de implementação (colar no Claude Code do outro computador)
@@ -957,9 +1009,9 @@ Regras:
   .claude/agents/verifier.md e REVIEW.md, chmod +x nos scripts e provocar cada hook
   uma vez), depois os épicos 1, 2 e 3. PARE depois do épico 3 e me mostre a despesa
   funcionando no Claude. Só siga para os épicos 4 a 7 com a minha aprovação.
-- Escopo: só mcp-server/, supabase/functions/mcp/, o bloco [functions.mcp] do
-  supabase/config.toml, .claude/, REVIEW.md, plans/ e, no fim, DOCUMENTACAO-TECNICA.md
-  e uma linha no CLAUDE.md. NÃO altere app/ nem as outras Edge Functions. NÃO
+- Escopo: só mcp-server/, .claude/, REVIEW.md, plans/ e, no fim, DOCUMENTACAO-TECNICA.md
+  e uma linha no CLAUDE.md. O servidor e a página de login rodam na Vercel. NÃO altere
+  app/ nem nada em supabase/: o agente do app é muito usado em produção. NÃO
   implemente nada da seção 28 (roadmap) nem o que está "Fora" na seção 3.
 - Desempate: os princípios da seção 0 (P1 a P5).
 - Banco em português como já está; código e variáveis em inglês; nomes de ferramenta
