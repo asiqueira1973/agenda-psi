@@ -4,7 +4,9 @@ import { suporteAUi } from '../src/client-capabilities.js';
 import { lerConfig } from '../src/config.js';
 import { eventos } from '../src/events.js';
 import { formatarData, formatarDinheiro } from '../src/rules/format.js';
+import { createHash } from 'node:crypto';
 import { DESPESA_HTML } from '../src/ui/generated.js';
+import { DESPESA_RESOURCE_URI } from '../src/tools/expense/resource-uri.js';
 
 describe('eventos (21, pegadinha 5)', () => {
   const doApp = readFileSync(new URL('../../app/src/lib/analytics/events.ts', import.meta.url), 'utf8');
@@ -66,5 +68,12 @@ describe('HTML do formulário embutido (4.2, 17)', () => {
     // `.carregar-erro { display: flex }` sobrepunha o atributo hidden, e a mensagem de
     // erro ao carregar aparecia com as opções já carregadas.
     expect(DESPESA_HTML).toMatch(/\[hidden\]\s*\{\s*display:\s*none\s*!important;?\s*\}/);
+  });
+});
+
+describe('endereço do formulário versionado (épico 3)', () => {
+  it('o hash no endereço é o do HTML embutido: mudou a tela, muda o endereço', () => {
+    const hash = createHash('sha256').update(DESPESA_HTML).digest('hex').slice(0, 12);
+    expect(DESPESA_RESOURCE_URI).toBe(`ui://agenda-psi/despesa-${hash}.html`);
   });
 });

@@ -133,3 +133,8 @@ EXIT build=0
 
 Testes primeiro (`test/expense/form-memory.test.ts`). Um teste antigo que comparava o pré-preenchimento inteiro com `toEqual` foi ajustado para aceitar o `formulario_id` novo (`expect.any(String)`): é mudança de contrato aprovada, e foi feito **fora** do `fix-mode`.
 - **Despesas de teste:** o Alexandre decidiu **deixar no banco** as despesas criadas pelo Claude nos testes do épico 3 (15/11/2026). Não apagar.
+
+### Segundo teste no Claude e mais dois ajustes (aprovados)
+- "Registra 120 de supervisão de ontem" abriu o formulário **preenchido** (Supervisão, R$ 120, 14/11/2026) e salvou. A pergunta "o que eu acabei de registrar?" teve a resposta certa, sem a pessoa repetir nada: **critério 8 do épico 2 cumprido** (o modelo não citou o id, mas sabia o resumo).
+- O texto da abertura ficou mais curto, mas o modelo ainda escreveu "A despesa só fica registrada quando você clicar em Salvar", estranho embaixo do "Despesa registrada.". **Novo texto, aprovado:** o modelo deve responder exatamente "Abri o formulário de despesa.".
+- Ao voltar, o formulário não lembrou que foi salvo, e o Cancelar não trancou: é o comportamento do **HTML antigo**. Já o texto do modelo, que vem do servidor, chegou atualizado. Conclusão: o Claude guarda em cache o recurso `ui://agenda-psi/despesa.html`. **Correção aprovada:** o endereço passa a levar o hash do HTML (`ui://agenda-psi/despesa-<sha256[0:12]>.html`, em `src/tools/expense/resource-uri.ts`), e cada mudança da tela gera um endereço novo. Diverge da 13.1 (endereço fixo). Teste garante que o hash é o do HTML embutido.

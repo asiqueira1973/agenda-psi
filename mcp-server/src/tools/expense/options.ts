@@ -2,7 +2,8 @@ import { registerAppTool } from '@modelcontextprotocol/ext-apps/server';
 import type { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod';
 import { executar, type ResultadoDeLeitura, type ToolContext } from '../context.js';
-import { DESPESA_RESOURCE_URI, type TipoDespesa } from './schema.js';
+import { DESPESA_RESOURCE_URI } from './resource-uri.js';
+import type { TipoDespesa } from './schema.js';
 
 /**
  * Lê o catálogo de tipos de despesa: `id` e `nome`, ordenados por nome (8.2 e 13.3).

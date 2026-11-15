@@ -62,7 +62,7 @@ describe('formulário reaparece depois de salvo (épico 3, visto no Claude)', ()
     expect(textosNovosDespesa.cancelado).toBe('Cancelado. Nada foi registrado.');
     expect(textosParaOModelo.formularioCancelado).toBe('A pessoa cancelou o formulário de despesa. Nada foi gravado.');
     expect(textosParaOModelo.formularioAberto).toBe(
-      'O formulário de despesa está aberto para a pessoa. Responda em uma frase curta, sem repetir os campos nem explicar como preencher. Nada foi gravado: só grava quando a pessoa clicar em Salvar, e o formulário informa você quando isso acontecer.',
+      'O formulário de despesa está aberto para a pessoa. Responda exatamente "Abri o formulário de despesa." e nada mais. Nada foi gravado: só grava quando a pessoa clicar em Salvar, e o formulário informa você quando isso acontecer.',
     );
   });
 });

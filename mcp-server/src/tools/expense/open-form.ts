@@ -9,7 +9,8 @@ import { validarValorEmReais } from '../../rules/money.js';
 import type { ToolContext } from '../context.js';
 import { lerTiposDespesa } from './options.js';
 import { avisoDoTipo, resolverTipo } from './resolve-type.js';
-import { DESPESA_RESOURCE_URI, MAX_DESCRICAO, type PreenchimentoDaDespesa, type TipoDespesa } from './schema.js';
+import { DESPESA_RESOURCE_URI } from './resource-uri.js';
+import { MAX_DESCRICAO, type PreenchimentoDaDespesa, type TipoDespesa } from './schema.js';
 
 /**
  * Descrição para o modelo: a do `propor_despesas` do agente, no singular, e a regra

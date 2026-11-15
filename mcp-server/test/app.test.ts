@@ -86,7 +86,9 @@ describe('tools/list conforme o cliente (13.1 e 13.4)', () => {
     expect(Object.keys(t).sort()).toEqual([
       'abrir_formulario_despesa', 'consultar_despesas', 'listar_tipos_despesa', 'salvar_despesa',
     ]);
-    expect(t.abrir_formulario_despesa?._meta?.ui).toMatchObject({ visibility: ['model'], resourceUri: 'ui://agenda-psi/despesa.html' });
+    expect(t.abrir_formulario_despesa?._meta?.ui?.visibility).toEqual(['model']);
+    // Endereço versionado pelo conteúdo: o Claude guardava em cache o HTML antigo (épico 3).
+    expect(t.abrir_formulario_despesa?._meta?.ui?.resourceUri).toMatch(/^ui:\/\/agenda-psi\/despesa-[0-9a-f]{12}\.html$/);
     // 8.2, critério 6: o que só o formulário chama fica fora da vista do modelo.
     expect(t.listar_tipos_despesa?._meta?.ui?.visibility).toEqual(['app']);
     expect(t.salvar_despesa?._meta?.ui?.visibility).toEqual(['app']);

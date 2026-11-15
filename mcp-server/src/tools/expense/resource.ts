@@ -1,7 +1,7 @@
 import { registerAppResource, RESOURCE_MIME_TYPE } from '@modelcontextprotocol/ext-apps/server';
 import type { McpServer } from '@modelcontextprotocol/server';
 import { DESPESA_HTML } from '../../ui/generated.js';
-import { DESPESA_RESOURCE_URI } from './schema.js';
+import { DESPESA_RESOURCE_URI } from './resource-uri.js';
 
 /**
  * Registra o HTML do formulário de despesa como recurso MCP Apps (13.1). O HTML é um

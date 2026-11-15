@@ -2,8 +2,6 @@
  * Constantes e tipos da despesa, SEM zod (18). O formulário importa daqui; se importasse
  * de schema.ts, o zod inteiro iria junto no HTML e passaria do limite de tamanho do HTML (17).
  */
-/** URI do formulário de despesa (13.1). */
-export const DESPESA_RESOURCE_URI = 'ui://agenda-psi/despesa.html';
 
 /** Tamanhos máximos dos textos livres (8.2, tabela de campos). */
 export const MAX_DESCRICAO = 200;

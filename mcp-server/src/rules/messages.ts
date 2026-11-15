@@ -80,7 +80,9 @@ export const erros = {
 export const textosParaOModelo = {
   // Trocado em 15/11/2026 (épico 3, aprovado): o texto antigo fazia o modelo descrever os
   // campos vazios, e essa resposta ficava embaixo do "Despesa registrada." depois do Salvar.
-  formularioAberto: 'O formulário de despesa está aberto para a pessoa. Responda em uma frase curta, sem repetir os campos nem explicar como preencher. Nada foi gravado: só grava quando a pessoa clicar em Salvar, e o formulário informa você quando isso acontecer.',
+  // Mais estrito (15/11/2026, aprovado): "uma frase curta" ainda gerava "só fica registrada
+  // quando você clicar em Salvar", que soa errado embaixo do "Despesa registrada.".
+  formularioAberto: 'O formulário de despesa está aberto para a pessoa. Responda exatamente "Abri o formulário de despesa." e nada mais. Nada foi gravado: só grava quando a pessoa clicar em Salvar, e o formulário informa você quando isso acontecer.',
   formularioCancelado: 'A pessoa cancelou o formulário de despesa. Nada foi gravado.',
   previaPronta: 'Prévia pronta. Nada foi gravado. Mostre a prévia à pessoa e só confirme se ela concordar.',
   nadaGravadoComPendencias: 'Nada foi gravado. Resolva as pendências e os erros com a pessoa e chame de novo, sem confirmar.',

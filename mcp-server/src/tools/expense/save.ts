@@ -7,12 +7,12 @@ import { STATUS_PAGO } from '../../rules/db-literals.js';
 import { erros, mensagensDoApp } from '../../rules/messages.js';
 import type { ToolContext } from '../context.js';
 import {
-  DESPESA_RESOURCE_URI,
   entradaSalvarDespesa,
   type DespesaNormalizada,
   type EntradaDespesa,
   type RespostaDoSalvar,
 } from './schema.js';
+import { DESPESA_RESOURCE_URI } from './resource-uri.js';
 import { resumoDaDespesa, validarDespesa } from './validate.js';
 
 /** Código do Postgres para violação de RLS / permissão. */
