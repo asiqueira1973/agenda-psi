@@ -16,7 +16,10 @@ if [ -n "$drift" ]; then
   exit 2
 fi
 
-leak=$(grep -rlE 'service_role|SERVICE_ROLE|sb_secret_|N8N_WEBHOOK_SECRET|PLAY_PUSH_TOKEN' mcp-server \
+# `sb_secret_` só conta seguido de caracteres de chave: o supabase-js embutido nas páginas
+# do site (public/) tem o PREFIXO como texto, numa checagem de formato, sem chave nenhuma.
+# Ajuste autorizado pelo Alexandre em 15/11/2026 (épico 3).
+leak=$(grep -rlE 'service_role|SERVICE_ROLE|sb_secret_[A-Za-z0-9]|N8N_WEBHOOK_SECRET|PLAY_PUSH_TOKEN' mcp-server \
   --exclude=spec.md --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=.vercel 2>/dev/null)
 if [ -n "$leak" ]; then
   echo "ALERTA: credencial privilegiada em: $leak. O servidor MCP usa só o JWT do usuário e a chave publicável (P1). Remova e explique ao Alexandre." >&2

@@ -16,5 +16,5 @@
     "types": ["node"],
     "noEmit": true
   },
-  "include": ["src", "api", "scripts", "test", "ui", "vitest.config.ts", "vite.config.ts"]
+  "include": ["src", "api", "scripts", "test", "ui", "site", "vitest.config.ts", "vite.config.ts", "vite.site.config.ts"]
 }

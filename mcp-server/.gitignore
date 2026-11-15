@@ -3,3 +3,5 @@
 # Saída do Vite e o HTML embutido gerado a partir dela (4.2).
 ui/dist/
 src/ui/generated.ts
+# Páginas do domínio montadas pelo Vite (6.3). Ancorado: site/public/ é fonte e é versionado.
+/public/
