@@ -1,10 +1,9 @@
 import type { CallToolResult, McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod';
-import { logarChamada } from '../../log.js';
-import { conferirTokenDePrevia, emitirTokenDePrevia } from '../../preview-token.js';
+import { fluxoComPrevia, registrarFallback, resposta, type Normalizado } from '../shared/previa.js';
 import { hojeEmSaoPaulo } from '../../rules/dates.js';
 import { formatarData, formatarDinheiro } from '../../rules/format.js';
-import { erros, textosParaOModelo } from '../../rules/messages.js';
+import { erros } from '../../rules/messages.js';
 import type { ToolContext } from '../context.js';
 import { lerTiposDespesa } from './options.js';
 import { avisoDoTipo, resolverTipo } from './resolve-type.js';
@@ -74,46 +73,29 @@ export function normalizarFallback(e: Entrada, tipos: TipoDespesa[], hoje: strin
   return { ok: true, dados: v.dados, nomeDoTipo: tipo.nome };
 }
 
-/** Resultado para o modelo; `isError` quando nada foi gravado por um problema a corrigir. */
-function resposta(estrutura: Record<string, unknown>, texto: string, isError = false): CallToolResult {
-  return { content: [{ type: 'text', text: texto }], structuredContent: estrutura, ...(isError ? { isError } : {}) };
-}
-
 /**
- * `registrar_despesa` (13.4). Chamada 1: devolve `previa` (com rótulos em português),
- * `pendencias` e, só se não houver pendência nem erro, o `token_previa`. Chamada 2
- * (`confirmar: true`): recusa com pendência, recalcula o HMAC sobre os dados de agora e
- * só grava se bater e não tiver vencido; dados diferentes dão a mensagem da 13.4.
+ * `registrar_despesa` (13.4): normaliza como o `salvar_despesa` validaria, monta a prévia
+ * com rótulos em português e entrega ao fluxo comum de prévia e confirmação
+ * (shared/previa.ts), que só grava com o `token_previa` certo.
  */
 export async function registrarDespesa(e: Entrada, ctx: ToolContext): Promise<CallToolResult> {
   const tipos = await lerTiposDespesa(ctx);
   if (!tipos) return resposta({ ok: false }, erros.inesperado, true);
-
   const n = normalizarFallback(e, tipos);
-  if (!n.ok) {
-    if (e.confirmar && n.pendencias.length) return resposta({ ok: false, pendencias: n.pendencias }, erros.pendenciasAbertas, true);
-    return resposta({ ok: false, pendencias: n.pendencias, erros: n.erros }, textosParaOModelo.nadaGravadoComPendencias, true);
-  }
-
-  if (!e.confirmar) {
-    const previa = {
-      tipo: n.nomeDoTipo,
-      valor: formatarDinheiro(n.dados.valor_despesa),
-      data: formatarData(n.dados.data_competencia),
-      descricao: n.dados.descricao,
-      observacoes: n.dados.observacoes,
-    };
-    const token = emitirTokenDePrevia(ctx.config.previewSecret, ctx.sub, ACAO, n.dados);
-    return resposta({ ok: true, previa, pendencias: [], token_previa: token }, textosParaOModelo.previaPronta);
-  }
-
-  const conferencia = conferirTokenDePrevia(ctx.config.previewSecret, ctx.sub, ACAO, n.dados, e.token_previa);
-  if (conferencia === 'divergente') return resposta({ ok: false }, erros.dadosMudaram, true);
-  if (conferencia !== 'ok') return resposta({ ok: false }, erros.tokenInvalido, true);
-
-  const r = await gravarDespesa(n.dados, ctx).catch(() => ({ ok: false as const, erros: [{ campo: null, mensagem: erros.inesperado }] }));
-  if (!r.ok) return resposta(r, r.erros.map((x) => x.mensagem).join('; '), true);
-  return resposta(r, textoParaOModelo(r.resumo, r.ids[0] ?? ''));
+  const normalizado: Normalizado<DespesaNormalizada> = n.ok
+    ? {
+        ok: true,
+        dados: n.dados,
+        previa: {
+          tipo: n.nomeDoTipo,
+          valor: formatarDinheiro(n.dados.valor_despesa),
+          data: formatarData(n.dados.data_competencia),
+          descricao: n.dados.descricao,
+          observacoes: n.dados.observacoes,
+        },
+      }
+    : n;
+  return fluxoComPrevia(ctx, ACAO, normalizado, e, (d) => gravarDespesa(d, ctx), (r) => textoParaOModelo(r.resumo, r.ids[0] ?? ''));
 }
 
 /**
@@ -122,15 +104,5 @@ export async function registrarDespesa(e: Entrada, ctx: ToolContext): Promise<Ca
  * registra também, para nunca deixar a pessoa sem caminho.
  */
 export function registrarFallbackDespesa(server: McpServer, ctx: ToolContext): void {
-  if (ctx.ui === 'sim') return;
-  server.registerTool(
-    'registrar_despesa',
-    { description: DESCRICAO, inputSchema: entrada, _meta: { ui: { visibility: ['model'] } } },
-    async (args) => {
-      const inicio = performance.now();
-      const r = await registrarDespesa(args, ctx);
-      logarChamada('registrar_despesa', inicio, !r.isError, ctx.sub);
-      return r;
-    },
-  );
+  registrarFallback(server, ctx, 'registrar_despesa', DESCRICAO, entrada, registrarDespesa);
 }

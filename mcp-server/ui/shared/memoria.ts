@@ -8,7 +8,7 @@
  * O host pode bloquear o armazenamento (iframe isolado): aí nada quebra, só não lembra.
  */
 export type Lembranca =
-  | { fase: 'sucesso'; resumo: string; idSalvo: string | null }
+  | { fase: 'sucesso'; resumo: string; idSalvo: string | null; titulo?: string }
   | { fase: 'cancelado' };
 
 const chave = (id: string) => `agenda-psi:formulario:${id}`;

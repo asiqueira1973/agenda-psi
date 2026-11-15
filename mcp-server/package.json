@@ -11,7 +11,7 @@
     "dev": "npm run build:ui && tsx --env-file=.env.local scripts/dev-server.ts",
     "dev:token": "tsx --env-file=.env.local scripts/dev-token.ts",
     "dev:proxy": "tsx --env-file=.env.local scripts/dev-proxy.ts",
-    "build:ui": "FORM=expense vite build && tsx scripts/embed-ui.ts",
+    "build:ui": "tsx scripts/build-ui.ts",
     "build:site": "vite build --config vite.site.config.ts",
     "pretest": "npm run -s build:ui",
     "test": "vitest run",

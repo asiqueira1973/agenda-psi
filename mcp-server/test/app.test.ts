@@ -84,12 +84,21 @@ const LEITURAS = [
   'consultar_periodo', 'historico_do_paciente', 'listar_pacientes', 'listar_pendencias',
 ];
 
+/** Ferramentas de formulário (épicos 2 e 5): as que o modelo vê e as que só o app chama. */
+const FORM_MODELO = ['abrir_formulario_despesa', 'abrir_formulario_pagamento', 'abrir_formulario_sessoes'];
+const FORM_APP = ['buscar_pacientes_opcoes', 'listar_tipos_despesa', 'salvar_despesa', 'salvar_pagamentos', 'salvar_sessoes'];
+/** Fallbacks com prévia (13.4), um por ação. */
+const FALLBACKS = ['registrar_despesa', 'registrar_pagamentos', 'registrar_sessoes'];
+const ordenar = (xs: string[]) => [...xs].sort();
+
 const COM_UI = { extensions: { 'io.modelcontextprotocol/ui': { mimeTypes: ['text/html;profile=mcp-app'] } } };
 
 describe('tools/list conforme o cliente (13.1 e 13.4)', () => {
   it('cliente com MCP Apps: formulário, sem o fallback', async () => {
     const t = await listar(COM_UI);
-    expect(Object.keys(t).sort()).toEqual([...LEITURAS, 'abrir_formulario_despesa', 'listar_tipos_despesa', 'salvar_despesa'].sort());
+    expect(Object.keys(t).sort()).toEqual(ordenar([...LEITURAS, ...FORM_MODELO, ...FORM_APP]));
+    for (const f of FORM_APP) expect(t[f]?._meta?.ui?.visibility, f).toEqual(['app']);
+    for (const f of FORM_MODELO) expect(t[f]?._meta?.ui?.visibility, f).toEqual(['model']);
     expect(t.abrir_formulario_despesa?._meta?.ui?.visibility).toEqual(['model']);
     // Endereço versionado pelo conteúdo: o Claude guardava em cache o HTML antigo (épico 3).
     expect(t.abrir_formulario_despesa?._meta?.ui?.resourceUri).toMatch(/^ui:\/\/agenda-psi\/despesa-[0-9a-f]{12}\.html$/);
@@ -105,13 +114,14 @@ describe('tools/list conforme o cliente (13.1 e 13.4)', () => {
 
   it('cliente que anuncia capacidades sem MCP Apps: só o fallback', async () => {
     const t = await listar({ extensions: {} });
-    expect(Object.keys(t).sort()).toEqual([...LEITURAS, 'registrar_despesa'].sort());
+    expect(Object.keys(t).sort()).toEqual(ordenar([...LEITURAS, ...FALLBACKS]));
+    for (const f of FALLBACKS) expect(t[f]?._meta?.ui?.visibility, f).toEqual(['model']);
     expect(t.registrar_despesa?._meta?.ui?.visibility).toEqual(['model']);
   });
 
   it('cliente de 2025, que não repete as capacidades: os dois caminhos', async () => {
     const t = await listar();
-    expect(Object.keys(t).sort()).toEqual([...LEITURAS, 'abrir_formulario_despesa', 'listar_tipos_despesa', 'registrar_despesa', 'salvar_despesa'].sort());
+    expect(Object.keys(t).sort()).toEqual(ordenar([...LEITURAS, ...FORM_MODELO, ...FORM_APP, ...FALLBACKS]));
   });
 });
 

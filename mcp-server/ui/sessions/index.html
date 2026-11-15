@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Registrar sessão</title>
+    <link rel="stylesheet" href="../shared/form.css" />
+  </head>
+  <body>
+    <main class="form" aria-busy="true">
+      <form id="form" novalidate>
+        <div id="avisos" class="avisos" role="status" hidden></div>
+        <div id="linhas" class="linhas"></div>
+        <p id="erro-geral" class="erro geral" role="alert" hidden></p>
+        <div id="carregar-erro" class="carregar-erro" hidden>
+          <p id="carregar-erro-texto"></p>
+          <button type="button" id="tentar-de-novo" class="texto"></button>
+        </div>
+        <div class="acoes">
+          <button type="button" id="cancelar" class="texto"></button>
+          <button type="submit" id="salvar" class="primario"></button>
+        </div>
+      </form>
+      <p id="cancelado" class="cancelado" role="status" hidden></p>
+      <section id="sucesso" class="sucesso" role="status" hidden>
+        <h2 id="sucesso-titulo"></h2>
+        <p id="sucesso-resumo"></p>
+        <button type="button" id="oferta" class="primario" hidden></button>
+      </section>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

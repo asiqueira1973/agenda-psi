@@ -6,6 +6,9 @@ import { registrarListarTiposDespesa } from './expense/options.js';
 import { registrarRecursoDespesa } from './expense/resource.js';
 import { registrarSalvarDespesa } from './expense/save.js';
 import { registrarLeituras } from './read/index.js';
+import { registrarAcaoPagamento } from './payment/index.js';
+import { registrarAcaoSessoes } from './sessions/index.js';
+import { registrarBuscarPacientesOpcoes } from './shared/pacientes.js';
 
 /**
  * Registra as ferramentas e os recursos no `McpServer` do request (13.1). Nenhuma recebe
@@ -28,4 +31,9 @@ export function registrarFerramentas(server: McpServer, ctx: ToolContext): void 
     registrarSalvarDespesa(server, ctx);
   }
   registrarFallbackDespesa(server, ctx);
+
+  // Épico 5: a opção de paciente é comum aos formulários de sessão, pagamento e horário.
+  if (ctx.ui !== 'nao') registrarBuscarPacientesOpcoes(server, ctx);
+  registrarAcaoSessoes(server, ctx);
+  registrarAcaoPagamento(server, ctx);
 }
