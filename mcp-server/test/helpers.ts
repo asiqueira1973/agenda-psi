@@ -79,7 +79,7 @@ export function dbPorTabela(respostas: Record<string, Resposta | Resposta[]>) {
       const resultado = Array.isArray(r) ? r[i] ?? r[r.length - 1] : r;
       if (!resultado) throw new Error(`tabela não simulada: ${tabela}`);
       const consulta: Record<string, unknown> = {};
-      for (const metodo of ['select', 'insert', 'eq', 'gte', 'lte', 'lt', 'gt', 'in', 'order', 'limit', 'maybeSingle', 'single']) {
+      for (const metodo of ['select', 'insert', 'update', 'delete', 'eq', 'gte', 'lte', 'lt', 'gt', 'in', 'order', 'limit', 'maybeSingle', 'single']) {
         consulta[metodo] = (...args: unknown[]) => {
           chamadas.push({ tabela, metodo, args });
           return consulta;
@@ -89,6 +89,11 @@ export function dbPorTabela(respostas: Record<string, Resposta | Resposta[]>) {
       const promessa = (resultado as { lancar?: boolean }).lancar ? Promise.reject(new Error('rede')) : Promise.resolve(resultado);
       consulta.then = (ok: (v: unknown) => unknown, erro?: (e: unknown) => unknown) => promessa.then(ok, erro);
       return consulta;
+    },
+    // RPC: a resposta é a de `rpc:<nome>`.
+    rpc(nome: string) {
+      chamadas.push({ tabela: `rpc:${nome}`, metodo: 'rpc', args: [] });
+      return Promise.resolve(respostas[`rpc:${nome}`] ?? { data: null, error: null });
     },
     // Edge Functions: registra a chamada; a resposta é a de `functions:<nome>`, ou sucesso.
     functions: {

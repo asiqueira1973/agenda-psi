@@ -10,6 +10,9 @@ export const eventos = {
   novoPagamento: 'agenda_psi_novopagamento',
   novoAgendamento: 'agenda_psi_novoagendamento',
   novaDespesa: 'agenda_psi_novadespesa',
+  // Épico 6: edição de paciente e preço novo, como useEditarPaciente e useAtualizarPreco.
+  pacienteEditado: 'agenda_psi_paciente_editado',
+  atualizacaoPreco: 'agenda_psi_atualizacao_preco',
 } as const;
 
 export type NomeDeEvento = (typeof eventos)[keyof typeof eventos];

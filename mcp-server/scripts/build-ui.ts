@@ -6,7 +6,7 @@ import { build } from 'vite';
  * singlefile, vite.config.ts) e é embutido em src/ui/generated.ts, que fica fora do git.
  * Falha se algum passar de 300 KB (17; teto alterado em 15/11/2026).
  */
-const FORMULARIOS = ['expense', 'sessions', 'payment', 'patient', 'schedule', 'feedback'];
+const FORMULARIOS = ['expense', 'sessions', 'payment', 'patient', 'schedule', 'feedback', 'record'];
 const LIMITE_BYTES = 300 * 1024;
 
 const html: Record<string, string> = {};

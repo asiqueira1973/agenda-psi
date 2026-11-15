@@ -85,10 +85,11 @@ const LEITURAS = [
 ];
 
 /** Ferramentas de formulário (épicos 2 e 5): as que o modelo vê e as que só o app chama. */
-const FORM_MODELO = ['abrir_formulario_despesa', 'abrir_formulario_feedback', 'abrir_formulario_horario', 'abrir_formulario_paciente', 'abrir_formulario_pagamento', 'abrir_formulario_sessoes'];
-const FORM_APP = ['buscar_pacientes_opcoes', 'listar_agenda', 'listar_tipos_despesa', 'salvar_despesa', 'salvar_feedback', 'salvar_horarios', 'salvar_paciente', 'salvar_pagamentos', 'salvar_sessoes'];
+const REGISTROS = ['troca_horario', 'remocao_horario', 'edicao_paciente', 'edicao_sessao', 'exclusao_sessao', 'edicao_pagamento', 'exclusao_pagamento', 'edicao_despesa', 'exclusao_despesa'];
+const FORM_MODELO = ['abrir_formulario_despesa', 'abrir_formulario_feedback', 'abrir_formulario_horario', 'abrir_formulario_paciente', 'abrir_formulario_pagamento', 'abrir_formulario_sessoes', ...REGISTROS.map((a) => `abrir_formulario_${a}`)];
+const FORM_APP = ['buscar_pacientes_opcoes', 'listar_agenda', 'listar_tipos_despesa', 'salvar_despesa', 'salvar_feedback', 'salvar_horarios', 'salvar_paciente', 'salvar_pagamentos', 'salvar_sessoes', 'listar_registros', ...REGISTROS.map((a) => `salvar_${a}`)];
 /** Fallbacks com prévia (13.4), um por ação. */
-const FALLBACKS = ['registrar_despesa', 'registrar_feedback', 'registrar_horarios', 'registrar_paciente', 'registrar_pagamentos', 'registrar_sessoes'];
+const FALLBACKS = ['registrar_despesa', 'registrar_feedback', 'registrar_horarios', 'registrar_paciente', 'registrar_pagamentos', 'registrar_sessoes', ...REGISTROS.map((a) => `registrar_${a}`)];
 const ordenar = (xs: string[]) => [...xs].sort();
 
 const COM_UI = { extensions: { 'io.modelcontextprotocol/ui': { mimeTypes: ['text/html;profile=mcp-app'] } } };
