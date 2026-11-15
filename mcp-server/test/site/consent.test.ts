@@ -130,6 +130,10 @@ describe('vercel.json (4.2, 6.3)', () => {
     expect(destinos['/mcp']).toBe('/api/index');
     expect(destinos['/.well-known/oauth-protected-resource']).toBe('/api/index');
     expect(destinos['/oauth/consent']).toBe('/oauth/consent/index.html');
+    // Desvio do authorize (épico 3): metadata de AS e authorize vão para a função.
+    for (const r of ['/.well-known/oauth-authorization-server', '/.well-known/openid-configuration', '/oauth/authorize']) {
+      expect(destinos[r], r).toBe('/api/index');
+    }
   });
   it('o ignore compara com o último deploy, não com o commit anterior (deploy cancelado no épico 3)', () => {
     // Com `HEAD^`, um commit só de docs depois de um de código fazia a Vercel pular o build.

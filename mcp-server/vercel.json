@@ -16,6 +16,18 @@
       "destination": "/api/index"
     },
     {
+      "source": "/.well-known/oauth-authorization-server",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/.well-known/openid-configuration",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/oauth/authorize",
+      "destination": "/api/index"
+    },
+    {
       "source": "/oauth/consent",
       "destination": "/oauth/consent/index.html"
     }

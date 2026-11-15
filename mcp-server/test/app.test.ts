@@ -42,7 +42,7 @@ describe('rotas (6.2)', () => {
       expect(r.headers.get('access-control-allow-origin')).toBe('*');
       expect(await r.json()).toEqual({
         resource: 'https://mcp.exemplo.com/mcp',
-        authorization_servers: ['https://exemplo.supabase.co/auth/v1'],
+        authorization_servers: ['https://mcp.exemplo.com'],
         bearer_methods_supported: ['header'],
         resource_name: 'Agenda Psi',
         scopes_supported: ['email'],
@@ -136,5 +136,51 @@ describe('escopo pedido ao cliente (épico 3: HS256 sem ID token)', () => {
     const desafio = r.headers.get('www-authenticate') ?? '';
     expect(desafio).toContain('scope="email"');
     expect(desafio).not.toContain('openid');
+  });
+});
+
+describe('desvio do authorize (épico 3, opção A aprovada): o Claude sempre pede openid', () => {
+  it.each(['/.well-known/oauth-authorization-server', '/.well-known/openid-configuration'])(
+    'GET %s: emissor é o nosso domínio; só o authorize é nosso, o resto é do Supabase',
+    async (caminho) => {
+      const r = await app.fetch(new Request(`${base}${caminho}`));
+      expect(r.status).toBe(200);
+      const m = await r.json();
+      expect(m.issuer).toBe('https://mcp.exemplo.com');
+      expect(m.authorization_endpoint).toBe('https://mcp.exemplo.com/oauth/authorize');
+      expect(m.token_endpoint).toBe('https://exemplo.supabase.co/auth/v1/oauth/token');
+      expect(m.registration_endpoint).toBe('https://exemplo.supabase.co/auth/v1/oauth/clients/register');
+      expect(m.code_challenge_methods_supported).toEqual(['S256']);
+      expect(m.scopes_supported).not.toContain('openid');
+    },
+  );
+
+  it('/oauth/authorize redireciona ao Supabase com a mesma query, sem openid no escopo', async () => {
+    const q = 'response_type=code&client_id=c1&redirect_uri=https%3A%2F%2Fclaude.ai%2Fapi%2Fmcp%2Fauth_callback&code_challenge=abc&code_challenge_method=S256&state=xyz&scope=openid+email+profile&resource=https%3A%2F%2Fmcp.exemplo.com%2Fmcp';
+    const r = await app.fetch(new Request(`${base}/oauth/authorize?${q}`));
+    expect(r.status).toBe(302);
+    const destino = new URL(r.headers.get('location')!);
+    expect(destino.origin + destino.pathname).toBe('https://exemplo.supabase.co/auth/v1/oauth/authorize');
+    const p = destino.searchParams;
+    expect(p.get('scope')).toBe('email profile');
+    for (const k of ['response_type', 'client_id', 'redirect_uri', 'code_challenge', 'code_challenge_method', 'state', 'resource']) {
+      expect(p.get(k), k).toBe(new URLSearchParams(q).get(k));
+    }
+  });
+
+  it('só openid, ou sem escopo: vira email (o padrão do Supabase)', async () => {
+    for (const q of ['scope=openid', '']) {
+      const r = await app.fetch(new Request(`${base}/oauth/authorize?client_id=c&${q}`));
+      expect(new URL(r.headers.get('location')!).searchParams.get('scope')).toBe('email');
+    }
+  });
+
+  it('o token continua sendo conferido contra o emissor do Supabase, não o nosso (6.4)', async () => {
+    const r = await app.fetch(new Request(`${base}/mcp`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream', 'mcp-protocol-version': '2025-11-25', authorization: 'Bearer valido' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }),
+    }));
+    expect(r.status).toBe(200);
   });
 });

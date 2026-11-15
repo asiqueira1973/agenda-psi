@@ -1,5 +1,6 @@
 import { requireBearerAuth, type McpHttpHandler } from '@modelcontextprotocol/server';
 import { ESCOPO_PEDIDO, protectedResourceMetadata, protectedResourceMetadataUrl } from './auth/metadata.js';
+import { metadataDeAutorizacao, redirecionarAuthorize } from './auth/authorize-proxy.js';
 import { criarVerificador, type ClaimsReader } from './auth/verify-token.js';
 import { suporteAUi } from './client-capabilities.js';
 import type { Config } from './config.js';
@@ -37,6 +38,8 @@ export type Dependencias = { leitorDeClaims?: ClaimsReader; mcp?: McpHttpHandler
  *
  * Rotas:
  * - `GET /.well-known/oauth-protected-resource[/mcp]` → metadata da 6.2;
+ * - `GET /.well-known/oauth-authorization-server` (e `openid-configuration`) e
+ *   `GET /oauth/authorize` → desvio do authorize, sem openid (authorize-proxy.ts);
  * - `/mcp` → exige Bearer: sem token ou com token inválido, 401 com
  *   `WWW-Authenticate: Bearer … resource_metadata="…"` (6.2, passo 1); com token
  *   válido, o handler MCP recebe o `authInfo`;
@@ -56,6 +59,16 @@ export function criarApp(config: Config, deps: Dependencias = {}) {
         if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS_PUBLICO });
         if (request.method !== 'GET') return new Response(null, { status: 405, headers: CORS_PUBLICO });
         return Response.json(prm, { headers: CORS_PUBLICO });
+      }
+
+      // Desvio do authorize (authorize-proxy.ts): metadata de AS no nosso domínio e o
+      // authorize sem openid. Token, DCR e JWKS seguem direto no Supabase.
+      if (pathname === '/.well-known/oauth-authorization-server' || pathname === '/.well-known/openid-configuration') {
+        if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS_PUBLICO });
+        return Response.json(metadataDeAutorizacao(config), { headers: CORS_PUBLICO });
+      }
+      if (pathname === '/oauth/authorize' && request.method === 'GET') {
+        return redirecionarAuthorize(config, request);
       }
 
       if (pathname === '/mcp') {

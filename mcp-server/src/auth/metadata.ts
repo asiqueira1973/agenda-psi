@@ -1,5 +1,6 @@
 import { getOAuthProtectedResourceMetadataUrl } from '@modelcontextprotocol/server';
 import type { Config } from '../config.js';
+import { emissorAnunciado } from './authorize-proxy.js';
 
 /**
  * O único escopo que o servidor pede ao cliente OAuth (épico 3). Sem `openid`: com ele,
@@ -21,7 +22,9 @@ export const ESCOPO_PEDIDO = 'email';
 export function protectedResourceMetadata(config: Config) {
   return {
     resource: config.publicUrl,
-    authorization_servers: [config.issuer],
+    // O nosso domínio, e não o Supabase direto: só o authorize passa por aqui, para tirar
+    // `openid` (authorize-proxy.ts, épico 3). O Claude usa só o primeiro item (6.2).
+    authorization_servers: [emissorAnunciado(config)],
     bearer_methods_supported: ['header'],
     resource_name: 'Agenda Psi',
     scopes_supported: [ESCOPO_PEDIDO],
