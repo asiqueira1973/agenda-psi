@@ -56,7 +56,7 @@ Nada de `package.json`, código do servidor ou Vercel: isso é o épico 1.
 
 ## Execução (15/11/2026)
 
-**Status: PRONTO COM UMA PENDÊNCIA** — falta a prova real numa sessão nova (ver abaixo).
+**Status: PRONTO** — prova real feita numa sessão nova em 15/11/2026 (ver o fim).
 
 ### Divergências em relação ao plano
 - O `.claude/settings.json` foi criado junto com os scripts (extraídos de uma vez do Anexo B), não por último. Sem efeito: todos os scripts já existiam.
@@ -138,7 +138,27 @@ Migration escrita. NÃO aplique sem a aprovação do Alexandre. Depois de aplica
 
 (O `guard-bash-drift` foi provocado com `touch app/src/x.tmp`, apagado em seguida; saída na tabela acima.)
 
-### Prova real pelo Claude Code — PENDENTE
-Nesta sessão, um Write real em `app/src/x.ts` **não** foi bloqueado: a sessão começou antes de existir o `.claude/settings.json`, e o Claude Code só carrega hooks no início da sessão. O arquivo foi apagado na hora (`git status -- app/ supabase/` vazio).
+### Prova real pelo Claude Code (sessão nova, 15/11/2026)
+Na primeira sessão, um Write real em `app/src/x.ts` **não** foi bloqueado: ela começou antes de existir o `.claude/settings.json`, e o Claude Code só carrega hooks no início da sessão. O arquivo foi apagado na hora. Numa sessão nova, cada caso do critério 8.0 foi tentado pela ferramenta de verdade:
 
-**Primeira tarefa da próxima sessão, antes do épico 1:** tentar um Write em `app/src/x.ts` e um `supabase functions deploy` pelo Bash, colar aqui o bloqueio real e trocar o status para PRONTO.
+| Tentativa (ferramenta real) | Hook que barrou |
+|---|---|
+| Write em `app/src/x.ts` | guard-app-scope |
+| Write de `SUPABASE_SERVICE_ROLE_KEY` em `mcp-server/src/x.ts` | guard-secrets |
+| Edit em `supabase/migrations/20260913220000_0001_baseline.sql` | guard-app-scope (o primeiro a responder; o guard-migrations barra o mesmo caminho, como mostra a prova simulada) |
+| Write em `mcp-server/test/x.test.ts` com `.claude/fix-mode` presente | guard-tests |
+| Bash `supabase functions deploy` | guard-production |
+| Bash `vercel --prod` | guard-production |
+
+```
+PreToolUse:Write hook error: [guard-app-scope.sh]: Bloqueado: na branch feature/mcp-server não se altera o app nem nada em supabase/ (spec 4.2 e 25.4). Copie a regra para mcp-server/src/rules/ com teste, ou pare e pergunte.
+PreToolUse:Write hook error: [guard-secrets.sh]: Bloqueado: credencial privilegiada em /Users/alexandresiqueira/agenda-psi/mcp-server/src/x.ts. O servidor MCP usa só o JWT do usuário e a chave publicável (spec seção 0, P1, e seção 20). Se a operação parece exigir service_role, pare e pergunte ao Alexandre.
+PreToolUse:Edit hook error: [guard-app-scope.sh]: Bloqueado: na branch feature/mcp-server não se altera o app nem nada em supabase/ (spec 4.2 e 25.4). Copie a regra para mcp-server/src/rules/ com teste, ou pare e pergunte.
+PreToolUse:Write hook error: [guard-tests.sh]: Bloqueado: modo de correção ativo (.claude/fix-mode). Corrija o código, não o teste (seção 22.1). Se o teste estiver errado de fato, pare e explique ao Alexandre.
+PreToolUse:Bash hook error: [guard-production.sh]: Bloqueado: 'supabase functions deploy/delete'. Sem nome, o deploy republica todas as funções, inclusive o agente. Pare e peça ao Alexandre (spec 6.5 e 25.4).
+PreToolUse:Bash hook error: [guard-production.sh]: Bloqueado: deploy de produção na Vercel. Produção sai pelo push na Production Branch, com o Alexandre. Pare e peça ao Alexandre (spec 6.5 e 25.4).
+```
+
+Depois: `.claude/fix-mode` apagado (ignorado por `.claude/.gitignore:2`), nenhum dos arquivos tentados existe e `git status --short` ficou vazio.
+
+**Efeito colateral conhecido:** o `guard-production` olha o texto inteiro do comando, então barra também um heredoc ou `echo` que apenas *cite* um comando proibido (aconteceu ao registrar esta prova). É falso positivo do lado seguro; a saída é usar Write/Edit para esse texto.

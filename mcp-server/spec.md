@@ -273,9 +273,9 @@ Ordem obrigatória. **Há uma parada de aprovação depois do épico 3**: nada d
 
 ### 8.0 Épico 0 — Guardrails
 Objetivo: instalar o Anexo B antes de qualquer feature.
-- [ ] `.claude/settings.json`, `.claude/hooks/*.sh` (executáveis), `.claude/agents/verifier.md` e `REVIEW.md` criados com o conteúdo do Anexo B.
-- [ ] Cada hook provocado uma vez, com a saída do bloqueio colada: escrever `service_role` em `mcp-server/src/x.ts`, editar `supabase/migrations/…0001_baseline.sql`, escrever em `app/src/x.ts`, editar um teste com `.claude/fix-mode` presente, e rodar `supabase functions deploy` (sem nome) e `vercel --prod` (o hook bloqueia antes de executar).
-- [ ] `.claude/fix-mode` está no `.gitignore`.
+- [x] `.claude/settings.json`, `.claude/hooks/*.sh` (executáveis), `.claude/agents/verifier.md` e `REVIEW.md` criados com o conteúdo do Anexo B.
+- [x] Cada hook provocado uma vez, com a saída do bloqueio colada: escrever `service_role` em `mcp-server/src/x.ts`, editar `supabase/migrations/…0001_baseline.sql`, escrever em `app/src/x.ts`, editar um teste com `.claude/fix-mode` presente, e rodar `supabase functions deploy` (sem nome) e `vercel --prod` (o hook bloqueia antes de executar).
+- [x] `.claude/fix-mode` está no `.gitignore` (em `.claude/.gitignore`).
 
 ### 8.1 Épico 1 — Esqueleto, autenticação por token e uma leitura
 Objetivo: servidor local respondendo a um cliente MCP real, com JWT verificado e RLS valendo.
