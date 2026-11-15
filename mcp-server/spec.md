@@ -584,7 +584,7 @@ Não se aplica.
 |---|---|---|
 | Nenhuma `service_role` ou segredo privilegiado em `mcp-server/` | P1, seção 20 | Hook `guard-secrets.sh` |
 | Não alterar `app/` nem `supabase/` nesta branch | 4.2, 25.4 | Hook `guard-app-scope.sh` |
-| Nada vai para produção sem o Alexandre: deploy de Edge Function, `config push`, `db push`, secrets, `vercel --prod`, env e domínios da Vercel | 6.5, 25.4 | Hook `guard-production.sh` |
+| Nada vai para produção sem o Alexandre: deploy de Edge Function, `config push`, `db push`, secrets, `vercel --prod`, env e domínios da Vercel, pela CLI **e pelo MCP da Vercel** (acrescentado em 15/11/2026) | 6.5, 25.4 | Hook `guard-production.sh` |
 | Migration versionada não se edita | 7 | Hook `guard-migrations.sh` |
 | Teste não se edita em modo correção | 22.1 | Hook `guard-tests.sh` |
 | Advisors depois de qualquer migration | 20 | Hook `remind-advisors.sh` |
@@ -777,7 +777,7 @@ O repositório ainda não tem `.claude/`. Os hooks dependem de `jq` (`brew insta
         ]
       },
       {
-        "matcher": "Bash|mcp__.*__(deploy_edge_function|apply_migration)",
+        "matcher": "Bash|mcp__.*__(deploy_edge_function|apply_migration|create_deployment|request_promote|request_rollback|assign_alias|start_rolling_release|approve_rolling_release_stage|complete_rolling_release|create_project_env|edit_project_env|add_project_domain|verify_project_domain|update_project|create_project|create_git_project|pause_project|unpause_project|buy_domain|create_or_transfer_domain|create_record|update_record|replace_domain_dns_records|update_firewall_config|put_firewall_config|update_project_protection_bypass)",
         "hooks": [
           { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-production.sh" }
         ]
@@ -926,6 +926,15 @@ block() { echo "Bloqueado: $1 Pare e peça ao Alexandre (spec 6.5 e 25.4)." >&2;
 case "$tool" in
   *__deploy_edge_function) block "deploy de Edge Function. O servidor MCP roda na Vercel; nenhuma função do Supabase é publicada nesta branch." ;;
   *__apply_migration)      block "migration via MCP do Supabase. Este trabalho não muda o banco." ;;
+  # MCP da Vercel (acrescentado em 15/11/2026): o mesmo que a CLI abaixo, pelo outro
+  # caminho. Projeto, variáveis e domínio foram criados uma vez, com ordem explícita do
+  # Alexandre; daqui em diante, qualquer mudança desse tipo volta a passar por ele.
+  *__create_deployment|*__request_promote|*__request_rollback|*__assign_alias|*__start_rolling_release|*__approve_rolling_release_stage|*__complete_rolling_release)
+    block "deploy, promoção, rollback ou alias de produção na Vercel pelo MCP." ;;
+  *__create_project_env|*__edit_project_env|*__add_project_domain|*__verify_project_domain|*__update_project|*__create_project|*__create_git_project|*__pause_project|*__unpause_project)
+    block "mudança de projeto, variáveis ou domínio na Vercel pelo MCP." ;;
+  *__buy_domain|*__create_or_transfer_domain|*__create_record|*__update_record|*__replace_domain_dns_records|*__update_firewall_config|*__put_firewall_config|*__update_project_protection_bypass)
+    block "domínio, DNS, firewall ou proteção na Vercel pelo MCP." ;;
 esac
 
 cmd=$(echo "$input" | jq -r '.tool_input.command // empty')

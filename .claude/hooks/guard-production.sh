@@ -13,6 +13,15 @@ block() { echo "Bloqueado: $1 Pare e peça ao Alexandre (spec 6.5 e 25.4)." >&2;
 case "$tool" in
   *__deploy_edge_function) block "deploy de Edge Function. O servidor MCP roda na Vercel; nenhuma função do Supabase é publicada nesta branch." ;;
   *__apply_migration)      block "migration via MCP do Supabase. Este trabalho não muda o banco." ;;
+  # MCP da Vercel (acrescentado em 15/11/2026): o mesmo que a CLI abaixo, pelo outro
+  # caminho. Projeto, variáveis e domínio foram criados uma vez, com ordem explícita do
+  # Alexandre; daqui em diante, qualquer mudança desse tipo volta a passar por ele.
+  *__create_deployment|*__request_promote|*__request_rollback|*__assign_alias|*__start_rolling_release|*__approve_rolling_release_stage|*__complete_rolling_release)
+    block "deploy, promoção, rollback ou alias de produção na Vercel pelo MCP." ;;
+  *__create_project_env|*__edit_project_env|*__add_project_domain|*__verify_project_domain|*__update_project|*__create_project|*__create_git_project|*__pause_project|*__unpause_project)
+    block "mudança de projeto, variáveis ou domínio na Vercel pelo MCP." ;;
+  *__buy_domain|*__create_or_transfer_domain|*__create_record|*__update_record|*__replace_domain_dns_records|*__update_firewall_config|*__put_firewall_config|*__update_project_protection_bypass)
+    block "domínio, DNS, firewall ou proteção na Vercel pelo MCP." ;;
 esac
 
 cmd=$(echo "$input" | jq -r '.tool_input.command // empty')
