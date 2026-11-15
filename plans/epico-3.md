@@ -155,3 +155,4 @@ Testes primeiro (`test/expense/form-memory.test.ts`). Um teste antigo que compar
 - [ ] Cadastro novo no app recebendo o e-mail de confirmação e caindo na página `/` nova: **pendente, com o Alexandre**.
 
 Parada do épico 3 (seção 8): o Alexandre viu a despesa funcionando no Claude e mandou seguir para as outras funções em 15/11/2026.
+- **Atualização do backlog (15/11/2026):** numa **conversa nova**, o Cancelar funcionou. Isso confirma a hipótese: as conversas antigas seguiam com o HTML em cache, e o endereço versionado resolve nas novas. Fica em aberto só a memória de "já salvo" ao voltar a uma conversa: falta conferir se o Claude deixa o iframe usar `localStorage`.
