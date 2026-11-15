@@ -588,6 +588,7 @@ Não se aplica.
 | Migration versionada não se edita | 7 | Hook `guard-migrations.sh` |
 | Teste não se edita em modo correção | 22.1 | Hook `guard-tests.sh` |
 | Advisors depois de qualquer migration | 20 | Hook `remind-advisors.sh` |
+| Um comando Bash não pode alterar `app/` ou `supabase/` nem pôr credencial em `mcp-server/` (os hooks de Write/Edit não veem o Bash) | 4.2, 25.4, P1 | Hook `guard-bash-drift.sh` (PostToolUse, avisa depois) |
 | `usuario_id` não é argumento de ferramenta | P1, pegadinha 3 | Hook `guard-tool-schema.sh` + `REVIEW.md` |
 | Critérios de aceite, P5 e regras 11.x | 8, 11 | Subagente `verifier` + `REVIEW.md` |
 
@@ -758,7 +759,7 @@ Atualize DOCUMENTACAO-TECNICA.md no mesmo commit.
 
 ## Anexo B — Kit de guardrails do Claude Code
 
-O repositório ainda não tem `.claude/`. Os hooks dependem de `jq` (`brew install jq`).
+O repositório ainda não tem `.claude/`. Os hooks dependem de `jq` (`brew install jq`). **O Claude Code carrega os hooks quando a sessão começa:** depois de criar o `.claude/settings.json`, a prova real dos hooks é feita numa sessão nova.
 
 ### `.claude/settings.json`
 ```json
@@ -787,6 +788,12 @@ O repositório ainda não tem `.claude/`. Os hooks dependem de `jq` (`brew insta
         "matcher": "Write|Edit",
         "hooks": [
           { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/remind-advisors.sh" }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-bash-drift.sh" }
         ]
       }
     ]
@@ -933,6 +940,35 @@ has '\bvercel[[:space:]]+(env|domains|dns|alias|certs|project[[:space:]]+rm|remo
 exit 0
 ```
 
+### `.claude/hooks/guard-bash-drift.sh`
+```bash
+#!/bin/bash
+# Fecha a brecha dos hooks de Write/Edit: um comando Bash (sed -i, cat >) também edita
+# arquivos. Depois de cada Bash, confere se algo mudou em app/ ou supabase/ e se entrou
+# credencial privilegiada em mcp-server/. Roda depois do comando, então avisa, não impede.
+# Implementa a regra de escopo 4.2, a decisão 25.4 e P1 do mcp-server/spec.md.
+command -v jq >/dev/null || { echo "Guardrail inativo: jq não está instalado. Rode brew install jq antes de continuar." >&2; exit 2; }
+cd "$CLAUDE_PROJECT_DIR" || exit 0
+branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+case "$branch" in feature/mcp-server*) ;; *) exit 0 ;; esac
+
+drift=$(git status --porcelain -- app/ supabase/)
+if [ -n "$drift" ]; then
+  echo "ALERTA: o último comando alterou app/ ou supabase/, o que é proibido nesta branch (spec 4.2 e 25.4):" >&2
+  echo "$drift" >&2
+  echo "Pare. Desfaça (git checkout -- <arquivo> ou rm do arquivo novo) e explique ao Alexandre." >&2
+  exit 2
+fi
+
+leak=$(grep -rlE 'service_role|SERVICE_ROLE|sb_secret_|N8N_WEBHOOK_SECRET|PLAY_PUSH_TOKEN' mcp-server \
+  --exclude=spec.md --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=.vercel 2>/dev/null)
+if [ -n "$leak" ]; then
+  echo "ALERTA: credencial privilegiada em: $leak. O servidor MCP usa só o JWT do usuário e a chave publicável (P1). Remova e explique ao Alexandre." >&2
+  exit 2
+fi
+exit 0
+```
+
 ### `.claude/hooks/remind-advisors.sh`
 ```bash
 #!/bin/bash
@@ -966,7 +1002,7 @@ Você verifica; não corrige nada.
    (a) nenhum inputSchema tem usuario_id;
    (b) nenhuma resposta inclui observacoes;
    (c) nenhuma referência a service_role;
-   (d) git diff main --stat -- app/ está vazio;
+   (d) git diff main --stat -- app/ supabase/ está vazio;
    (e) literais e mensagens de 11.x são idênticos aos do app;
    (f) nenhum log imprime argumentos ou resultados.
 6. Liste as divergências entre o diff e o plano.
@@ -982,7 +1018,7 @@ Termine com uma linha: PRONTO ou NÃO PRONTO, e os itens que impedem.
 Faça três passes e marque cada achado com o passe:
 - Bugs: lógica, caso de borda (fuso de São Paulo, dia 1–7, valor com centavos, paciente ambíguo), regressão.
 - Segurança: só o JWT do usuário e a RLS (P1); sem service_role; usuario_id nunca como argumento; nada de observacoes (P5); nada de PII em log; fallback só grava com token_previa válido (13.4).
-- Conformidade: bate com mcp-server/spec.md (épicos da seção 8, regras da seção 11, contratos da seção 13) e com o plano em plans/; app/ intocado; rotinas comentadas em português com a regra que implementam.
+- Conformidade: bate com mcp-server/spec.md (épicos da seção 8, regras da seção 11, contratos da seção 13) e com o plano em plans/; app/ e supabase/ intocados; rotinas comentadas em português com a regra que implementam.
 
 ## O que é Importante
 O que grava diferente do app, vaza dado ou viola o spec. Estilo é detalhe.
