@@ -138,3 +138,20 @@ Testes primeiro (`test/expense/form-memory.test.ts`). Um teste antigo que compar
 - "Registra 120 de supervisão de ontem" abriu o formulário **preenchido** (Supervisão, R$ 120, 14/11/2026) e salvou. A pergunta "o que eu acabei de registrar?" teve a resposta certa, sem a pessoa repetir nada: **critério 8 do épico 2 cumprido** (o modelo não citou o id, mas sabia o resumo).
 - O texto da abertura ficou mais curto, mas o modelo ainda escreveu "A despesa só fica registrada quando você clicar em Salvar", estranho embaixo do "Despesa registrada.". **Novo texto, aprovado:** o modelo deve responder exatamente "Abri o formulário de despesa.".
 - Ao voltar, o formulário não lembrou que foi salvo, e o Cancelar não trancou: é o comportamento do **HTML antigo**. Já o texto do modelo, que vem do servidor, chegou atualizado. Conclusão: o Claude guarda em cache o recurso `ui://agenda-psi/despesa.html`. **Correção aprovada:** o endereço passa a levar o hash do HTML (`ui://agenda-psi/despesa-<sha256[0:12]>.html`, em `src/tools/expense/resource-uri.ts`), e cada mudança da tela gera um endereço novo. Diverge da 13.1 (endereço fixo). Teste garante que o hash é o do HTML embutido.
+
+### Terceiro teste no Claude e fechamento
+- Texto da abertura: **resolvido**. O Claude respondeu só "Abri o formulário de despesa.".
+- Cancelar e a memória de "já salvo" seguem sem funcionar no Claude. **Backlog, por decisão do Alexandre (15/11/2026):**
+  - Hipótese principal: o Claude guarda o `tools/list` da conexão (com o `resourceUri` antigo) até o conector ser removido e adicionado de novo, e continua abrindo o HTML antigo. Primeiro teste: remover e readicionar o conector, depois Cancelar e sair/voltar.
+  - Se o HTML novo aparecer e mesmo assim não funcionar: investigar o `localStorage` no iframe do Claude (pode estar bloqueado) e o `requestTeardown`.
+  - Sem risco de dado errado: nada grava sem Salvar, e o Salvar tranca o formulário.
+
+### Critérios 8.3
+- [x] PRM em produção (6.2), conferido com `curl`.
+- [x] Conector no Claude: login, consentimento e conector ativo, com o desvio do authorize (opção A).
+- [x] "Registra 120 de supervisão de ontem" abre o formulário preenchido, salva e grava igual ao app.
+- [x] Token do app (sem `client_id`) recusado em produção.
+- [x] Logs da Vercel sem nome, valor, descrição ou token.
+- [ ] Cadastro novo no app recebendo o e-mail de confirmação e caindo na página `/` nova: **pendente, com o Alexandre**.
+
+Parada do épico 3 (seção 8): o Alexandre viu a despesa funcionando no Claude e mandou seguir para as outras funções em 15/11/2026.

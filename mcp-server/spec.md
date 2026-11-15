@@ -323,7 +323,7 @@ Critérios:
 - [x] A linha gravada tem `status = 'pago'`, `pago_em` preenchido e os mesmos campos que a tela do app grava (conferido no painel do Supabase).
 - [x] `listar_tipos_despesa` e `salvar_despesa` **não** aparecem no `tools/list` visto pelo modelo (`visibility: ["app"]`).
 - [x] Num cliente sem a extensão MCP Apps (Inspector sem UI), aparece `registrar_despesa`. A primeira chamada devolve a prévia e o `token_previa`; a segunda, com `confirmar: true` e o token, grava; token adulterado ou vencido não grava.
-- [ ] Depois do Salvar, o modelo responde sabendo o id e o resumo, sem a pessoa repetir nada. (Contexto entregue ao host no épico 2; a resposta do modelo se confere no épico 3.)
+- [x] Depois do Salvar, o modelo responde sabendo o id e o resumo, sem a pessoa repetir nada. (Conferido no Claude no épico 3, 15/11/2026.)
 
 ### 8.3 Épico 3 — OAuth e deploy em produção (conector no Claude)
 Objetivo: a despesa do épico 2 funcionando no Claude web e desktop como conector personalizado.
@@ -331,11 +331,11 @@ Objetivo: a despesa do épico 2 funcionando no Claude web e desktop como conecto
 Bloqueado pelo checklist 6.5, que o Alexandre executa (25.1 respondida em 15/11/2026).
 
 Critérios:
-- [ ] O deploy na Vercel sobe, e `GET https://app.agendapsi.app.br/.well-known/oauth-protected-resource` devolve o JSON da seção 6.2.
-- [ ] No Claude, em Configurações > Conectores > Adicionar conector personalizado, a URL leva ao login, ao consentimento e ao conector ativo.
-- [ ] "Registra 120 de supervisão de ontem" abre o formulário, salva e aparece no app (lista de despesas) com os mesmos dados.
-- [ ] O token do app (sessão comum, sem `client_id`) é recusado pelo MCP em produção.
-- [ ] Os logs da Vercel não contêm nome de paciente, valor, descrição nem token (conferido no painel ou com `vercel logs`).
+- [x] O deploy na Vercel sobe, e `GET https://app.agendapsi.app.br/.well-known/oauth-protected-resource` devolve o JSON da seção 6.2.
+- [x] No Claude, em Configurações > Conectores > Adicionar conector personalizado, a URL leva ao login, ao consentimento e ao conector ativo.
+- [x] "Registra 120 de supervisão de ontem" abre o formulário, salva e aparece no app (lista de despesas) com os mesmos dados.
+- [x] O token do app (sessão comum, sem `client_id`) é recusado pelo MCP em produção.
+- [x] Os logs da Vercel não contêm nome de paciente, valor, descrição nem token (conferido no painel ou com `vercel logs`).
 - [ ] Um cadastro novo no app recebe o e-mail de confirmação, e o link termina na página `/` nova.
 
 **→ PARADA. Mostrar ao Alexandre e só seguir com a aprovação dele.**
