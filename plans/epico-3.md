@@ -132,3 +132,4 @@ EXIT build=0
 4. "Unverified" é o selo do Claude para conector personalizado fora do diretório dele. Não depende do código.
 
 Testes primeiro (`test/expense/form-memory.test.ts`). Um teste antigo que comparava o pré-preenchimento inteiro com `toEqual` foi ajustado para aceitar o `formulario_id` novo (`expect.any(String)`): é mudança de contrato aprovada, e foi feito **fora** do `fix-mode`.
+- **Despesas de teste:** o Alexandre decidiu **deixar no banco** as despesas criadas pelo Claude nos testes do épico 3 (15/11/2026). Não apagar.
