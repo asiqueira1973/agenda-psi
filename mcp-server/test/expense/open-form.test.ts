@@ -59,6 +59,7 @@ describe('preencherDespesa (8.2, passo 2)', () => {
 
   it('nada dito: só a data de hoje', () => {
     expect(preencherDespesa({}, tipos, HOJE)).toEqual({
+      formulario_id: expect.any(String),
       campos: { tipo_despesa_id: null, valor_despesa: '', data_competencia: HOJE, descricao: '', observacoes: '' },
       candidatos: [],
       avisos: [],

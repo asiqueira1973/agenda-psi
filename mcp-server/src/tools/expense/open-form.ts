@@ -1,4 +1,5 @@
 import { registerAppTool } from '@modelcontextprotocol/ext-apps/server';
+import { randomUUID } from 'node:crypto';
 import type { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod';
 import { logarChamada } from '../../log.js';
@@ -41,6 +42,7 @@ export function preencherDespesa(
   args: z.infer<typeof entrada>,
   tipos: TipoDespesa[],
   hoje: string = hojeEmSaoPaulo(),
+  formularioId: string = randomUUID(),
 ): PreenchimentoDaDespesa {
   const avisos: string[] = [];
 
@@ -70,6 +72,7 @@ export function preencherDespesa(
   if (descricao.length > MAX_DESCRICAO) avisos.push(textosNovosDespesa.descricaoLonga);
 
   return {
+    formulario_id: formularioId,
     campos: {
       tipo_despesa_id: tipo.situacao === 'ok' ? tipo.tipo.id : null,
       valor_despesa: valor,

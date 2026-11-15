@@ -41,6 +41,8 @@ export type TipoDespesa = { id: string; nome: string };
  * pré-preenchimento, os candidatos do tipo e os avisos para a pessoa.
  */
 export type PreenchimentoDaDespesa = {
+  /** Único por abertura; o formulário o usa para lembrar se já foi salvo (ui/shared/memoria.ts). */
+  formulario_id?: string;
   campos: {
     tipo_despesa_id: string | null;
     valor_despesa: string;

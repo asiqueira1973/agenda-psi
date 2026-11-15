@@ -5,6 +5,7 @@ import type {
   TipoDespesa,
 } from '../../src/tools/expense/model.js';
 import { validarDespesa } from '../../src/tools/expense/validate.js';
+import type { Lembranca } from '../shared/memoria.js';
 
 /** Os campos como a pessoa os vê: tudo texto, inclusive o valor (para recusar "1450,50"). */
 export type Campos = PreenchimentoDaDespesa['campos'] & { tipo_despesa_id: string };
@@ -17,7 +18,7 @@ export type NomeDoCampo = keyof Campos;
  * não há segundo Salvar, o que evita gravar em duplicidade.
  */
 export type Estado = {
-  fase: 'carregando' | 'erro_opcoes' | 'pronto' | 'salvando' | 'sucesso';
+  fase: 'carregando' | 'erro_opcoes' | 'pronto' | 'salvando' | 'sucesso' | 'cancelado';
   tipos: TipoDespesa[];
   campos: Campos;
   erros: Partial<Record<NomeDoCampo, string>>;
@@ -37,7 +38,9 @@ export type Acao =
   | { tipo: 'editar'; campo: NomeDoCampo; valor: string }
   | { tipo: 'erros_locais'; erros: ErroDeCampo[] }
   | { tipo: 'salvar_inicio' }
-  | { tipo: 'salvar_fim'; resposta: RespostaDoSalvar };
+  | { tipo: 'salvar_fim'; resposta: RespostaDoSalvar }
+  | { tipo: 'cancelar' }
+  | { tipo: 'restaurar'; lembranca: Lembranca };
 
 /** Estado inicial: carregando, campos vazios e a data de hoje vinda do pré-preenchimento. */
 export function estadoInicial(): Estado {
@@ -71,7 +74,8 @@ function espalharErros(lista: ErroDeCampo[]): Pick<Estado, 'erros' | 'erroGeral'
  * nenhuma ação muda mais nada.
  */
 export function reduzir(s: Estado, a: Acao): Estado {
-  if (s.fase === 'sucesso') return s;
+  // Sucesso e cancelado são finais: nada mais muda o formulário (sem segundo Salvar).
+  if (s.fase === 'sucesso' || s.fase === 'cancelado') return s;
   switch (a.tipo) {
     case 'preenchimento': {
       const c = a.dados.campos;
@@ -97,6 +101,13 @@ export function reduzir(s: Estado, a: Acao): Estado {
       return { ...s, ...espalharErros(a.erros) };
     case 'salvar_inicio':
       return podeSalvar(s) ? { ...s, fase: 'salvando', erros: {}, erroGeral: null } : s;
+    case 'cancelar':
+      return s.fase === 'salvando' ? s : { ...s, fase: 'cancelado', erros: {}, erroGeral: null };
+    case 'restaurar':
+      // O host remontou o formulário de uma abertura que já terminou (memoria.ts).
+      return a.lembranca.fase === 'sucesso'
+        ? { ...s, fase: 'sucesso', resumo: a.lembranca.resumo, idSalvo: a.lembranca.idSalvo }
+        : { ...s, fase: 'cancelado' };
     case 'salvar_fim':
       if (a.resposta.ok) {
         return { ...s, fase: 'sucesso', resumo: a.resposta.resumo, idSalvo: a.resposta.ids[0] ?? null };

@@ -118,3 +118,17 @@ EXIT build=0
 - **Deploy cancelado:** o push de `a890546` (correção de escopo) + `15c61b5` (só docs) foi **cancelado** pela Vercel. O Ignored Build Step do projeto (`git diff --quiet HEAD^ HEAD -- .`, que eu configurei) só olhava o último commit, que não mexia em `mcp-server/`. Corrigido no `vercel.json` (que prevalece sobre o painel, sem mexer no projeto): `ignoreCommand: git diff --quiet "${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}" HEAD -- .`, comparando com o último commit publicado. Teste primeiro.
 - **Escopo `email` não bastou:** às 18:46:37 (Brasília), com PRM e 401 pedindo só `email`, o `/oauth/token` deu o mesmo 500. O Claude pede `openid` de qualquer jeito.
 - **Opção A aprovada pelo Alexandre: desvio do authorize** (`src/auth/authorize-proxy.ts`). O nosso domínio se anuncia como authorization server (PRM `authorization_servers: ["https://app.agendapsi.app.br"]`) e serve `/.well-known/oauth-authorization-server` e `/.well-known/openid-configuration`, onde **só** o `authorization_endpoint` é nosso. Token, DCR e JWKS apontam direto para o Supabase. O `/oauth/authorize` faz 302 para o authorize do Supabase com a mesma query, sem `openid` no `scope`. Nada de token ou segredo guardado; o PKCE passa intacto; a verificação 6.4 continua contra o `iss` do Supabase. **Diverge da 6.1** ("o servidor MCP é só resource server"), com aprovação registrada aqui. Risco a conferir no teste: o Claude recusar a resposta do authorize por vir do emissor do Supabase, diferente do anunciado.
+
+### Funcionou no Claude (15/11/2026, 18:52 a 18:54, Brasília)
+- Conector adicionado do zero, login, consentimento e **conector ativo**, com o desvio do authorize. O Claude anuncia MCP Apps: ele vê `abrir_formulario_despesa` e `consultar_despesas`, sem o fallback (fecha a dúvida da divergência 2 do épico 2).
+- Duas despesas salvas pelo formulário: Aluguel da sala R$ 2.000 (`0389387d…`) e Alimentação R$ 50 (`aa91fdeb…`), as duas com `status=pago`, `pago_em` preenchido e `metodo` nulo, como o app grava. Ficam no banco até o Alexandre decidir sobre a limpeza.
+- Logs da Vercel no fluxo: só `{ferramenta, ms, ok, usuario(hash)}`. Nenhum nome, valor, descrição ou token (critério 5 da 8.3).
+- `salvar_despesa` levou 2.959 e 1.980 ms, **acima da meta de 2 s (17)**. Pendente: o analytics agora envia de verdade (até 1,5 s esperando), além da partida a frio.
+
+### Ajustes pedidos pelo Alexandre depois do teste (aprovados)
+1. **Texto que o modelo recebe na abertura:** o antigo fazia o Claude descrever os campos vazios, e essa resposta ficava embaixo do "Despesa registrada." Trocado pelo texto aprovado.
+2. **Cancelar não fechava** (o Claude ignora `requestTeardown`): o formulário agora tranca com "Cancelado. Nada foi registrado." e avisa o modelo ("A pessoa cancelou o formulário de despesa. Nada foi gravado.").
+3. **Formulário reaparecia vazio** ao voltar à conversa (o host remonta com o resultado original da ferramenta): cada abertura ganha um `formulario_id`, e o formulário anota no `localStorage` do iframe que foi salvo (com o resumo) ou cancelado. Ao ser remontado, mostra o fim de novo. Se o host bloquear o armazenamento, nada quebra, só não lembra. **Conferir no Claude.**
+4. "Unverified" é o selo do Claude para conector personalizado fora do diretório dele. Não depende do código.
+
+Testes primeiro (`test/expense/form-memory.test.ts`). Um teste antigo que comparava o pré-preenchimento inteiro com `toEqual` foi ajustado para aceitar o `formulario_id` novo (`expect.any(String)`): é mudança de contrato aprovada, e foi feito **fora** do `fix-mode`.

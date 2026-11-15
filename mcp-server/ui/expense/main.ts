@@ -5,9 +5,10 @@ import {
   applyHostStyleVariables,
   type McpUiHostContext,
 } from '@modelcontextprotocol/ext-apps';
-import { copyDespesaDoApp, erros as errosDoServidor, textosNovosDespesa } from '../../src/rules/messages.js';
+import { copyDespesaDoApp, erros as errosDoServidor, textosNovosDespesa, textosParaOModelo } from '../../src/rules/messages.js';
 import type { PreenchimentoDaDespesa, RespostaDoSalvar, TipoDespesa } from '../../src/tools/expense/model.js';
 import { textoParaOModelo } from '../../src/tools/expense/validate.js';
+import { lembrar, lerLembranca, storageDaPagina } from '../shared/memoria.js';
 import { errosLocais, estadoInicial, podeSalvar, reduzir, type Acao, type Estado, type NomeDoCampo } from './state.js';
 
 /**
@@ -44,6 +45,7 @@ $('cancelar').textContent = textosNovosDespesa.cancelar;
 $('tentar-de-novo').textContent = textosNovosDespesa.tentarDeNovo;
 $('carregar-erro-texto').textContent = textosNovosDespesa.erroAoCarregarTipos;
 $('sucesso-titulo').textContent = copyDespesaDoApp.sucessoCriada;
+$('cancelado').textContent = textosNovosDespesa.cancelado;
 
 /** Monta a lista de tipos: vazia no começo, com os candidatos (11.15) em primeiro. */
 function desenharTipos(tipos: TipoDespesa[], candidatos: string[], escolhido: string): void {
@@ -79,7 +81,7 @@ function desenhar(): void {
 
   const avisos = $('avisos');
   avisos.replaceChildren(...s.avisos.map((t) => Object.assign(document.createElement('p'), { textContent: t })));
-  avisos.hidden = s.avisos.length === 0 || s.fase === 'sucesso';
+  avisos.hidden = s.avisos.length === 0 || s.fase === 'sucesso' || s.fase === 'cancelado';
 
   const geral = $('erro-geral');
   geral.textContent = s.erroGeral ?? '';
@@ -92,8 +94,9 @@ function desenhar(): void {
   salvar.disabled = !podeSalvar(s);
   $<HTMLButtonElement>('cancelar').disabled = s.fase === 'salvando';
 
-  $('form').hidden = s.fase === 'sucesso';
+  $('form').hidden = s.fase === 'sucesso' || s.fase === 'cancelado';
   $('sucesso').hidden = s.fase !== 'sucesso';
+  $('cancelado').hidden = s.fase !== 'cancelado';
   $('sucesso-resumo').textContent = s.resumo ?? '';
 }
 
@@ -120,9 +123,17 @@ async function carregarTipos(): Promise<void> {
 }
 
 // Handlers ANTES do connect (8.2, passo 3): o resultado da ferramenta chega uma vez só.
+let formularioId: string | undefined;
+const storage = storageDaPagina();
+
 app.ontoolresult = (resultado) => {
   const dados = resultado.structuredContent as PreenchimentoDaDespesa | undefined;
-  if (dados?.campos) despachar({ tipo: 'preenchimento', dados });
+  if (!dados?.campos) return;
+  formularioId = dados.formulario_id;
+  // O host remonta o formulário com o resultado ORIGINAL quando a pessoa volta à conversa:
+  // se esta abertura já terminou, mostra o fim de novo, em vez dos campos (memoria.ts).
+  const lembranca = formularioId ? lerLembranca(storage, formularioId) : null;
+  despachar(lembranca ? { tipo: 'restaurar', lembranca } : { tipo: 'preenchimento', dados });
 };
 app.onhostcontextchanged = aplicarTema;
 app.onteardown = async () => ({});
@@ -140,7 +151,12 @@ $('tentar-de-novo').addEventListener('click', () => {
 });
 
 $('cancelar').addEventListener('click', () => {
-  // Fechar sem salvar não grava nada (9.2); o host decide como fechar a visualização.
+  // Fechar sem salvar não grava nada (9.2). O Claude não fecha o formulário por pedido
+  // (requestTeardown é só um pedido), então o formulário tranca e avisa o modelo.
+  despachar({ tipo: 'cancelar' });
+  if (estado.fase !== 'cancelado') return;
+  if (formularioId) lembrar(storage, formularioId, { fase: 'cancelado' });
+  void app.updateModelContext({ content: [{ type: 'text', text: textosParaOModelo.formularioCancelado }] }).catch(() => undefined);
   void app.requestTeardown().catch(() => undefined);
 });
 
@@ -164,6 +180,9 @@ $('form').addEventListener('submit', async (ev) => {
     resposta = { ok: false, erros: [{ campo: null, mensagem: errosDoServidor.inesperado }] };
   }
   despachar({ tipo: 'salvar_fim', resposta });
+  if (resposta.ok && formularioId) {
+    lembrar(storage, formularioId, { fase: 'sucesso', resumo: resposta.resumo, idSalvo: resposta.ids[0] ?? null });
+  }
   if (resposta.ok && resposta.ids[0]) {
     // O modelo passa a saber o que foi gravado, sem a pessoa repetir (8.2, passo 6).
     void app.updateModelContext({ content: [{ type: 'text', text: textoParaOModelo(resposta.resumo, resposta.ids[0]) }] })
