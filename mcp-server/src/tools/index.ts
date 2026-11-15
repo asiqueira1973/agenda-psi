@@ -7,6 +7,9 @@ import { registrarRecursoDespesa } from './expense/resource.js';
 import { registrarSalvarDespesa } from './expense/save.js';
 import { registrarLeituras } from './read/index.js';
 import { registrarAcaoPagamento } from './payment/index.js';
+import { registrarAcaoFeedback } from './feedback/index.js';
+import { registrarAcaoPaciente } from './patient/index.js';
+import { registrarAcaoHorario } from './schedule/index.js';
 import { registrarAcaoSessoes } from './sessions/index.js';
 import { registrarBuscarPacientesOpcoes } from './shared/pacientes.js';
 
@@ -36,4 +39,7 @@ export function registrarFerramentas(server: McpServer, ctx: ToolContext): void 
   if (ctx.ui !== 'nao') registrarBuscarPacientesOpcoes(server, ctx);
   registrarAcaoSessoes(server, ctx);
   registrarAcaoPagamento(server, ctx);
+  registrarAcaoPaciente(server, ctx);
+  registrarAcaoHorario(server, ctx);
+  registrarAcaoFeedback(server, ctx);
 }

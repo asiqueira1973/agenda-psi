@@ -1,10 +1,10 @@
 import type { App } from '@modelcontextprotocol/ext-apps';
-import { copyAgendaDoApp, copySessoesDoApp, textosNovosEpico5 } from '../../src/rules/copy-app.js';
+import { copyAgendaDoApp, copyPacientesDoApp, copySessoesDoApp, textosNovosEpico5 } from '../../src/rules/copy-app.js';
 import { copyDespesaDoApp, erros as errosDoServidor, textosNovosDespesa } from '../../src/rules/messages.js';
 import { modalidadeDaSessao, pagamentoDaSessao } from '../../src/rules/db-literals.js';
 import { textoDasSessoesParaOModelo, validarSessoes, type LinhaDeSessao } from '../../src/tools/sessions/model.js';
 import type { PreenchimentoDeSessoes, RespostaDeSessoes } from '../../src/tools/sessions/index.js';
-import { $, criarFormulario, el, opcoesDePaciente } from '../shared/app.js';
+import { $, comBusca, criarFormulario, el, opcoesDePaciente } from '../shared/app.js';
 import { estadoInicialDeLinhas, reduzirLinhas, type AcaoDeLinhas, type EstadoDeLinhas } from '../shared/linhas.js';
 import { lembrar, lerLembranca, storageDaPagina } from '../shared/memoria.js';
 
@@ -55,13 +55,15 @@ function montarLinhas(): void {
   raiz.replaceChildren();
   estado.linhas.forEach((_, i) => {
     const paciente = el('select');
+    const busca = el('input', { type: 'search', className: 'busca', id: `busca-${i}`, placeholder: copyPacientesDoApp.buscar, 'aria-label': copyPacientesDoApp.buscar });
+    busca.addEventListener('input', () => opcoesDePaciente(paciente, pacientes, estado.candidatos[i] ?? [], copyDespesaDoApp.tipoPlaceholder, busca.value, estado.linhas[i]?.paciente_id ?? ''));
     const data = el('input', { type: 'date' });
     const pagamento = selecao(pagamentoDaSessao);
     const modalidade = selecao(modalidadeDaSessao);
     const duracao = el('input', { inputMode: 'numeric', placeholder: copySessoesDoApp.duracaoPlaceholder });
     const cobrada = el('input', { type: 'checkbox', id: `${i}.devesercobrada` });
     const bloco = el('div', { className: 'linha' },
-      campo(`${i}.paciente_id`, copyAgendaDoApp.paciente, paciente),
+      comBusca(campo(`${i}.paciente_id`, copyAgendaDoApp.paciente, paciente), busca, paciente),
       el('div', { className: 'dupla' }, campo(`${i}.ocorreu_em_dia`, copySessoesDoApp.data, data), campo(`${i}.duracao_minutos`, copySessoesDoApp.duracao, duracao)),
       el('div', { className: 'dupla' }, campo(`${i}.pagamento`, copySessoesDoApp.grupoPagamento, pagamento), campo(`${i}.modalidade`, copySessoesDoApp.grupoModalidade, modalidade)),
       el('label', { className: 'marcar', for: `${i}.devesercobrada` }, cobrada, copySessoesDoApp.seraCobrada),
@@ -82,7 +84,9 @@ function desenhar(): void {
   if ($('linhas').children.length !== s.linhas.length) montarLinhas();
   s.linhas.forEach((l, i) => {
     const sel = $<HTMLSelectElement>(`${i}.paciente_id`);
-    if (sel.options.length <= 1 && pacientes.length) opcoesDePaciente(sel, pacientes, s.candidatos[i] ?? [], copyDespesaDoApp.tipoPlaceholder);
+    const busca = $<HTMLInputElement>(`busca-${i}`);
+    busca.disabled = trancado;
+    if (sel.options.length <= 1 && pacientes.length) opcoesDePaciente(sel, pacientes, s.candidatos[i] ?? [], copyDespesaDoApp.tipoPlaceholder, busca.value, l.paciente_id);
     for (const c of ['paciente_id', 'ocorreu_em_dia', 'pagamento', 'modalidade', 'duracao_minutos'] as const) {
       const e = $<HTMLInputElement>(`${i}.${c}`);
       if (e.value !== l[c]) e.value = l[c];
@@ -176,10 +180,12 @@ $('form').addEventListener('submit', async (ev) => {
   } catch {
     r = { ok: false, erros: [{ campo: null, mensagem: errosDoServidor.inesperado }], gravadas: [], ids: [] };
   }
-  if (!r.ok) return despachar({ tipo: 'salvar_erro', erros: r.erros, gravadas: r.gravadas });
-  despachar({ tipo: 'salvar_ok', titulo: r.titulo, resumo: r.resumo, extra: r.pagas });
-  if (formularioId) lembrar(storage, formularioId, { fase: 'sucesso', resumo: r.resumo, idSalvo: r.ids[0] ?? null, titulo: r.titulo });
-  void app?.updateModelContext({ content: [{ type: 'text', text: textoDasSessoesParaOModelo(r.resumo, r.ids) }] }).catch(() => undefined);
+  if (!r.ok) return despachar({ tipo: 'salvar_erro', erros: r.erros, gravadas: r.gravadas, parcial: { ids: r.ids, resumo: r.resumo ?? '', extra: r.pagas ?? [] } });
+  despachar({ tipo: 'salvar_ok', titulo: r.titulo, tituloVarios: textosNovosEpico5.sessoesRegistradas, resumo: r.resumo, extra: r.pagas, ids: r.ids });
+  // Depois de falha parcial, o estado soma as tentativas: memória e modelo recebem o total.
+  const { resumo, ids, titulo } = estado;
+  if (formularioId) lembrar(storage, formularioId, { fase: 'sucesso', resumo: resumo ?? '', idSalvo: ids[0] ?? null, titulo: titulo ?? r.titulo });
+  void app?.updateModelContext({ content: [{ type: 'text', text: textoDasSessoesParaOModelo(resumo ?? '', ids) }] }).catch(() => undefined);
 });
 
 desenhar();

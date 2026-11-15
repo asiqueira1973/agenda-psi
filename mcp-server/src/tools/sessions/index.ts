@@ -89,7 +89,7 @@ export function preencherSessoes(
 /** Resposta do salvar de várias linhas: o geral, mais quais linhas foram gravadas (8.5). */
 export type RespostaDeSessoes =
   | { ok: true; ids: string[]; resumo: string; titulo: string; pagas: string[] }
-  | { ok: false; erros: ErroDeLinha[]; gravadas: number[]; ids: string[] };
+  | { ok: false; erros: ErroDeLinha[]; gravadas: number[]; ids: string[]; resumo?: string; pagas?: string[] };
 
 /**
  * Grava as sessões em ordem, como o app (`useCriarSessao`): `usuario_id` do token, sem
@@ -97,6 +97,11 @@ export type RespostaDeSessoes =
  * que cada paciente é da pessoa (está nas opções que a RLS devolve). Se uma falhar, as
  * anteriores ficam, e a resposta diz quais (8.5). Um `agenda_psi_novasessao` por sessão.
  */
+/** Sessões marcadas "Pagou", no formato da oferta: "Beatriz Nogueira (14/11/2026)". */
+function pagasDe(dados: SessaoNormalizada[], nomeDe: Map<string, string>): string[] {
+  return dados.filter((d) => d.pagamento === 'pagou').map((d) => `${nomeDe.get(d.paciente_id) ?? ''} (${formatarData(d.ocorreu_em_dia)})`);
+}
+
 export async function gravarSessoes(dados: SessaoNormalizada[], ctx: ToolContext): Promise<RespostaDeSessoes> {
   const pacientes = await lerPacientesOpcoes(ctx);
   if (!pacientes) return { ok: false, erros: [{ campo: null, mensagem: erros.inesperado }], gravadas: [], ids: [] };
@@ -124,7 +129,16 @@ export async function gravarSessoes(dados: SessaoNormalizada[], ctx: ToolContext
       .single();
     if (r.error || !r.data) {
       const faltam = dados.slice(i).map((x) => resumoDaSessao(nomeDe.get(x.paciente_id) ?? '', x));
-      return { ok: false, erros: [{ campo: null, mensagem: i === 0 ? erros.inesperado : textosNovosEpico5.naoGravadas(faltam) }], gravadas: dados.slice(0, i).map((_, k) => k), ids };
+      const feitas = dados.slice(0, i);
+      return {
+        ok: false,
+        erros: [{ campo: null, mensagem: i === 0 ? erros.inesperado : textosNovosEpico5.naoGravadas(faltam) }],
+        gravadas: feitas.map((_, k) => k),
+        ids,
+        // O que JÁ foi gravado, para o sucesso final e a oferta de pagamento somarem (8.5).
+        resumo: feitas.map((x) => resumoDaSessao(nomeDe.get(x.paciente_id) ?? '', x)).join('; '),
+        pagas: pagasDe(feitas, nomeDe),
+      };
     }
     ids.push(r.data.id);
     await enviarEvento(ctx.config, { nome: eventos.novaSessao, id: r.data.id, distinctId: ctx.email, tela: 'mcp_sessoes', descricao: 'nova sessao criada' });
@@ -136,7 +150,7 @@ export async function gravarSessoes(dados: SessaoNormalizada[], ctx: ToolContext
     resumo: resumos.join('; '),
     titulo: tituloDoSucesso(dados.length, copySessoesDoApp.sucessoCriada, textosNovosEpico5.sessoesRegistradas),
     // As marcadas "Pagou", para o botão "Registrar também o pagamento" (11.18).
-    pagas: dados.filter((d) => d.pagamento === 'pagou').map((d) => `${nomeDe.get(d.paciente_id) ?? ''} (${formatarData(d.ocorreu_em_dia)})`),
+    pagas: pagasDe(dados, nomeDe),
   };
 }
 

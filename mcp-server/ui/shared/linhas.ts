@@ -19,7 +19,14 @@ export type EstadoDeLinhas<L> = {
   resumo: string | null;
   /** Extra do sucesso (ex.: as sessões marcadas "Pagou", para a oferta de pagamento). */
   extra: string[];
+  /** Ids gravados no total, somando as tentativas (para o texto ao modelo). */
+  ids: string[];
+  /** O que já foi gravado numa falha parcial, para o sucesso final somar (8.5). */
+  acumulado: Parcial;
 };
+
+/** O que uma tentativa com falha parcial chegou a gravar. */
+export type Parcial = { ids: string[]; resumo: string; extra: string[] };
 
 export type AcaoDeLinhas<L> =
   | { tipo: 'preenchimento'; linhas: L[]; candidatos: string[][]; avisos: string[] }
@@ -29,13 +36,13 @@ export type AcaoDeLinhas<L> =
   | { tipo: 'editar'; linha: number; campo: keyof L & string; valor: L[keyof L] }
   | { tipo: 'erros_locais'; erros: Array<{ campo: string | null; mensagem: string }> }
   | { tipo: 'salvar_inicio' }
-  | { tipo: 'salvar_ok'; titulo: string; resumo: string; extra: string[] }
-  | { tipo: 'salvar_erro'; erros: Array<{ campo: string | null; mensagem: string }>; gravadas: number[] }
+  | { tipo: 'salvar_ok'; titulo: string; tituloVarios?: string; resumo: string; extra: string[]; ids?: string[] }
+  | { tipo: 'salvar_erro'; erros: Array<{ campo: string | null; mensagem: string }>; gravadas: number[]; parcial?: Parcial }
   | { tipo: 'cancelar' }
   | { tipo: 'restaurar'; lembranca: Lembranca };
 
 export function estadoInicialDeLinhas<L>(): EstadoDeLinhas<L> {
-  return { fase: 'carregando', linhas: [], candidatos: [], erros: {}, erroGeral: null, avisos: [], titulo: null, resumo: null, extra: [] };
+  return { fase: 'carregando', linhas: [], candidatos: [], erros: {}, erroGeral: null, avisos: [], titulo: null, resumo: null, extra: [], ids: [], acumulado: { ids: [], resumo: '', extra: [] } };
 }
 
 function espalhar(lista: Array<{ campo: string | null; mensagem: string }>): Pick<EstadoDeLinhas<unknown>, 'erros' | 'erroGeral'> {
@@ -71,15 +78,30 @@ export function reduzirLinhas<L>(s: EstadoDeLinhas<L>, a: AcaoDeLinhas<L>): Esta
       return { ...s, ...espalhar(a.erros) };
     case 'salvar_inicio':
       return s.fase === 'pronto' && s.linhas.length > 0 ? { ...s, fase: 'salvando', erros: {}, erroGeral: null } : s;
-    case 'salvar_ok':
-      return { ...s, fase: 'sucesso', titulo: a.titulo, resumo: a.resumo, extra: a.extra };
+    case 'salvar_ok': {
+      // Depois de uma falha parcial, o sucesso conta tudo o que foi gravado, não só o reenvio.
+      const antes = s.acumulado;
+      const somou = antes.ids.length > 0;
+      return {
+        ...s,
+        fase: 'sucesso',
+        titulo: somou && a.tituloVarios ? a.tituloVarios : a.titulo,
+        resumo: [antes.resumo, a.resumo].filter(Boolean).join('; '),
+        extra: [...antes.extra, ...a.extra],
+        ids: [...antes.ids, ...(a.ids ?? [])],
+      };
+    }
     case 'salvar_erro': {
       // As gravadas saem; os erros por linha foram calculados sobre a lista ANTIGA, então
       // só se mantém o erro geral quando há linha gravada (os índices mudam).
       const ficam = s.linhas.filter((_, i) => !a.gravadas.includes(i));
       const cand = s.candidatos.filter((_, i) => !a.gravadas.includes(i));
       const e = espalhar(a.erros);
-      return { ...s, fase: 'pronto', linhas: ficam, candidatos: cand, erros: a.gravadas.length ? {} : e.erros, erroGeral: e.erroGeral };
+      const p = a.parcial;
+      const acumulado = p && p.ids.length
+        ? { ids: [...s.acumulado.ids, ...p.ids], resumo: [s.acumulado.resumo, p.resumo].filter(Boolean).join('; '), extra: [...s.acumulado.extra, ...p.extra] }
+        : s.acumulado;
+      return { ...s, fase: 'pronto', linhas: ficam, candidatos: cand, erros: a.gravadas.length ? {} : e.erros, erroGeral: e.erroGeral, acumulado };
     }
     case 'cancelar':
       return s.fase === 'salvando' ? s : { ...s, fase: 'cancelado', erros: {}, erroGeral: null };

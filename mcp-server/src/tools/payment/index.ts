@@ -42,7 +42,7 @@ const itemDoModelo = z.object({
   paciente: z.string().optional().describe('Nome do paciente como a pessoa disse. O servidor procura no cadastro.'),
   valor: z.number().optional().describe('Valor em reais, só se a pessoa disser. Omita se não disser.'),
   data: z.string().optional().describe('Data AAAA-MM-DD. Resolva "hoje", "ontem", "segunda passada" a partir da data de hoje.'),
-  tipo: z.enum(['mensal', 'por sessao']).optional().describe('Só se a pessoa disser. Padrão: mensal.'),
+  tipo: z.enum(['mensal', 'por sessao']).optional().describe('Só se a pessoa disser. Padrão: mensal. Quando a pessoa pedir o pagamento de sessões já registradas ("Quero registrar o pagamento destas sessões: ..."), use por sessao e a data de cada sessão.'),
 });
 export const entradaAbrir = z.object({ itens: z.array(itemDoModelo).optional().describe('Uma entrada por pagamento recebido.') });
 
@@ -79,7 +79,7 @@ export function preencherPagamentos(
 
 export type RespostaDePagamentos =
   | { ok: true; ids: string[]; resumo: string; titulo: string }
-  | { ok: false; erros: Array<{ campo: string | null; mensagem: string }>; gravadas: number[]; ids: string[] };
+  | { ok: false; erros: Array<{ campo: string | null; mensagem: string }>; gravadas: number[]; ids: string[]; resumo?: string };
 
 /**
  * Grava em ordem, como `useCriarPagamento`: `usuario_id` do token, `pago_em` agora,
@@ -112,7 +112,8 @@ export async function gravarPagamentos(dados: PagamentoNormalizado[], ctx: ToolC
       .single();
     if (r.error || !r.data) {
       const faltam = dados.slice(i).map((x) => resumoDoPagamento(nomeDe.get(x.paciente_id) ?? '', x));
-      return { ok: false, erros: [{ campo: null, mensagem: i === 0 ? erros.inesperado : textosNovosEpico5.naoGravadas(faltam) }], gravadas: dados.slice(0, i).map((_, k) => k), ids };
+      const resumo = dados.slice(0, i).map((x) => resumoDoPagamento(nomeDe.get(x.paciente_id) ?? '', x)).join('; ');
+      return { ok: false, erros: [{ campo: null, mensagem: i === 0 ? erros.inesperado : textosNovosEpico5.naoGravadas(faltam) }], gravadas: dados.slice(0, i).map((_, k) => k), ids, resumo };
     }
     ids.push(r.data.id);
     await enviarEvento(ctx.config, { nome: eventos.novoPagamento, id: r.data.id, distinctId: ctx.email, tela: 'mcp_pagamento', descricao: 'novo pagamento criado' });

@@ -6,6 +6,7 @@ import {
   type McpUiHostContext,
 } from '@modelcontextprotocol/ext-apps';
 import type { CallToolResult } from '@modelcontextprotocol/server';
+import { normalizar } from '../../src/rules/text.js';
 
 /**
  * Bootstrap comum dos formulários do épico 5 (8.2, passo 3; 16):
@@ -50,15 +51,30 @@ export function el<K extends keyof HTMLElementTagNameMap>(
   return e;
 }
 
-/** Monta um `<select>` de pacientes: vazio no começo, candidatos (11.14) em primeiro. */
+/**
+ * Monta um `<select>` de pacientes: vazio no começo, candidatos (11.14) e o já escolhido
+ * em primeiro, mesmo inativos, para nunca haver paciente escolhido que não aparece. Os
+ * demais são os ativos cujo nome contém o `filtro` da busca (8.5), sem acento nem caixa.
+ */
 export function opcoesDePaciente(
   select: HTMLSelectElement,
   pacientes: Array<{ id: string; nome: string; ativo?: boolean }>,
   candidatos: string[],
   placeholder: string,
+  filtro = '',
+  selecionado = '',
 ): void {
+  const fixos = selecionado ? [...candidatos, selecionado] : candidatos;
+  const termo = normalizar(filtro);
   select.replaceChildren(new Option(placeholder, ''));
-  const primeiro = pacientes.filter((p) => candidatos.includes(p.id));
-  const resto = pacientes.filter((p) => !candidatos.includes(p.id) && p.ativo !== false);
+  const primeiro = pacientes.filter((p) => fixos.includes(p.id));
+  const resto = pacientes.filter((p) => !fixos.includes(p.id) && p.ativo !== false && normalizar(p.nome).includes(termo));
   for (const p of [...primeiro, ...resto]) select.add(new Option(p.nome, p.id));
+  select.value = selecionado;
+}
+
+/** Põe a busca de paciente (8.5) entre o rótulo e o `<select>` de um campo. */
+export function comBusca(campo: HTMLElement, busca: HTMLInputElement, select: HTMLSelectElement): HTMLElement {
+  campo.insertBefore(busca, select);
+  return campo;
 }

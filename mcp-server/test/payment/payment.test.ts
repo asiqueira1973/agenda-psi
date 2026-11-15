@@ -63,7 +63,7 @@ describe('gravarPagamentos (P4: como useCriarPagamento)', () => {
       { paciente_id: BEA, valor_pagamento: 280, data_competencia: '2026-11-14', tipo: 'mensal' },
       { paciente_id: CAIO, valor_pagamento: 250, data_competencia: '2026-11-14', tipo: 'mensal' },
     ], ctxDeTeste(dbPorTabela({ v_pacientes_cartao: view, pagamentos: [{ data: { id: 'a' }, error: null }, { data: null, error: { message: 'x' } }] }).db));
-    expect(parcial).toEqual({ ok: false, ids: ['a'], gravadas: [0], erros: [{ campo: null, mensagem: 'Estas não foram gravadas: Caio Lemos, R$ 250, 14/11/2026, Mensal. As outras foram.' }] });
+    expect(parcial).toMatchObject({ ok: false, ids: ['a'], gravadas: [0], resumo: 'Beatriz Nogueira, R$ 280, 14/11/2026, Mensal', erros: [{ campo: null, mensagem: 'Estas não foram gravadas: Caio Lemos, R$ 250, 14/11/2026, Mensal. As outras foram.' }] });
   });
   it('salvar com valor inválido não toca no banco', async () => {
     const { db, chamadas } = dbPorTabela({});

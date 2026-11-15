@@ -80,7 +80,7 @@ describe('gravarSessoes (P4: como useCriarSessao)', () => {
       { paciente_id: BEA, ocorreu_em_dia: '2026-11-14', pagamento: 'pagou', modalidade: 'presencial', duracao_minutos: 50, devesercobrada: true },
       { paciente_id: CAIO, ocorreu_em_dia: '2026-11-14', pagamento: 'pagou', modalidade: 'presencial', duracao_minutos: 50, devesercobrada: true },
     ], ctxDeTeste(db));
-    expect(r).toEqual({ ok: false, ids: ['s1'], gravadas: [0], erros: [{ campo: null, mensagem: 'Estas não foram gravadas: Caio Lemos, 14/11/2026, Pagou. As outras foram.' }] });
+    expect(r).toMatchObject({ ok: false, ids: ['s1'], gravadas: [0], erros: [{ campo: null, mensagem: 'Estas não foram gravadas: Caio Lemos, 14/11/2026, Pagou. As outras foram.' }] });
   });
   it('paciente que não é da pessoa (fora da RLS): erro de campo, nada gravado', async () => {
     const { db, chamadas } = dbPorTabela({ v_pacientes_cartao: view });
@@ -91,7 +91,7 @@ describe('gravarSessoes (P4: como useCriarSessao)', () => {
   it('erro na primeira: mensagem geral, sem texto do Postgres', async () => {
     const { db } = dbPorTabela({ v_pacientes_cartao: view, sessoes: { data: null, error: { message: 'violates foreign key' } } });
     const r = await gravarSessoes([{ paciente_id: BEA, ocorreu_em_dia: '2026-11-14', pagamento: 'pagou', modalidade: 'presencial', duracao_minutos: 50, devesercobrada: true }], ctxDeTeste(db));
-    expect(r).toEqual({ ok: false, ids: [], gravadas: [], erros: [{ campo: null, mensagem: erros.inesperado }] });
+    expect(r).toEqual({ ok: false, ids: [], gravadas: [], erros: [{ campo: null, mensagem: erros.inesperado }], resumo: '', pagas: [] });
   });
   it('salvar sem paciente não toca no banco', async () => {
     const { db, chamadas } = dbPorTabela({});
@@ -140,5 +140,21 @@ describe('estado de várias linhas (12)', () => {
     expect(s.fase).toBe('sucesso');
     expect(reduzirLinhas(s, { tipo: 'cancelar' })).toBe(s);
     expect(s.extra).toEqual(['Beatriz (14/11/2026)']);
+  });
+  it('tentar de novo depois de falha parcial: o sucesso soma o que já tinha sido gravado (defeito do verifier)', () => {
+    let s = reduzirLinhas(comLinhas(), { tipo: 'salvar_inicio' });
+    s = reduzirLinhas(s, { tipo: 'salvar_erro', erros: [{ campo: null, mensagem: 'faltou b' }], gravadas: [0], parcial: { ids: ['s1'], resumo: 'A', extra: ['A (14/11/2026)'] } });
+    s = reduzirLinhas(reduzirLinhas(s, { tipo: 'salvar_inicio' }), { tipo: 'salvar_ok', titulo: 'Sessão registrada.', tituloVarios: 'Sessões registradas.', resumo: 'B', extra: ['B (14/11/2026)'], ids: ['s2'] });
+    expect(s).toMatchObject({ fase: 'sucesso', titulo: 'Sessões registradas.', resumo: 'A; B', extra: ['A (14/11/2026)', 'B (14/11/2026)'], ids: ['s1', 's2'] });
+  });
+});
+
+describe('falha parcial no servidor (defeito do verifier)', () => {
+  it('devolve resumo e "Pagou" do que JÁ foi gravado, para a oferta não perder ninguém', async () => {
+    const r = await gravarSessoes([
+      { paciente_id: BEA, ocorreu_em_dia: '2026-11-14', pagamento: 'pagou', modalidade: 'presencial', duracao_minutos: 50, devesercobrada: true },
+      { paciente_id: CAIO, ocorreu_em_dia: '2026-11-14', pagamento: 'pagou', modalidade: 'presencial', duracao_minutos: 50, devesercobrada: true },
+    ], ctxDeTeste(dbPorTabela({ v_pacientes_cartao: view, sessoes: [{ data: { id: 'a' }, error: null }, { data: null, error: { message: 'x' } }] }).db));
+    expect(r).toMatchObject({ ok: false, ids: ['a'], gravadas: [0], resumo: 'Beatriz Nogueira, 14/11/2026, Pagou', pagas: ['Beatriz Nogueira (14/11/2026)'] });
   });
 });

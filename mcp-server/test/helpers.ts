@@ -67,7 +67,8 @@ export async function lerJsonRpc(r: Response): Promise<{ result: Record<string, 
  * insert. `respostas[tabela]` pode ser um objeto ou uma lista (uma resposta por consulta,
  * em ordem). Basta para conferir colunas, valores e tratamento de erro (seção 22).
  */
-export function dbPorTabela(respostas: Record<string, { data: unknown; error: unknown } | Array<{ data: unknown; error: unknown }>>) {
+type Resposta = { data: unknown; error: unknown } | { lancar: true };
+export function dbPorTabela(respostas: Record<string, Resposta | Resposta[]>) {
   const chamadas: Array<{ tabela: string; metodo: string; args: unknown[] }> = [];
   const usadas: Record<string, number> = {};
   const db = {
@@ -84,8 +85,18 @@ export function dbPorTabela(respostas: Record<string, { data: unknown; error: un
           return consulta;
         };
       }
-      consulta.then = (ok: (v: unknown) => unknown, erro?: (e: unknown) => unknown) => Promise.resolve(resultado).then(ok, erro);
+      // `{ lancar: true }` simula exceção (rede caiu), diferente de `{ error }` do PostgREST.
+      const promessa = (resultado as { lancar?: boolean }).lancar ? Promise.reject(new Error('rede')) : Promise.resolve(resultado);
+      consulta.then = (ok: (v: unknown) => unknown, erro?: (e: unknown) => unknown) => promessa.then(ok, erro);
       return consulta;
+    },
+    // Edge Functions: registra a chamada; a resposta é a de `functions:<nome>`, ou sucesso.
+    functions: {
+      invoke(nome: string, opcoes: unknown) {
+        chamadas.push({ tabela: `functions:${nome}`, metodo: 'invoke', args: [opcoes] });
+        const r = respostas[`functions:${nome}`];
+        return r && !Array.isArray(r) && 'error' in r && r.error ? Promise.reject(r.error) : Promise.resolve({ data: null, error: null });
+      },
     },
   };
   return { db: db as never, chamadas };

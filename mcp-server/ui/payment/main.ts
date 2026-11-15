@@ -1,10 +1,10 @@
 import type { App } from '@modelcontextprotocol/ext-apps';
-import { copyAgendaDoApp, copyPagamentosDoApp, textosNovosEpico5 } from '../../src/rules/copy-app.js';
+import { copyAgendaDoApp, copyPacientesDoApp, copyPagamentosDoApp, textosNovosEpico5 } from '../../src/rules/copy-app.js';
 import { tipoDoPagamento } from '../../src/rules/db-literals.js';
 import { copyDespesaDoApp, erros as errosDoServidor, textosNovosDespesa } from '../../src/rules/messages.js';
 import type { PreenchimentoDePagamentos, RespostaDePagamentos } from '../../src/tools/payment/index.js';
 import { textoDosPagamentosParaOModelo, validarPagamentos, type LinhaDePagamento } from '../../src/tools/payment/model.js';
-import { $, criarFormulario, el, opcoesDePaciente } from '../shared/app.js';
+import { $, comBusca, criarFormulario, el, opcoesDePaciente } from '../shared/app.js';
 import { estadoInicialDeLinhas, reduzirLinhas, type AcaoDeLinhas, type EstadoDeLinhas } from '../shared/linhas.js';
 import { lembrar, lerLembranca, storageDaPagina } from '../shared/memoria.js';
 
@@ -44,13 +44,15 @@ function montarLinhas(): void {
   raiz.replaceChildren();
   estado.linhas.forEach((_, i) => {
     const paciente = el('select');
+    const busca = el('input', { type: 'search', className: 'busca', id: `busca-${i}`, placeholder: copyPacientesDoApp.buscar, 'aria-label': copyPacientesDoApp.buscar });
+    busca.addEventListener('input', () => opcoesDePaciente(paciente, pacientes, estado.candidatos[i] ?? [], copyDespesaDoApp.tipoPlaceholder, busca.value, estado.linhas[i]?.paciente_id ?? ''));
     const valor = el('input', { inputMode: 'numeric', placeholder: 'Ex: 200' });
     const data = el('input', { type: 'date' });
     const tipo = el('select');
     for (const o of tipoDoPagamento) tipo.add(new Option(o.rotulo, o.valor));
     const rodape = el('p', { className: 'rodape', id: `rodape-${i}` }, copyPagamentosDoApp.rodapeValor);
     raiz.append(el('div', { className: 'linha' },
-      campo(`${i}.paciente_id`, copyAgendaDoApp.paciente, paciente),
+      comBusca(campo(`${i}.paciente_id`, copyAgendaDoApp.paciente, paciente), busca, paciente),
       el('div', { className: 'dupla' },
         el('div', { className: 'campo' }, el('label', { for: `${i}.valor_pagamento` }, copyPagamentosDoApp.valor), el('div', { className: 'prefixo' }, el('span', { 'aria-hidden': 'true' }, 'R$'), valor), rodape, el('p', { className: 'erro', id: `erro-${i}.valor_pagamento`, hidden: true })),
         campo(`${i}.data_competencia`, copyPagamentosDoApp.competencia, data)),
@@ -85,7 +87,9 @@ function desenhar(): void {
   if ($('linhas').children.length !== s.linhas.length) montarLinhas();
   s.linhas.forEach((l, i) => {
     const sel = $<HTMLSelectElement>(`${i}.paciente_id`);
-    if (sel.options.length <= 1 && pacientes.length) opcoesDePaciente(sel, pacientes, s.candidatos[i] ?? [], copyDespesaDoApp.tipoPlaceholder);
+    const busca = $<HTMLInputElement>(`busca-${i}`);
+    busca.disabled = trancado;
+    if (sel.options.length <= 1 && pacientes.length) opcoesDePaciente(sel, pacientes, s.candidatos[i] ?? [], copyDespesaDoApp.tipoPlaceholder, busca.value, l.paciente_id);
     for (const c of ['paciente_id', 'valor_pagamento', 'data_competencia', 'tipo'] as const) {
       const e = $<HTMLInputElement>(`${i}.${c}`);
       if (e.value !== l[c]) e.value = l[c];
@@ -164,10 +168,12 @@ $('form').addEventListener('submit', async (ev) => {
   } catch {
     r = { ok: false, erros: [{ campo: null, mensagem: errosDoServidor.inesperado }], gravadas: [], ids: [] };
   }
-  if (!r.ok) return despachar({ tipo: 'salvar_erro', erros: r.erros, gravadas: r.gravadas });
-  despachar({ tipo: 'salvar_ok', titulo: r.titulo, resumo: r.resumo, extra: [] });
-  if (formularioId) lembrar(storage, formularioId, { fase: 'sucesso', resumo: r.resumo, idSalvo: r.ids[0] ?? null, titulo: r.titulo });
-  void app?.updateModelContext({ content: [{ type: 'text', text: textoDosPagamentosParaOModelo(r.resumo, r.ids) }] }).catch(() => undefined);
+  if (!r.ok) return despachar({ tipo: 'salvar_erro', erros: r.erros, gravadas: r.gravadas, parcial: { ids: r.ids, resumo: r.resumo ?? '', extra: [] } });
+  despachar({ tipo: 'salvar_ok', titulo: r.titulo, tituloVarios: textosNovosEpico5.pagamentosRegistrados, resumo: r.resumo, extra: [], ids: r.ids });
+  // Depois de falha parcial, o estado soma as tentativas: memória e modelo recebem o total.
+  const { resumo, ids, titulo } = estado;
+  if (formularioId) lembrar(storage, formularioId, { fase: 'sucesso', resumo: resumo ?? '', idSalvo: ids[0] ?? null, titulo: titulo ?? r.titulo });
+  void app?.updateModelContext({ content: [{ type: 'text', text: textoDosPagamentosParaOModelo(resumo ?? '', ids) }] }).catch(() => undefined);
 });
 
 desenhar();

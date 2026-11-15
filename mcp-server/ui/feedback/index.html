@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Feedback para a equipe</title>
+    <link rel="stylesheet" href="../shared/form.css" />
+  </head>
+  <body>
+    <main class="form" aria-busy="true">
+      <form id="form" novalidate>
+        <div class="campo">
+          <label id="rotulo-categoria" for="categoria"></label>
+          <select id="categoria"></select>
+        </div>
+        <div class="campo">
+          <label id="rotulo-mensagem" for="mensagem"></label>
+          <textarea id="mensagem" rows="5" aria-describedby="erro-mensagem rodape-mensagem"></textarea>
+          <p id="rodape-mensagem" class="rodape"></p>
+          <p id="erro-mensagem" class="erro" hidden></p>
+        </div>
+        <p id="erro-geral" class="erro geral" role="alert" hidden></p>
+        <div class="acoes">
+          <button type="button" id="cancelar" class="texto"></button>
+          <button type="submit" id="salvar" class="primario"></button>
+        </div>
+      </form>
+      <p id="cancelado" class="cancelado" role="status" hidden></p>
+      <section id="sucesso" class="sucesso" role="status" hidden>
+        <h2 id="sucesso-titulo"></h2>
+      </section>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

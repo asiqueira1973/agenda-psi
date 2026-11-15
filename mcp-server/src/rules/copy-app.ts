@@ -42,6 +42,23 @@ export const copyAgendaDoApp = {
   salvando: 'Salvando...',
 } as const;
 
+/**
+ * app/src/features/schedule/copy.ts (`diasDoSegmented`): ordem visual começando no
+ * DOMINGO; o valor é o do banco, 1 = segunda … 7 = domingo (pegadinha 7, regra 11.6).
+ */
+export const diasDoApp = [
+  { valor: 7, rotulo: 'Dom' },
+  { valor: 1, rotulo: 'Seg' },
+  { valor: 2, rotulo: 'Ter' },
+  { valor: 3, rotulo: 'Qua' },
+  { valor: 4, rotulo: 'Qui' },
+  { valor: 5, rotulo: 'Sex' },
+  { valor: 6, rotulo: 'Sáb' },
+] as const;
+
+/** app/src/features/schedule/copy.ts (`copyAgenda.novo.sucessoCriado`). */
+export const sucessoHorarioDoApp = 'Horário criado.';
+
 /** app/src/lib/validation.ts (`mensagens`), os do épico 5. */
 export const mensagensEpico5DoApp = {
   nomeVazio: 'O nome é obrigatório',
@@ -50,6 +67,51 @@ export const mensagensEpico5DoApp = {
   horaFimAntesDoInicio: 'A hora fim precisa ser depois da hora início',
   horarioIncompleto: 'Informe a hora de início e a de fim',
 } as const;
+
+/** app/src/features/patients/copy.ts (`copyPacientes.novo`). */
+export const copyPacientesDoApp = {
+  buscar: 'Buscar',
+  titulo: 'Novo paciente',
+  nome: 'Nome',
+  telefone: 'Telefone',
+  email: 'E-mail',
+  preco: 'Preço',
+  rodapePreco: 'Valor inteiro, sem centavos.',
+  receberSms: 'Enviar SMS minutos antes da sessão',
+  salvar: 'Cadastrar paciente',
+  salvando: 'Cadastrando...',
+} as const;
+
+/** app/src/features/patients/copy.ts (`copyPacientes.sucessoCriado`, literal da 15.3). */
+export const sucessoPacienteDoApp = (nome: string) => `${nome} cadastrado.`;
+
+/** app/src/features/auth/copy.ts (`copyAuth.erros.emailInvalido`), usado por `validarEmailOpcional`. */
+export const emailInvalidoDoApp = 'Digite um e-mail válido';
+
+/** app/src/features/agent/copy.ts (`cartao.tituloDeHorarioDoPacienteNovo`). */
+export const horarioDoPacienteNovoDoApp = 'Horário na agenda';
+
+/**
+ * Feedback: tela de Ajustes (`copyConfiguracoes.feedbackTela`), cartão do agente
+ * (`copyAgente.cartao`, `rotuloDaCategoria`) e a regra de mensagem vazia de rascunhos.ts.
+ */
+export const copyFeedbackDoApp = {
+  titulo: 'Feedback para a equipe',
+  mensagem: 'Mensagem',
+  aviso: 'Vai para a equipe do Agenda Psi. Confira o texto antes de enviar.',
+  placeholder: 'Escreva aqui...',
+  enviar: 'Enviar',
+  enviando: 'Enviando...',
+  sucesso: 'Obrigado. Sua mensagem chegou.',
+  vazia: 'Escreva a mensagem',
+} as const;
+
+/** `rotuloDaCategoria` (app/src/features/agent/rascunhos.ts). Valores na ordem do cartão. */
+export const categoriasDoFeedbackDoApp = [
+  { valor: 'problema', rotulo: 'Problema' },
+  { valor: 'sugestao', rotulo: 'Sugestão' },
+  { valor: 'elogio', rotulo: 'Elogio' },
+] as const;
 
 /** Avisos de paciente do cartão do agente do app (`problemasDoPaciente`, rascunhos.ts). */
 export const avisosDePacienteDoApp = {
@@ -60,6 +122,8 @@ export const avisosDePacienteDoApp = {
 /** Textos novos aprovados (plans/epico-5.md, seção "Textos"). */
 export const textosNovosEpico5 = {
   sessoesRegistradas: 'Sessões registradas.',
+  /** PENDENTE DE APROVAÇÃO (fechamento do épico 5): plural de "Horário criado." do app. */
+  horariosCriados: 'Horários criados.',
   pagamentosRegistrados: 'Pagamentos registrados.',
   registrarTambemPagamento: 'Registrar também o pagamento',
   /** Mensagem que o botão manda na conversa, para o modelo abrir o formulário de pagamento. */

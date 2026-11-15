@@ -46,3 +46,35 @@ Cada ação tem testes de validação, de gravação (colunas exatas do app, com
 
 ## Fora deste épico
 Edições, exclusões e troca de horário (épico 6); README (épico 7).
+
+## Registro (15/11/2026)
+
+### Entregue
+Sessões, pagamentos (commit bc75815), horário, paciente com horários e feedback: `abrir_formulario_*` (modelo), `salvar_*` e opções (app), `registrar_*` (fallback com prévia) e os seis formulários (240–248 KB cada, teto de 300 KB). Ferramentas novas desta parte: `abrir_formulario_horario`, `listar_agenda`, `salvar_horarios`, `registrar_horarios`, `abrir_formulario_paciente`, `salvar_paciente`, `registrar_paciente`, `abrir_formulario_feedback`, `salvar_feedback`, `registrar_feedback`.
+
+### Comandos 22.1 (em `mcp-server/`)
+```
+ Test Files  26 passed (26)
+      Tests  275 passed (275)
+EXIT test=0
+EXIT typecheck=0
+EXIT build=0
+```
+
+### Verifier: NÃO PRONTO, depois corrigido
+Corrigidos, com teste primeiro:
+1. Dia não dito virava segunda. Agora fica vazio no formulário (o Salvar só libera com o dia escolhido) e é erro no fallback, como o agente.
+2. A oferta de pagamento abria o formulário como Mensal. A descrição do `tipo` em `abrir_formulario_pagamento` agora manda usar "por sessao" e a data de cada sessão quando a mensagem é a da oferta. Nenhum texto visível mudou.
+3. Paciente inativo resolvido sozinho ficava escolhido sem aparecer no seletor. Agora o escolhido sempre aparece. Também entrou a busca de paciente que o 8.5 pede, com o rótulo "Buscar" do app.
+4. No paciente, uma exceção depois de o paciente existir devolvia "Tente de novo", e isso duplicaria o cadastro. Agora vira aviso, e o formulário tranca. O evento `agenda_psi_novopaciente` sai só depois de o preço ser gravado, como no app.
+5. Ao tentar de novo depois de uma falha parcial, o sucesso só contava o reenvio. Agora soma tudo: título no plural, resumo, ids e as sessões "Pagou" que vão para a oferta.
+
+Pendentes de decisão do Alexandre:
+- "Horários criados." (plural de "Horário criado.");
+- duração inválida (0, 700, "abc") volta para 50 em silêncio. O app não tem mensagem para isso; para virar erro no campo, falta um texto aprovado;
+- no paciente, se o host derrubar a chamada por tempo esgotado, o formulário não sabe se o paciente foi criado e volta a permitir Salvar;
+- o seletor de categoria do feedback usa o título "Feedback para a equipe" como rótulo (o app faz o mesmo no cartão do agente).
+
+Divergência de documentação, sem efeito no código: o spec 21 e o CLAUDE.md escrevem `agenda_psi_novapaciente`, mas o app e o MCP usam `agenda_psi_novopaciente`.
+
+Ainda falta: o teste ao vivo de cada ação e o teste no Claude numa conversa nova.
