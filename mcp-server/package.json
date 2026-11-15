@@ -8,11 +8,15 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "tsx --env-file=.env.local scripts/dev-server.ts",
+    "dev": "npm run build:ui && tsx --env-file=.env.local scripts/dev-server.ts",
     "dev:token": "tsx --env-file=.env.local scripts/dev-token.ts",
+    "dev:proxy": "tsx --env-file=.env.local scripts/dev-proxy.ts",
+    "build:ui": "FORM=expense vite build && tsx scripts/embed-ui.ts",
+    "pretest": "npm run -s build:ui",
     "test": "vitest run",
+    "pretypecheck": "npm run -s build:ui",
     "typecheck": "tsc --noEmit",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "npm run build:ui && tsc -p tsconfig.build.json",
     "gen:types": "supabase gen types typescript --linked > src/database.types.ts"
   },
   "dependencies": {
@@ -25,6 +29,8 @@
     "@types/node": "^22",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
+    "vite": "^8.3.8",
+    "vite-plugin-singlefile": "^2.3.4",
     "vitest": "5.1.0"
   }
 }

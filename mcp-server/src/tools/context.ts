@@ -1,12 +1,22 @@
 import type { CallToolResult } from '@modelcontextprotocol/server';
+import type { SuporteAUi } from '../client-capabilities.js';
+import type { Config } from '../config.js';
 import { logarChamada } from '../log.js';
 import type { DbClient } from '../supabase.js';
 
 /**
- * O que toda ferramenta recebe: o cliente COMO o usuário e o `sub` do token (P1).
- * Montado uma vez por request em handler.ts; nenhuma ferramenta lê usuário de argumento.
+ * O que toda ferramenta recebe, montado uma vez por request em handler.ts:
+ * - `db`: o cliente COMO o usuário; `sub` e `email`: do token, nunca de argumento (P1);
+ * - `config`: segredo da prévia e analytics;
+ * - `ui`: se o cliente mostra MCP Apps, que decide o fallback (13.4).
  */
-export type ToolContext = { db: DbClient; sub: string };
+export type ToolContext = {
+  db: DbClient;
+  sub: string;
+  email: string | null;
+  config: Pick<Config, 'previewSecret' | 'analytics'>;
+  ui: SuporteAUi;
+};
 
 /** Resposta de leitura: objeto devolvido ao modelo, ou `{ erro }` como no agente. */
 export type ResultadoDeLeitura = Record<string, unknown> | { erro: string };
@@ -20,7 +30,7 @@ export type ResultadoDeLeitura = Record<string, unknown> | { erro: string };
  */
 export async function executar(
   ferramenta: string,
-  ctx: ToolContext,
+  ctx: Pick<ToolContext, 'sub'>,
   logica: () => Promise<ResultadoDeLeitura>,
 ): Promise<CallToolResult> {
   const inicio = performance.now();

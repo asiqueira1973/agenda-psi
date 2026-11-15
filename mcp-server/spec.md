@@ -316,14 +316,14 @@ Campos do formulário:
 | Observações | Texto (até 1000) | não | Despesa não é dado clínico |
 
 Critérios:
-- [ ] No basic-host do ext-apps, "paguei 1450 de aluguel hoje" abre o formulário com tipo Aluguel (ou vazio, se houver mais de um "aluguel"), valor 1450 e a data de hoje.
-- [ ] Valor `1450,50` é recusado na tela **e** no servidor com "Informe um valor inteiro, sem centavos. Ex: 200".
-- [ ] Chamar `salvar_despesa` direto pelo Inspector, sem tipo, devolve erro no campo `tipo_despesa_id`, em português, sem gravar.
-- [ ] Chamar `salvar_despesa` com um `tipo_despesa_id` inexistente ou inativo devolve erro de campo, nunca erro cru do Postgres.
-- [ ] A linha gravada tem `status = 'pago'`, `pago_em` preenchido e os mesmos campos que a tela do app grava (conferido no painel do Supabase).
-- [ ] `listar_tipos_despesa` e `salvar_despesa` **não** aparecem no `tools/list` visto pelo modelo (`visibility: ["app"]`).
-- [ ] Num cliente sem a extensão MCP Apps (Inspector sem UI), aparece `registrar_despesa`. A primeira chamada devolve a prévia e o `token_previa`; a segunda, com `confirmar: true` e o token, grava; token adulterado ou vencido não grava.
-- [ ] Depois do Salvar, o modelo responde sabendo o id e o resumo, sem a pessoa repetir nada.
+- [x] No basic-host do ext-apps, "paguei 1450 de aluguel hoje" abre o formulário com tipo Aluguel (ou vazio, se houver mais de um "aluguel"), valor 1450 e a data de hoje.
+- [x] Valor `1450,50` é recusado na tela **e** no servidor com "Informe um valor inteiro, sem centavos. Ex: 200".
+- [x] Chamar `salvar_despesa` direto pelo Inspector, sem tipo, devolve erro no campo `tipo_despesa_id`, em português, sem gravar.
+- [x] Chamar `salvar_despesa` com um `tipo_despesa_id` inexistente ou inativo devolve erro de campo, nunca erro cru do Postgres.
+- [x] A linha gravada tem `status = 'pago'`, `pago_em` preenchido e os mesmos campos que a tela do app grava (conferido no painel do Supabase).
+- [x] `listar_tipos_despesa` e `salvar_despesa` **não** aparecem no `tools/list` visto pelo modelo (`visibility: ["app"]`).
+- [x] Num cliente sem a extensão MCP Apps (Inspector sem UI), aparece `registrar_despesa`. A primeira chamada devolve a prévia e o `token_previa`; a segunda, com `confirmar: true` e o token, grava; token adulterado ou vencido não grava.
+- [ ] Depois do Salvar, o modelo responde sabendo o id e o resumo, sem a pessoa repetir nada. (Contexto entregue ao host no épico 2; a resposta do modelo se confere no épico 3.)
 
 ### 8.3 Épico 3 — OAuth e deploy em produção (conector no Claude)
 Objetivo: a despesa do épico 2 funcionando no Claude web e desktop como conector personalizado.
@@ -552,7 +552,7 @@ Não se aplica.
 | Latência de `tools/call` de leitura | p95 < 1,5 s (servidor + banco) |
 | Latência de `salvar_*` | p95 < 2 s |
 | CPU por request | < 500 ms |
-| Tamanho de cada HTML de formulário | < 150 KB |
+| Tamanho de cada HTML de formulário | < 300 KB (era 150 KB; só o `App` do ext-apps 2.0.4 ocupa 234 KB, 60 KB em gzip. Alterado por decisão do Alexandre em 15/11/2026, épico 2) |
 | Acessibilidade | `label` em todo campo, foco visível, navegação por teclado, erro ligado ao campo por `aria-describedby` |
 | Idioma | pt-BR |
 | Clientes | Claude web e desktop (conector personalizado), ChatGPT (modo desenvolvedor), MCP Inspector e basic-host |

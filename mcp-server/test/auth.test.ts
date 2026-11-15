@@ -42,6 +42,7 @@ describe('verificação do token (6.4)', () => {
       SUPABASE_URL: 'https://exemplo.supabase.co',
       SUPABASE_PUBLISHABLE_KEY: 'x',
       MCP_PUBLIC_URL: 'http://localhost:3000/mcp',
+      MCP_PREVIEW_SECRET: 'segredo-de-teste-com-mais-de-32-caracteres',
       MCP_DEV_ALLOW_SESSION_TOKEN: '1',
     });
     const info = await verificar(claimsValidas({ client_id: undefined }), 'valido', dev);
@@ -49,7 +50,7 @@ describe('verificação do token (6.4)', () => {
   });
 
   it('a flag de dev só liga com o valor exato "1"', () => {
-    const base = { SUPABASE_URL: 'https://e.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'x', MCP_PUBLIC_URL: 'https://m/mcp' };
+    const base = { SUPABASE_URL: 'https://e.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'x', MCP_PUBLIC_URL: 'https://m/mcp', MCP_PREVIEW_SECRET: 'segredo-de-teste-com-mais-de-32-caracteres' };
     expect(lerConfig({ ...base, MCP_DEV_ALLOW_SESSION_TOKEN: 'true' }).devAllowSessionToken).toBe(false);
     expect(lerConfig(base).devAllowSessionToken).toBe(false);
   });
@@ -70,7 +71,7 @@ describe('verificação do token (6.4)', () => {
   });
 
   it('a flag de dev na Vercel impede o servidor de subir (8.1.3: ela nunca existe no deploy)', () => {
-    const base = { SUPABASE_URL: 'https://e.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'x', MCP_PUBLIC_URL: 'https://m/mcp' };
+    const base = { SUPABASE_URL: 'https://e.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'x', MCP_PUBLIC_URL: 'https://m/mcp', MCP_PREVIEW_SECRET: 'segredo-de-teste-com-mais-de-32-caracteres' };
     expect(() => lerConfig({ ...base, VERCEL: '1', MCP_DEV_ALLOW_SESSION_TOKEN: '1' })).toThrow(/MCP_DEV_ALLOW_SESSION_TOKEN/);
     expect(lerConfig({ ...base, VERCEL: '1' }).devAllowSessionToken).toBe(false);
   });

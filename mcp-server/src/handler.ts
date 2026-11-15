@@ -1,11 +1,18 @@
-import { createMcpHandler, McpServer, type McpHttpHandler } from '@modelcontextprotocol/server';
-import { subDoAuthInfo } from './auth/verify-token.js';
+import { createMcpHandler, McpServer, type AuthInfo, type McpHttpHandler } from '@modelcontextprotocol/server';
+import { emailDoAuthInfo, subDoAuthInfo } from './auth/verify-token.js';
+import type { SuporteAUi } from './client-capabilities.js';
 import type { Config } from './config.js';
 import { criarClienteDoUsuario } from './supabase.js';
 import { registrarFerramentas } from './tools/index.js';
 
 /** Identificação do servidor no `initialize` / `server/discover`. */
-export const SERVER_INFO = { name: 'agenda-psi', version: '0.1.0' } as const;
+export const SERVER_INFO = { name: 'agenda-psi', version: '0.2.0' } as const;
+
+/** Lê o suporte a UI que o app.ts anexou ao `authInfo` deste request (13.4). */
+function uiDoAuthInfo(authInfo: AuthInfo | undefined): SuporteAUi {
+  const ui = (authInfo?.extra as { ui?: SuporteAUi } | undefined)?.ui;
+  return ui === 'sim' || ui === 'nao' ? ui : 'desconhecido';
+}
 
 /**
  * Monta o handler MCP stateless (4.3): um `McpServer` novo por request, sem sessão em
@@ -21,7 +28,7 @@ export function criarHandlerMcp(config: Config): McpHttpHandler {
     // authInfo existe aqui: subDoAuthInfo lança quando falta.
     const db = criarClienteDoUsuario(config, authInfo!.token);
     const server = new McpServer(SERVER_INFO);
-    registrarFerramentas(server, { db, sub });
+    registrarFerramentas(server, { db, sub, email: emailDoAuthInfo(authInfo), config, ui: uiDoAuthInfo(authInfo) });
     return server;
   });
 }

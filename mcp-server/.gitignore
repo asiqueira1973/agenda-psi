@@ -1,2 +1,5 @@
 # node_modules, dist e .env.* já são ignorados pelo .gitignore da raiz.
 .vercel/
+# Saída do Vite e o HTML embutido gerado a partir dela (4.2).
+ui/dist/
+src/ui/generated.ts

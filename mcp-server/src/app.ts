@@ -1,6 +1,7 @@
 import { requireBearerAuth, type McpHttpHandler } from '@modelcontextprotocol/server';
 import { protectedResourceMetadata, protectedResourceMetadataUrl } from './auth/metadata.js';
 import { criarVerificador, type ClaimsReader } from './auth/verify-token.js';
+import { suporteAUi } from './client-capabilities.js';
 import type { Config } from './config.js';
 import { criarHandlerMcp } from './handler.js';
 import { criarClienteAnonimo } from './supabase.js';
@@ -48,7 +49,11 @@ export function criarApp(config: Config, deps: Dependencias = {}) {
       if (pathname === '/mcp') {
         const auth = await exigirToken(request);
         if (auth instanceof Response) return auth;
-        return mcp.fetch(request, { authInfo: auth });
+        // O corpo é lido uma vez aqui: dele sai o suporte a UI do cliente (13.4), e o
+        // mesmo objeto vai ao SDK como `parsedBody`, sem segunda leitura.
+        const corpo = request.method === 'POST' ? await request.clone().json().catch(() => undefined) : undefined;
+        const authInfo = { ...auth, extra: { ...auth.extra, ui: suporteAUi(corpo) } };
+        return mcp.fetch(request, corpo === undefined ? { authInfo } : { authInfo, parsedBody: corpo });
       }
 
       return new Response('Not found', { status: 404 });

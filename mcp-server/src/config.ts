@@ -1,9 +1,10 @@
 /**
  * Configuração do servidor, lida das variáveis de ambiente (seção 18).
  *
- * Só há valores públicos aqui: a URL e a chave publicável do Supabase (inúteis sem
- * passar pela RLS) e a URL pública do MCP. Nenhuma chave privilegiada existe neste
- * servidor (P1).
+ * Valores públicos: a URL e a chave publicável do Supabase (inúteis sem passar pela
+ * RLS), a URL pública do MCP e a chave de ingestão do Visão do Produto (só escrita).
+ * O único segredo é `MCP_PREVIEW_SECRET`, do HMAC do fallback (13.4 e 20). Nenhuma
+ * chave privilegiada do Supabase existe neste servidor (P1).
  */
 export type Config = {
   /** URL do projeto Supabase, sem barra no fim. */
@@ -19,7 +20,17 @@ export type Config = {
    * `npm run dev:token`. Essa variável NUNCA existe no deploy.
    */
   devAllowSessionToken: boolean;
+  /** Segredo do HMAC do `token_previa` (13.4); no mínimo 32 caracteres. */
+  previewSecret: string;
+  /**
+   * Visão do Produto (21). Opcional: sem chave, o servidor roda e não emite evento,
+   * como o app. Localmente fica vazia, para a conta de teste não entrar na série.
+   */
+  analytics: { url: string; key: string } | null;
 };
+
+/** Endpoint de ingestão do Visão do Produto, o mesmo padrão do app (app/src/lib/env.ts). */
+const ANALYTICS_URL_PADRAO = 'https://api.visaodeproduto.com.br/functions/v1/ingest';
 
 /** Lê uma variável obrigatória; falha alto se faltar, para o deploy não subir meio configurado. */
 function obrigatoria(env: Record<string, string | undefined>, nome: string): string {
@@ -40,11 +51,17 @@ export function lerConfig(env: Record<string, string | undefined> = process.env)
   if (devAllowSessionToken && env.VERCEL) {
     throw new Error('MCP_DEV_ALLOW_SESSION_TOKEN não pode existir no deploy. Remova a variável na Vercel.');
   }
+  const previewSecret = obrigatoria(env, 'MCP_PREVIEW_SECRET');
+  // Segredo curto deixaria o token_previa adivinhável; P2 depende dele.
+  if (previewSecret.length < 32) throw new Error('MCP_PREVIEW_SECRET precisa ter pelo menos 32 caracteres.');
+  const analyticsKey = env.VISAODEPRODUTO_KEY?.trim();
   return {
     supabaseUrl,
     supabasePublishableKey: obrigatoria(env, 'SUPABASE_PUBLISHABLE_KEY'),
     publicUrl: obrigatoria(env, 'MCP_PUBLIC_URL'),
     issuer: `${supabaseUrl}/auth/v1`,
     devAllowSessionToken,
+    previewSecret,
+    analytics: analyticsKey ? { url: env.VISAODEPRODUTO_URL?.trim() || ANALYTICS_URL_PADRAO, key: analyticsKey } : null,
   };
 }

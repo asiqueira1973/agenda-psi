@@ -29,7 +29,7 @@ export const entrada = z.object({
  */
 export async function consultarDespesas(
   args: z.infer<typeof entrada>,
-  { db, sub }: ToolContext,
+  { db, sub }: Pick<ToolContext, 'db' | 'sub'>,
 ): Promise<ResultadoDeLeitura> {
   const data = (v: unknown) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
   const desde = data(args.desde);

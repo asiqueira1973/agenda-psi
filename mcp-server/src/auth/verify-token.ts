@@ -12,6 +12,8 @@ export type ClaimsReader = {
 export type IdentidadeDoToken = {
   /** `sub` do JWT: o `usuario_id` de todas as tabelas (P1, pegadinha 3). */
   sub: string;
+  /** Claim `email`: o `distinct_id` do analytics, como no app (21, assunção 24.4). */
+  email: string | null;
 };
 
 /**
@@ -66,10 +68,15 @@ export function criarVerificador(
       }
 
       const scopes = typeof c.scope === 'string' ? c.scope.split(' ').filter(Boolean) : [];
-      const extra: IdentidadeDoToken = { sub: c.sub };
+      const extra: IdentidadeDoToken = { sub: c.sub, email: typeof c.email === 'string' ? c.email : null };
       return { token, clientId: clientId ?? 'sessao-local', scopes, expiresAt: c.exp, extra };
     },
   };
+}
+
+/** Lê o e-mail que o verificador guardou, ou `null`. */
+export function emailDoAuthInfo(authInfo: AuthInfo | undefined): string | null {
+  return (authInfo?.extra as Partial<IdentidadeDoToken> | undefined)?.email ?? null;
 }
 
 /**

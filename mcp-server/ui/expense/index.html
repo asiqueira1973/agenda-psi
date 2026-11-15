@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Registrar despesa</title>
+    <link rel="stylesheet" href="../shared/form.css" />
+  </head>
+  <body>
+    <main class="form" aria-busy="true">
+      <form id="form" novalidate>
+        <div id="avisos" class="avisos" role="status" hidden></div>
+
+        <div class="campo" data-campo="tipo_despesa_id">
+          <label for="tipo_despesa_id"></label>
+          <select id="tipo_despesa_id" name="tipo_despesa_id" aria-describedby="erro-tipo_despesa_id"></select>
+          <p class="erro" id="erro-tipo_despesa_id" hidden></p>
+        </div>
+
+        <div class="campo" data-campo="valor_despesa">
+          <label for="valor_despesa"></label>
+          <div class="prefixo">
+            <span aria-hidden="true">R$</span>
+            <input id="valor_despesa" name="valor_despesa" inputmode="numeric" autocomplete="off" aria-describedby="erro-valor_despesa" />
+          </div>
+          <p class="erro" id="erro-valor_despesa" hidden></p>
+        </div>
+
+        <div class="campo" data-campo="data_competencia">
+          <label for="data_competencia"></label>
+          <input id="data_competencia" name="data_competencia" type="date" aria-describedby="erro-data_competencia" />
+          <p class="erro" id="erro-data_competencia" hidden></p>
+        </div>
+
+        <div class="campo" data-campo="descricao">
+          <label for="descricao"></label>
+          <input id="descricao" name="descricao" maxlength="200" autocomplete="off" aria-describedby="erro-descricao" />
+          <p class="erro" id="erro-descricao" hidden></p>
+        </div>
+
+        <div class="campo" data-campo="observacoes">
+          <label for="observacoes"></label>
+          <textarea id="observacoes" name="observacoes" rows="3" maxlength="1000" aria-describedby="erro-observacoes"></textarea>
+          <p class="erro" id="erro-observacoes" hidden></p>
+        </div>
+
+        <p id="erro-geral" class="erro geral" role="alert" hidden></p>
+
+        <div id="carregar-erro" class="carregar-erro" hidden>
+          <p id="carregar-erro-texto"></p>
+          <button type="button" id="tentar-de-novo" class="texto"></button>
+        </div>
+
+        <div class="acoes">
+          <button type="button" id="cancelar" class="texto"></button>
+          <button type="submit" id="salvar" class="primario"></button>
+        </div>
+      </form>
+
+      <section id="sucesso" class="sucesso" role="status" hidden>
+        <h2 id="sucesso-titulo"></h2>
+        <p id="sucesso-resumo"></p>
+      </section>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
