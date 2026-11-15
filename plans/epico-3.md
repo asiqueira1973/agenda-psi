@@ -105,3 +105,11 @@ EXIT test=0
 EXIT typecheck=0
 EXIT build=0
 ```
+
+### Primeira conexão no Claude: falha no `/oauth/token` (seção 23)
+- O Alexandre conectou com a conta de teste. Login e consentimento funcionaram ("**Claude** quer acessar…"). Depois do Permitir, o Claude mostrou "Authorization … failed".
+- O log novo do `/mcp` (commit `4f09813`, só motivo e método) mostrou a sondagem inicial do Claude (região `iad1`, sem token) e **nenhuma** chamada com token depois do Permitir.
+- Logs de Auth do Supabase (print do Alexandre): `POST /oauth/token` → **500 "HS256 is not suppo…"** às 18:31:17 e 18:37:27 (Brasília). DCR, authorize e consent responderam 200/201/302.
+- Causa provável: o Claude pede `openid`, o Supabase precisa emitir ID token, e o projeto assina em HS256 (25.4, JWKS vazio). Era o risco previsto na seção 23.
+- Correção tentada, só no servidor, sem tocar no Supabase: o servidor anuncia `scopes_supported: ["email"]` no PRM e manda `scope="email"` no desafio do 401, que é o que o cliente MCP usa primeiro. Teste primeiro, `fix-mode`, correção.
+- **Se o Claude ainda pedir `openid`**, ou se o 500 vier mesmo sem `openid`, a saída passa pela configuração do Supabase (chaves assimétricas), que a 25.4 vetou. Aí **paro e pergunto**.

@@ -1,5 +1,5 @@
 import { requireBearerAuth, type McpHttpHandler } from '@modelcontextprotocol/server';
-import { protectedResourceMetadata, protectedResourceMetadataUrl } from './auth/metadata.js';
+import { ESCOPO_PEDIDO, protectedResourceMetadata, protectedResourceMetadataUrl } from './auth/metadata.js';
 import { criarVerificador, type ClaimsReader } from './auth/verify-token.js';
 import { suporteAUi } from './client-capabilities.js';
 import type { Config } from './config.js';
@@ -15,6 +15,18 @@ const CORS_PUBLICO = {
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': '*',
 };
+
+/**
+ * Acrescenta `scope="email"` ao desafio do 401. O cliente MCP escolhe o escopo primeiro
+ * pelo `WWW-Authenticate` e só depois pelo PRM; assim ele não pede `openid` (épico 3).
+ */
+function comEscopo(r: Response): Response {
+  const desafio = r.headers.get('www-authenticate');
+  if (!desafio || /\bscope="/.test(desafio)) return r;
+  const headers = new Headers(r.headers);
+  headers.set('www-authenticate', `${desafio}, scope="${ESCOPO_PEDIDO}"`);
+  return new Response(r.body, { status: r.status, statusText: r.statusText, headers });
+}
 
 /** Dependências trocáveis no teste: o leitor de claims e o handler MCP. */
 export type Dependencias = { leitorDeClaims?: ClaimsReader; mcp?: McpHttpHandler };
@@ -53,7 +65,7 @@ export function criarApp(config: Config, deps: Dependencias = {}) {
           // método. Nunca o token. Sem isto, uma falha do OAuth no Claude não deixa rastro.
           const motivo = /error_description="([^"]*)"/.exec(auth.headers.get('www-authenticate') ?? '')?.[1] ?? 'sem motivo';
           console.log(JSON.stringify({ evento: 'token_recusado', motivo, metodo: request.method }));
-          return auth;
+          return comEscopo(auth);
         }
         // O corpo é lido uma vez aqui: dele sai o suporte a UI do cliente (13.4), e o
         // mesmo objeto vai ao SDK como `parsedBody`, sem segunda leitura.

@@ -45,6 +45,7 @@ describe('rotas (6.2)', () => {
         authorization_servers: ['https://exemplo.supabase.co/auth/v1'],
         bearer_methods_supported: ['header'],
         resource_name: 'Agenda Psi',
+        scopes_supported: ['email'],
       });
     },
   );
@@ -124,5 +125,16 @@ describe('log da recusa de token (diagnóstico do épico 3, seção 18)', () => 
       { evento: 'token_recusado', motivo: 'Missing Authorization header', metodo: 'POST' },
     ]);
     expect(linhas.join('\n')).not.toContain('adulterado');
+  });
+});
+
+describe('escopo pedido ao cliente (épico 3: HS256 sem ID token)', () => {
+  // O /oauth/token do Supabase respondeu 500 "HS256 is not suppo..." ao Claude: com o
+  // escopo openid, ele precisa emitir ID token, e o projeto assina em HS256 (25.4).
+  it('o 401 pede scope="email", que o cliente MCP usa antes do PRM, e nunca openid', async () => {
+    const r = await app.fetch(toolsList());
+    const desafio = r.headers.get('www-authenticate') ?? '';
+    expect(desafio).toContain('scope="email"');
+    expect(desafio).not.toContain('openid');
   });
 });
