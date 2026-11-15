@@ -78,7 +78,7 @@ export function dbPorTabela(respostas: Record<string, { data: unknown; error: un
       const resultado = Array.isArray(r) ? r[i] ?? r[r.length - 1] : r;
       if (!resultado) throw new Error(`tabela não simulada: ${tabela}`);
       const consulta: Record<string, unknown> = {};
-      for (const metodo of ['select', 'insert', 'eq', 'gte', 'lte', 'order', 'limit', 'maybeSingle', 'single']) {
+      for (const metodo of ['select', 'insert', 'eq', 'gte', 'lte', 'lt', 'gt', 'in', 'order', 'limit', 'maybeSingle', 'single']) {
         consulta[metodo] = (...args: unknown[]) => {
           chamadas.push({ tabela, metodo, args });
           return consulta;

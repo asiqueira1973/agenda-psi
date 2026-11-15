@@ -5,7 +5,7 @@ import { registrarAbrirFormularioDespesa } from './expense/open-form.js';
 import { registrarListarTiposDespesa } from './expense/options.js';
 import { registrarRecursoDespesa } from './expense/resource.js';
 import { registrarSalvarDespesa } from './expense/save.js';
-import { registrarConsultarDespesas } from './read/consultar-despesas.js';
+import { registrarLeituras } from './read/index.js';
 
 /**
  * Registra as ferramentas e os recursos no `McpServer` do request (13.1). Nenhuma recebe
@@ -18,7 +18,8 @@ import { registrarConsultarDespesas } from './read/consultar-despesas.js';
  *   pessoa nunca ficar sem caminho. Registrado em plans/epico-2.md.
  */
 export function registrarFerramentas(server: McpServer, ctx: ToolContext): void {
-  registrarConsultarDespesas(server, ctx);
+  // As 9 leituras do agente (épico 4), para qualquer cliente, com ou sem UI.
+  registrarLeituras(server, ctx);
 
   if (ctx.ui !== 'nao') {
     registrarRecursoDespesa(server);

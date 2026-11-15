@@ -1,14 +1,13 @@
-import type { McpServer } from '@modelcontextprotocol/server';
 import * as z from 'zod';
 import { normalizar } from '../../rules/text.js';
-import { executar, type ResultadoDeLeitura, type ToolContext } from '../context.js';
+import type { ResultadoDeLeitura, ToolContext } from '../context.js';
+import { descricoes } from './descricoes.js';
 
 /** Quantas despesas voltam listadas, no máximo (como `MAX_HISTORICO` do agente, 8.4). */
 export const MAX_DESPESAS = 30;
 
-/** Descrição copiada byte a byte de supabase/functions/agente/ferramentas.ts (13.2). */
-export const DESCRICAO =
-  'Despesas do consultório num período (aluguel de sala, supervisão, impostos etc.), com o total geral e o total por tipo já calculados. Filtro opcional por tipo (parte do nome, sem acento). Use para "quanto gastei de aluguel este ano?" ou "quais despesas tive em outubro?". Sem período, considera tudo.';
+/** Descrição copiada byte a byte do agente (13.2); mora em descricoes.ts com as outras. */
+export const DESCRICAO = descricoes.consultar_despesas;
 
 /** Entrada da ferramenta (13.2): tudo opcional, como no agente. Sem `usuario_id` (P1). */
 export const entrada = z.object({
@@ -65,18 +64,4 @@ export async function consultarDespesas(
     total_por_tipo: porTipo,
     despesas: despesas.slice(0, MAX_DESPESAS),
   };
-}
-
-/** Registra `consultar_despesas`: visível ao modelo e só leitura (13.1). */
-export function registrarConsultarDespesas(server: McpServer, ctx: ToolContext): void {
-  server.registerTool(
-    'consultar_despesas',
-    {
-      description: DESCRICAO,
-      inputSchema: entrada,
-      annotations: { readOnlyHint: true },
-      _meta: { ui: { visibility: ['model'] } },
-    },
-    (args) => executar('consultar_despesas', ctx, () => consultarDespesas(args, ctx)),
-  );
 }

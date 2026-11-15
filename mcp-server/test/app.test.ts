@@ -78,14 +78,18 @@ async function listar(capacidades?: Record<string, unknown>) {
   return Object.fromEntries(tools.map((t) => [t.name, t]));
 }
 
+/** As 9 leituras do agente (épico 4), presentes para qualquer cliente. */
+const LEITURAS = [
+  'agenda_da_semana', 'agenda_do_dia', 'buscar_paciente', 'consultar_despesas', 'consultar_mes',
+  'consultar_periodo', 'historico_do_paciente', 'listar_pacientes', 'listar_pendencias',
+];
+
 const COM_UI = { extensions: { 'io.modelcontextprotocol/ui': { mimeTypes: ['text/html;profile=mcp-app'] } } };
 
 describe('tools/list conforme o cliente (13.1 e 13.4)', () => {
   it('cliente com MCP Apps: formulário, sem o fallback', async () => {
     const t = await listar(COM_UI);
-    expect(Object.keys(t).sort()).toEqual([
-      'abrir_formulario_despesa', 'consultar_despesas', 'listar_tipos_despesa', 'salvar_despesa',
-    ]);
+    expect(Object.keys(t).sort()).toEqual([...LEITURAS, 'abrir_formulario_despesa', 'listar_tipos_despesa', 'salvar_despesa'].sort());
     expect(t.abrir_formulario_despesa?._meta?.ui?.visibility).toEqual(['model']);
     // Endereço versionado pelo conteúdo: o Claude guardava em cache o HTML antigo (épico 3).
     expect(t.abrir_formulario_despesa?._meta?.ui?.resourceUri).toMatch(/^ui:\/\/agenda-psi\/despesa-[0-9a-f]{12}\.html$/);
@@ -93,20 +97,21 @@ describe('tools/list conforme o cliente (13.1 e 13.4)', () => {
     expect(t.listar_tipos_despesa?._meta?.ui?.visibility).toEqual(['app']);
     expect(t.salvar_despesa?._meta?.ui?.visibility).toEqual(['app']);
     expect(t.consultar_despesas?._meta?.ui?.visibility).toEqual(['model']);
-    expect(t.consultar_despesas?.annotations?.readOnlyHint).toBe(true);
+    for (const l of LEITURAS) {
+      expect(t[l]?.annotations?.readOnlyHint, l).toBe(true);
+      expect(t[l]?._meta?.ui?.visibility, l).toEqual(['model']);
+    }
   });
 
   it('cliente que anuncia capacidades sem MCP Apps: só o fallback', async () => {
     const t = await listar({ extensions: {} });
-    expect(Object.keys(t).sort()).toEqual(['consultar_despesas', 'registrar_despesa']);
+    expect(Object.keys(t).sort()).toEqual([...LEITURAS, 'registrar_despesa'].sort());
     expect(t.registrar_despesa?._meta?.ui?.visibility).toEqual(['model']);
   });
 
   it('cliente de 2025, que não repete as capacidades: os dois caminhos', async () => {
     const t = await listar();
-    expect(Object.keys(t).sort()).toEqual([
-      'abrir_formulario_despesa', 'consultar_despesas', 'listar_tipos_despesa', 'registrar_despesa', 'salvar_despesa',
-    ]);
+    expect(Object.keys(t).sort()).toEqual([...LEITURAS, 'abrir_formulario_despesa', 'listar_tipos_despesa', 'registrar_despesa', 'salvar_despesa'].sort());
   });
 });
 

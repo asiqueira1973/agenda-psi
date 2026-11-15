@@ -346,9 +346,9 @@ As 9 ferramentas do agente, com os mesmos nomes, descrições e saídas, exceto:
 - sem ids internos nas respostas ao modelo (como o agente já faz).
 
 Detalhe em 13.2. Critérios:
-- [ ] Para cada ferramenta, o resultado bate com o do agente interno do app para a mesma pergunta na conta de teste (roteiro do README).
-- [ ] Nenhuma resposta tem a chave `observacoes`; um teste automatizado percorre as 9.
-- [ ] Toda resposta de lista tem teto (30 linhas no histórico, 5 pacientes na busca, como no agente) e avisa `pode_haver_mais`.
+- [ ] Para cada ferramenta, o resultado bate com o do agente interno do app para a mesma pergunta na conta de teste (roteiro do README). (Conferido contra as views no épico 4; a comparação com o agente vai no roteiro do README, épico 7.)
+- [x] Nenhuma resposta tem a chave `observacoes`; um teste automatizado percorre as 9.
+- [x] Toda resposta de lista tem teto (30 linhas no histórico, 5 pacientes na busca, como no agente) e avisa `pode_haver_mais`.
 
 ### 8.5 Épico 5 — Demais criações
 Replicar o molde do épico 2 para cada ação, um módulo por ação. Os campos e as regras estão na tabela 13.3:
