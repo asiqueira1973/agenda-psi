@@ -131,6 +131,11 @@ describe('vercel.json (4.2, 6.3)', () => {
     expect(destinos['/.well-known/oauth-protected-resource']).toBe('/api/index');
     expect(destinos['/oauth/consent']).toBe('/oauth/consent/index.html');
   });
+  it('o ignore compara com o último deploy, não com o commit anterior (deploy cancelado no épico 3)', () => {
+    // Com `HEAD^`, um commit só de docs depois de um de código fazia a Vercel pular o build.
+    expect(v.ignoreCommand).toBe('git diff --quiet "${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}" HEAD -- .');
+  });
+
   it('nenhum redirect que possa capturar /mcp (os caminhos antigos vão pela 404.html)', () => {
     expect(v.redirects ?? []).toEqual([]);
     const pagina404 = readFileSync(new URL('../../site/public/404.html', import.meta.url), 'utf8');
