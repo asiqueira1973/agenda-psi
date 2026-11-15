@@ -1,0 +1,2 @@
+# node_modules, dist e .env.* já são ignorados pelo .gitignore da raiz.
+.vercel/

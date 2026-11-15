@@ -285,11 +285,11 @@ Objetivo: servidor local respondendo a um cliente MCP real, com JWT verificado e
 4. Implementar a primeira leitura: `listar_tipos_despesa` (só app) e `consultar_despesas` (modelo).
 
 Critérios:
-- [ ] `npm test`, `npm run typecheck` e `npm run build` passam, com a saída colada.
-- [ ] Com o MCP Inspector apontando para `http://localhost:<porta>/mcp` sem token, a resposta é 401 com `WWW-Authenticate` contendo `resource_metadata`.
-- [ ] Com o token da conta de teste, `consultar_despesas` devolve só despesas da conta de teste.
-- [ ] Um token adulterado (um caractere trocado na assinatura) dá 401.
-- [ ] Os testes de `rules/` cobrem: literais 11.4 byte a byte (comparados com o texto de `app/src/features/patients/valores-do-banco.ts`), `diaDaSemanaDoBanco` (domingo = 7), "hoje" em São Paulo às 23h30 de Brasília (não pode virar o dia seguinte) e `resolverPaciente` nos três casos.
+- [x] `npm test`, `npm run typecheck` e `npm run build` passam, com a saída colada.
+- [x] Com o MCP Inspector apontando para `http://localhost:<porta>/mcp` sem token, a resposta é 401 com `WWW-Authenticate` contendo `resource_metadata`.
+- [x] Com o token da conta de teste, `consultar_despesas` devolve só despesas da conta de teste.
+- [x] Um token adulterado (um caractere trocado na assinatura) dá 401.
+- [x] Os testes de `rules/` cobrem: literais 11.4 byte a byte (comparados com o texto de `app/src/features/patients/valores-do-banco.ts`), `diaDaSemanaDoBanco` (domingo = 7), "hoje" em São Paulo às 23h30 de Brasília (não pode virar o dia seguinte) e `resolverPaciente` nos três casos.
 
 ### 8.2 Épico 2 — Registrar despesa de ponta a ponta (local)
 Objetivo: o padrão completo numa ação, que serve de molde para as outras.
