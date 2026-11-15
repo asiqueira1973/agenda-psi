@@ -55,7 +55,7 @@ Sessões, pagamentos (commit bc75815), horário, paciente com horários e feedba
 ### Comandos 22.1 (em `mcp-server/`)
 ```
  Test Files  26 passed (26)
-      Tests  275 passed (275)
+      Tests  276 passed (276)
 EXIT test=0
 EXIT typecheck=0
 EXIT build=0
@@ -69,10 +69,10 @@ Corrigidos, com teste primeiro:
 4. No paciente, uma exceção depois de o paciente existir devolvia "Tente de novo", e isso duplicaria o cadastro. Agora vira aviso, e o formulário tranca. O evento `agenda_psi_novopaciente` sai só depois de o preço ser gravado, como no app.
 5. Ao tentar de novo depois de uma falha parcial, o sucesso só contava o reenvio. Agora soma tudo: título no plural, resumo, ids e as sessões "Pagou" que vão para a oferta.
 
-Pendentes de decisão do Alexandre:
-- "Horários criados." (plural de "Horário criado.");
-- duração inválida (0, 700, "abc") volta para 50 em silêncio. O app não tem mensagem para isso; para virar erro no campo, falta um texto aprovado;
-- no paciente, se o host derrubar a chamada por tempo esgotado, o formulário não sabe se o paciente foi criado e volta a permitir Salvar;
+Decisões do Alexandre (15/11/2026, as três aprovadas):
+- "Horários criados." aprovado;
+- duração inválida (0, 601, "abc", "45,5") agora é erro no campo, "Informe a duração em minutos, de 1 a 600". Vazia continua virando 50;
+- **backlog:** no paciente, se o host derrubar a chamada por tempo esgotado, o formulário não sabe se o paciente foi criado e volta a permitir Salvar;
 - o seletor de categoria do feedback usa o título "Feedback para a equipe" como rótulo (o app faz o mesmo no cartão do agente).
 
 Divergência de documentação, sem efeito no código: o spec 21 e o CLAUDE.md escrevem `agenda_psi_novapaciente`, mas o app e o MCP usam `agenda_psi_novopaciente`.

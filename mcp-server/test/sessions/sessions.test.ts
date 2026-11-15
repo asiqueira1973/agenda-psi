@@ -29,11 +29,19 @@ describe('validarSessoes (11.3, 11.4, 11.8, 11.14)', () => {
     const r = validarSessoes([linha(BEA, { pagamento: 'nao pagou' })]);
     expect(r.ok && r.dados[0]?.pagamento).toBe('nao pagou');
   });
-  it('duração fora de 1–600 volta a 50 (11.8, como o agente)', () => {
-    for (const d of ['0', '601', 'abc']) {
-      const r = validarSessoes([linha(BEA, { duracao_minutos: d })]);
-      expect(r.ok && r.dados[0]?.duracao_minutos).toBe(50);
+  it('duração fora de 1–600 é erro no campo (11.8, texto aprovado em 15/11/2026); vazia vira 50', () => {
+    for (const d of ['0', '601', 'abc', '45,5']) {
+      expect(validarSessoes([linha(BEA, { duracao_minutos: d })])).toEqual({
+        ok: false, erros: [{ campo: '0.duracao_minutos', mensagem: 'Informe a duração em minutos, de 1 a 600' }],
+      });
     }
+    const vazia = validarSessoes([linha(BEA, { duracao_minutos: ' ' })]);
+    expect(vazia.ok && vazia.dados[0]?.duracao_minutos).toBe(50);
+  });
+  it('fallback: duração inválida dita pelo modelo é erro, sem token', async () => {
+    const r = await registrarSessoes({ itens: [{ paciente: 'beatriz', data: '2026-11-14', duracao_minutos: 0 }] }, ctxDeTeste(dbPorTabela({ v_pacientes_cartao: view }).db));
+    expect(r.isError).toBe(true);
+    expect(r.structuredContent).toMatchObject({ erros: [{ campo: '0.duracao_minutos' }] });
   });
   it('erros por linha: paciente e data', () => {
     expect(validarSessoes([linha(''), linha(BEA, { ocorreu_em_dia: '2026-02-31' })])).toEqual({

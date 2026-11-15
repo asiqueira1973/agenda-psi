@@ -78,7 +78,7 @@ export function preencherSessoes(
         ocorreu_em_dia: i.data ?? hoje,
         pagamento: literalDoPagamento(i.pagamento),
         modalidade: i.modalidade ?? PADRAO_SESSAO.modalidade,
-        duracao_minutos: i.duracao_minutos ? String(i.duracao_minutos) : PADRAO_SESSAO.duracao_minutos,
+        duracao_minutos: i.duracao_minutos !== undefined ? String(i.duracao_minutos) : PADRAO_SESSAO.duracao_minutos,
         devesercobrada: PADRAO_SESSAO.devesercobrada,
       },
     };
@@ -201,7 +201,7 @@ export async function registrarSessoes(e: z.infer<typeof entradaFallback>, ctx: 
       paciente_id = p.linha.paciente_id;
       if (p.aviso) pendencias.push({ item: k, aviso: p.aviso, opcoes: p.linha.candidatos.length ? p.linha.candidatos : pacientes.map((x) => ({ id: x.id, nome: x.nome })) });
     }
-    return { paciente_id, ocorreu_em_dia: i.data ?? hoje, pagamento: literalDoPagamento(i.pagamento), modalidade: i.modalidade ?? PADRAO_SESSAO.modalidade, duracao_minutos: i.duracao_minutos ? String(i.duracao_minutos) : '', devesercobrada: true };
+    return { paciente_id, ocorreu_em_dia: i.data ?? hoje, pagamento: literalDoPagamento(i.pagamento), modalidade: i.modalidade ?? PADRAO_SESSAO.modalidade, duracao_minutos: i.duracao_minutos !== undefined ? String(i.duracao_minutos) : '', devesercobrada: true };
   });
   const v = validarSessoes(linhas);
   const nomeDe = new Map(pacientes.map((p) => [p.id, p.nome]));

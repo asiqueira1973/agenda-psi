@@ -55,7 +55,7 @@ describe('copy do épico 5 igual à do app (15)', () => {
   it('sem exclamação nem emoji', () => {
     const t = [textosNovosEpico5.sessoesRegistradas, textosNovosEpico5.pagamentosRegistrados, textosNovosEpico5.registrarTambemPagamento,
       textosNovosEpico5.pedidoDePagamento(['A']), textosNovosEpico5.naoGravadas(['A']), textosNovosEpico5.horariosNaoGravados(['A']),
-      textosNovosEpico5.pacienteSemPreco, textosNovosEpico5.formularioAberto('sessão')];
+      textosNovosEpico5.pacienteSemPreco, textosNovosEpico5.formularioAberto('sessão'), textosNovosEpico5.horariosCriados, textosNovosEpico5.duracaoInvalida];
     for (const x of t) expect(x).not.toMatch(/!|\p{Extended_Pictographic}/u);
   });
 });

@@ -1,7 +1,7 @@
 import { dataValida } from '../../rules/dates.js';
 import { modalidadeDaSessao, pagamentoDaSessao, type ModalidadeDaSessao, type PagamentoDaSessao } from '../../rules/db-literals.js';
 import { formatarData } from '../../rules/format.js';
-import { mensagensEpico5DoApp } from '../../rules/copy-app.js';
+import { mensagensEpico5DoApp, textosNovosEpico5 } from '../../rules/copy-app.js';
 import { textosNovosDespesa } from '../../rules/messages.js';
 
 /**
@@ -59,14 +59,15 @@ export function validarSessoes(linhas: Partial<LinhaDeSessao>[]):
     if (!UUID.test(paciente)) erros.push({ campo: `${i}.paciente_id`, mensagem: mensagensEpico5DoApp.pacienteNaoEscolhido });
     const data = dataValida((l.ocorreu_em_dia ?? '').trim());
     if (!data) erros.push({ campo: `${i}.ocorreu_em_dia`, mensagem: textosNovosDespesa.dataInvalida });
+    // Vazia vira o padrão de 50; fora de 1–600 é erro no campo (11.8, texto aprovado em
+    // 15/11/2026). O agente trocava por 50 em silêncio; aqui a pessoa vê e corrige.
     const textoDuracao = (l.duracao_minutos ?? '').trim() || PADRAO_SESSAO.duracao_minutos;
     const duracao = /^\d+$/.test(textoDuracao) ? Number(textoDuracao) : NaN;
-    // Sem mensagem própria no app para duração: a regra 11.8 fica no servidor, e o campo
-    // inválido volta ao padrão de 50, como o agente faz.
-    const duracaoOk = Number.isInteger(duracao) && duracao >= 1 && duracao <= 600 ? duracao : 50;
+    const duracaoOk = Number.isInteger(duracao) && duracao >= 1 && duracao <= 600 ? duracao : null;
+    if (duracaoOk === null) erros.push({ campo: `${i}.duracao_minutos`, mensagem: textosNovosEpico5.duracaoInvalida });
     const pagamento = PAGAMENTOS.includes(l.pagamento ?? '') ? (l.pagamento as PagamentoDaSessao) : PADRAO_SESSAO.pagamento;
     const modalidade = MODALIDADES.includes(l.modalidade ?? '') ? (l.modalidade as ModalidadeDaSessao) : PADRAO_SESSAO.modalidade;
-    if (data && UUID.test(paciente)) {
+    if (data && UUID.test(paciente) && duracaoOk !== null) {
       dados.push({ paciente_id: paciente, ocorreu_em_dia: data, pagamento, modalidade, duracao_minutos: duracaoOk, devesercobrada: l.devesercobrada !== false });
     }
   });

@@ -122,9 +122,11 @@ export const avisosDePacienteDoApp = {
 /** Textos novos aprovados (plans/epico-5.md, seção "Textos"). */
 export const textosNovosEpico5 = {
   sessoesRegistradas: 'Sessões registradas.',
-  /** PENDENTE DE APROVAÇÃO (fechamento do épico 5): plural de "Horário criado." do app. */
+  /** Plural de "Horário criado." do app; aprovado em 15/11/2026, no fechamento do épico 5. */
   horariosCriados: 'Horários criados.',
   pagamentosRegistrados: 'Pagamentos registrados.',
+  /** Duração fora de 1–600 (11.8); aprovado em 15/11/2026, no fechamento do épico 5. */
+  duracaoInvalida: 'Informe a duração em minutos, de 1 a 600',
   registrarTambemPagamento: 'Registrar também o pagamento',
   /** Mensagem que o botão manda na conversa, para o modelo abrir o formulário de pagamento. */
   pedidoDePagamento: (itens: string[]) => `Quero registrar o pagamento destas sessões: ${itens.join(', ')}.`,
