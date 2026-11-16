@@ -3,7 +3,7 @@
  * byte dos `copy.ts` do app; `doAgente` do cartão de confirmação do agente do app
  * (`copyAgente.cartao`); `doSpec` da seção 15 e da tabela 12 do mcp-server/spec.md.
  * test/rules/copy-registros.test.ts lê os arquivos do app e falha se divergir.
- * `textosNovosEpico6` são novos, listados em plans/epico-6.md para aprovação.
+ * `textosNovosEpico6` são novos, aprovados pelo Alexandre em 15/11/2026 (plans/epico-6.md).
  * Sem exclamação nem emoji. Arquivo puro (a UI importa).
  */
 
@@ -87,7 +87,7 @@ export const doSpec = {
   horarioAlterado: 'Horário alterado.',
 } as const;
 
-/** Novos, no padrão de `semSessoes`/`semPagamentos` do app. PENDENTES DE APROVAÇÃO. */
+/** Novos, no padrão de `semSessoes`/`semPagamentos` do app. Aprovados em 15/11/2026. */
 export const textosNovosEpico6 = {
   semDespesas: 'Nenhuma despesa registrada ainda.',
   semHorarios: 'Nenhum horário fixo na agenda.',

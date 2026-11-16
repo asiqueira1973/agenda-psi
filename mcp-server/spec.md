@@ -616,7 +616,7 @@ Toda mudança posterior atualiza essa seção no mesmo commit.
 - **Guardrail de IA:** o modelo nunca grava sozinho (P2). A barreira não depende do modelo: o formulário exige clique humano, e o fallback exige um `token_previa` que só a prévia emite.
 
 ## 21. Telemetria
-- O servidor emite os **mesmos nomes de evento** do app (pegadinha 5): `agenda_psi_novadespesa`, `agenda_psi_novasessao`, `agenda_psi_novopagamento`, `agenda_psi_novapaciente` e `agenda_psi_novoagendamento`. Antes, copie os nomes byte a byte de `app/src/lib/analytics/events.ts`.
+- O servidor emite os **mesmos nomes de evento** do app (pegadinha 5): `agenda_psi_novadespesa`, `agenda_psi_novasessao`, `agenda_psi_novopagamento`, `agenda_psi_novopaciente` e `agenda_psi_novoagendamento`. Antes, copie os nomes byte a byte de `app/src/lib/analytics/events.ts`.
 - O campo `tela` leva `mcp_<acao>` (ex.: `mcp_despesa`), para separar a origem sem partir a série.
 - Mesmas propriedades fechadas do app: **sem nome de paciente, valor, observação ou texto digitado**.
 - Falha do analytics nunca falha a gravação.

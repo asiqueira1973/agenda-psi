@@ -50,7 +50,7 @@ Do cartão do agente: "Antes: …", o aviso da data, o aviso do preço, "Horári
 
 Do spec: "Excluir definitivamente", "Horário alterado." (15, com ponto, como no épico 5), "Nada mudou no registro" e os erros da 12.
 
-**Novos, para aprovação no fechamento:** "Nenhuma despesa registrada ainda." e "Nenhum horário fixo na agenda." (no padrão dos dois do app), mais os textos lidos só pelo modelo.
+**Novos (aprovados em 15/11/2026):** "Nenhuma despesa registrada ainda." e "Nenhum horário fixo na agenda." (no padrão dos dois do app), mais os textos lidos só pelo modelo.
 
 ## Registro (15/11/2026)
 

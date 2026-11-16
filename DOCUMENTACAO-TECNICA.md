@@ -714,7 +714,7 @@ Só app (o formulário chama, o modelo não vê): `salvar_*`, `buscar_pacientes_
 3. **Observações da despesa na edição:** a 13.3 lista o campo, mas o servidor não as lê nem as mostra, para cumprir o DoD ("nenhuma resposta com `observacoes`"). Ficam como estão.
 4. **Textos de sucesso:** valem os do app quando existem ("Sessão atualizada.", "Horário criado." etc.), e não os da 15. Da 15 ficaram "Sessões registradas.", "Horário alterado." e "Excluir definitivamente", com ponto nos sucessos.
 5. **Duração inválida** na sessão é erro no campo ("Informe a duração em minutos, de 1 a 600", aprovado em 15/11/2026). O agente trocava por 50 em silêncio.
-6. **Evento de paciente:** o spec 21 e o CLAUDE.md escrevem `agenda_psi_novapaciente`; o app e o servidor usam `agenda_psi_novopaciente`, que é o que tem série.
+6. **Evento de paciente:** o nome certo é `agenda_psi_novopaciente`, que é o que o app usa e o que tem série. O spec 21 e o CLAUDE.md diziam `novapaciente` e foram corrigidos em 15/11/2026.
 7. **Conta demo e agenda:** o servidor recusa tirar ou trocar horário na conta demo, embora a policy da agenda deixe. Isso é mais estrito que o app, para a 8.6 valer em toda exclusão.
 8. **Um formulário para as nove edições:** as nove ações apontam para o mesmo recurso `ui://agenda-psi/registro-<hash>.html`.
 9. **Saída do `salvar_*`:** além de `{ok, ids, resumo}` (13.3), a resposta traz `titulo` (o texto de sucesso do app). Na troca de horário, traz também `continuar` (o id do horário novo, depois de uma falha parcial).
