@@ -635,3 +635,87 @@ sessão", e transforma o risco 23.8 em evento certo. Com 14 pessoas ativas de
 fato, Alexandre decidiu não construir a importação de sessão e avisar essas 14
 por e-mail antes de publicar. A tela de login ganhou um texto explicando por que
 a pessoa está ali.
+
+---
+
+## 7. Servidor MCP
+
+Conector para Claude e ChatGPT em `mcp-server/`, publicado na Vercel em `https://app.agendapsi.app.br/mcp`. Spec em `mcp-server/spec.md`, como rodar e testar em `mcp-server/README.md`. O servidor não tem banco nem segredo de banco: entra com o **JWT da própria pessoa** (OAuth 2.1 do Supabase) e a chave publicável, e quem decide o que ela vê e grava é a RLS. Nada aqui usa `service_role`.
+
+### 7.1 Tabelas e views usadas
+Significado das colunas mais usadas:
+- `preco_vigente`: o preço da linha mais recente de `precos_paciente` (o preço de referência).
+- `ocorreu_em_dia`: o dia em que a sessão aconteceu.
+- `data_competencia`: o mês a que o pagamento ou a despesa se refere.
+- `pagamento` da sessão: se ela foi paga avulsa, não paga, ou entra no mensal.
+- `devesercobrada`: se a sessão conta como devida.
+- `receber_sms`: o lembrete antes do horário fixo.
+- `dia_semana`: o dia do horário fixo, 1 a 7 a partir de segunda.
+
+
+| Objeto | Colunas tocadas | Para quê |
+|---|---|---|
+| `v_pacientes_cartao` | `paciente_id`, `nome_completo`, `telefone`, `email`, `status`, `receber_sms`, `preco_vigente`, contagens e totais | Resolver o paciente pelo nome (11.14), preço de referência (P2), leituras e edição de cadastro. `observacoes` **nunca** é pedida |
+| `pacientes` | `nome_completo`, `telefone`, `email`, `receber_sms`, `status`, `observacoes: null` no insert | Cadastro e edição. O update não inclui `observacoes`, e o valor atual fica como está |
+| `precos_paciente` | `usuario_id`, `paciente_id`, `preco` | Append-only (pegadinha 2): preço novo é linha nova |
+| `sessoes` | `ocorreu_em_dia`, `pagamento` (`nao pagou` sem acento), `modalidade`, `duracao_minutos`, `devesercobrada` | Registro, edição e exclusão. `observacoes` só como `null` no insert |
+| `pagamentos` | `data_competencia`, `valor_pagamento`, `tipo` (`por sessão` com acento), `status: 'pago'`, `pago_em` | Registro, edição e exclusão |
+| `despesas`, `tipos_despesa` | `data_competencia`, `valor_despesa`, `descricao`, `tipo_despesa_id`; `tipos_despesa.nome` | Registro, edição e exclusão. As observações da despesa entram no cadastro, mas a edição não as lê |
+| `agenda_semana_padrao`, `view_agenda_semana_padrao` | `dia_semana` (1 = segunda … 7 = domingo), `hora_inicio`, `hora_fim`, `paciente_nome` | Horários fixos: criar, trocar, tirar; aviso de horário que coincide |
+| `v_financeiro_mensal`, `v_pendencias_por_paciente` | totais por mês, pendências | Leituras financeiras (os números saem prontos da view, P2) |
+| `feedback` | `mensagem` (`[Categoria · via conector] …`), `email`, `app_name: 'agenda_psi'` | Feedback; depois invoca `notifica-admin` com o JWT da pessoa e `{tipo, referencia}` |
+| `demo_uid()` (RPC) | — | Só depois de um DELETE que apagou zero linhas, para dar a mensagem da conta demo |
+
+### 7.2 Relacionamentos envolvidos
+Paciente → sessões, pagamentos, preços (`precos_paciente`) e horários (`agenda_semana_padrao`), todos por `paciente_id`. Despesa → tipo (`tipo_despesa_id`). O cadastro de paciente grava na ordem paciente → preço → horários. A troca de horário grava o novo e depois apaga o antigo, como o cartão do agente.
+
+### 7.3 Policies de RLS de que cada ferramenta depende
+- **Leituras:** `pacientes_select_own`, `sessoes_select_own`, `pagamentos_select_own`, `precos_select_own`, `despesas_select`, `tipos_despesa_select`, `Select only own rows` e `select agenda via view` (agenda).
+- **Criações:** `pacientes_insert_own`, `precos_insert_own`, `sessoes_insert_own`, `pagamentos_insert_own`, `despesas_insert`, `Insert only own rows` (agenda) e `feedback_insert_public`.
+- **Edições:** `pacientes_update_own`, `sessoes_update_own`, `pagamentos_update_own` e `despesas_update`.
+- **Exclusões:** `sessoes_delete_own`, `pagamentos_delete_own`, `despesas_delete` (as três barram a conta demo via `demo_uid()`) e `Delete only own rows` (agenda, que **não** barra a demo: o servidor confere `demo_uid()` antes de apagar).
+
+### 7.4 Mapa ferramenta → tabelas
+
+| Ferramenta (visível ao modelo) | Lê | Escreve |
+|---|---|---|
+| 9 leituras (`buscar_paciente`, `historico_do_paciente`, `listar_pacientes`, `consultar_mes`, `consultar_periodo`, `agenda_do_dia`, `agenda_da_semana`, `listar_pendencias`, `consultar_despesas`) | as views de 7.1 | — |
+| `abrir_formulario_despesa` / `registrar_despesa` | `tipos_despesa` | `despesas` (no salvar) |
+| `abrir_formulario_sessoes` / `registrar_sessoes` | `v_pacientes_cartao` | `sessoes` |
+| `abrir_formulario_pagamento` / `registrar_pagamentos` | `v_pacientes_cartao` | `pagamentos` |
+| `abrir_formulario_paciente` / `registrar_paciente` | `view_agenda_semana_padrao` | `pacientes`, `precos_paciente`, `agenda_semana_padrao` |
+| `abrir_formulario_horario` / `registrar_horarios` | `v_pacientes_cartao`, `view_agenda_semana_padrao` | `agenda_semana_padrao` |
+| `abrir_formulario_feedback` / `registrar_feedback` | — | `feedback` + Edge Function `notifica-admin` |
+| `…_edicao_paciente` | `v_pacientes_cartao` | `pacientes` (update), `precos_paciente` (insert) |
+| `…_edicao_sessao` / `…_exclusao_sessao` | `sessoes`, `v_pacientes_cartao` | `sessoes` (update / delete) |
+| `…_edicao_pagamento` / `…_exclusao_pagamento` | `pagamentos`, `v_pacientes_cartao` | `pagamentos` (update / delete) |
+| `…_edicao_despesa` / `…_exclusao_despesa` | `despesas`, `tipos_despesa` | `despesas` (update / delete) |
+| `…_troca_horario` / `…_remocao_horario` | `v_pacientes_cartao`, `view_agenda_semana_padrao` | `agenda_semana_padrao` (insert + delete / delete) |
+
+Só app (o formulário chama, o modelo não vê): `salvar_*`, `buscar_pacientes_opcoes`, `listar_tipos_despesa`, `listar_agenda` e `listar_registros`.
+
+### 7.5 Lógica das ferramentas
+- **Formulário primeiro (P2):** `abrir_formulario_*` não grava. Devolve o pré-preenchimento e responde ao modelo "Abri o formulário de X.". O `salvar_*` revalida tudo no servidor (P3) e grava como o hook do app grava (P4).
+- **Fallback (13.4):** `registrar_*` só existe para clientes sem MCP Apps. A primeira chamada devolve a prévia e um `token_previa`: HMAC de sub + ação + dados normalizados + validade de 10 min. A segunda só grava se o HMAC conferir.
+- **Paciente pelo nome (11.14):** um casamento preenche. Ambíguo ou não encontrado deixa o seletor vazio, com o aviso do cartão do agente. Nunca escolhe sozinho.
+- **Várias linhas:** grava em ordem. Numa falha parcial, as gravadas saem da tela, e só o que faltou fica para tentar de novo; o sucesso final soma tudo.
+- **Paciente com horários:** depois que o paciente existe, falha ou exceção no preço ou num horário vira aviso, e o formulário tranca. Assim o paciente nunca é cadastrado duas vezes.
+- **Edições (épico 6):** um motor genérico (`src/tools/records/`) e um formulário genérico (`ui/record/`).
+  - Os candidatos seguem `escolherAlvo` do agente: um casou, vem escolhido; senão, até 6 para escolher.
+  - Antes e depois em cada campo pedido. Data e competência só leitura.
+  - O `salvar_*` relê o registro pelo id com a RLS. Nada mudou: "Nada mudou no registro".
+- **Exclusões:** segundo clique "Excluir definitivamente". DELETE com `select('id')`; zero linhas e `demo_uid() = sub` dão "Esta conta de demonstração não permite excluir registros."; zero linhas sem ser a demo, "Registro não encontrado ou sem permissão.".
+- **Erros:** nunca repassam texto do Postgres. O genérico é "Não foi possível salvar agora. Tente de novo.".
+- **Eventos (pegadinha 5):** os mesmos nomes do app, com `tela: mcp_<acao>`, sem nome, valor nem texto: `agenda_psi_novadespesa`, `…_novasessao`, `…_novopagamento`, `…_novopaciente` (depois do preço), `…_novoagendamento`, `…_paciente_editado` e `…_atualizacao_preco`.
+
+### 7.6 Divergências em relação a `mcp-server/spec.md`
+1. **Emissor OAuth:** o servidor anuncia o próprio domínio e só desvia `/oauth/authorize`, para tirar o `openid` que o Supabase com HS256 recusa. Token, registro de cliente e JWKS são os do Supabase.
+2. **Opções das edições:** em vez de `listar_sessoes_do_paciente`, `listar_pagamentos_do_paciente`, `listar_horarios_do_paciente` e `listar_despesas_recentes` (13.3), há um só `listar_registros {acao, paciente_id}`. Os candidatos já chegam com os campos no `abrir_formulario_*`.
+3. **Observações da despesa na edição:** a 13.3 lista o campo, mas o servidor não as lê nem as mostra, para cumprir o DoD ("nenhuma resposta com `observacoes`"). Ficam como estão.
+4. **Textos de sucesso:** valem os do app quando existem ("Sessão atualizada.", "Horário criado." etc.), e não os da 15. Da 15 ficaram "Sessões registradas.", "Horário alterado." e "Excluir definitivamente", com ponto nos sucessos.
+5. **Duração inválida** na sessão é erro no campo ("Informe a duração em minutos, de 1 a 600", aprovado em 15/11/2026). O agente trocava por 50 em silêncio.
+6. **Evento de paciente:** o nome certo é `agenda_psi_novopaciente`, que é o que o app usa e o que tem série. O spec 21 e o CLAUDE.md diziam `novapaciente` e foram corrigidos em 15/11/2026.
+7. **Conta demo e agenda:** o servidor recusa tirar ou trocar horário na conta demo, embora a policy da agenda deixe. Isso é mais estrito que o app, para a 8.6 valer em toda exclusão.
+8. **Um formulário para as nove edições:** as nove ações apontam para o mesmo recurso `ui://agenda-psi/registro-<hash>.html`.
+9. **Saída do `salvar_*`:** além de `{ok, ids, resumo}` (13.3), a resposta traz `titulo` (o texto de sucesso do app). Na troca de horário, traz também `continuar` (o id do horário novo, depois de uma falha parcial).
+10. **Formulário HTML:** o teto é 300 KB, e não 150 KB (17), por decisão de 15/11/2026; só o `App` do ext-apps ocupa 234 KB.

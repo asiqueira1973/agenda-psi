@@ -65,7 +65,7 @@ Quatro eventos têm série histórica no Visão do Produto e estão preservados 
 a byte em `src/lib/analytics/events.ts`:
 
 ```
-agenda_psi_novapaciente  agenda_psi_novasessao
+agenda_psi_novopaciente  agenda_psi_novasessao
 agenda_psi_novopagamento agenda_psi_novoagendamento
 ```
 
@@ -154,6 +154,7 @@ supabase/
   functions/                  # agente, notifica-admin,
                               # apple-notificacoes, play-notificacoes
   tests/                      # pgTAP
+mcp-server/                   # conector MCP (Claude/ChatGPT); teste: cd mcp-server && npm test
 docs/
   spec.md  schema.md  decisoes-e-divergencias.md
 CLAUDE.md  README.md  DOCUMENTACAO-TECNICA.md

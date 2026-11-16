@@ -1,0 +1,7 @@
+<!doctype html>
+<!-- Caminhos antigos do app web do FlutterFlow (/inicio etc.) voltam para a raiz (6.3).
+     A query vai junto: se a Vercel não normalizar //oauth/consent, o pedido cai aqui, e
+     a raiz encaminha para /oauth/consent com o authorization_id (site/route.ts). Sem meta
+     refresh, que não carrega a query e ganharia a corrida. -->
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="robots" content="noindex"><title>Agenda Psi</title></head>
+<body><script>location.replace('/' + location.search);</script><noscript><a href="/">Agenda Psi</a></noscript></body></html>

@@ -1,0 +1,39 @@
+/*
+ * Estilo das páginas do domínio (6.3): login, consentimento e `/`. Neutro, claro e
+ * escuro, uma coluna, área de toque de 44 px (17). Sem a marca: o objetivo é ser
+ * claro, não decorativo.
+ */
+:root {
+  color-scheme: light dark;
+  --fundo: light-dark(#f7f7f5, #1a1a19);
+  --cartao: light-dark(#ffffff, #242422);
+  --texto: light-dark(#1a1a19, #f3f3f1);
+  --texto-2: light-dark(#5e5d59, #b8b7b2);
+  --borda: light-dark(#d6d5d0, #4a4945);
+  --anel: light-dark(#2f6fde, #6b9cf0);
+  --perigo: light-dark(#b42318, #f97066);
+  --sucesso: light-dark(#1f7a3d, #6fcf8e);
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; min-height: 100%; background: var(--fundo); color: var(--texto); font: 16px/1.45 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+body { display: flex; justify-content: center; padding: 48px 16px; }
+.cartao { width: 100%; max-width: 400px; background: var(--cartao); border: 1px solid var(--borda); border-radius: 12px; padding: 24px; }
+h1 { margin: 0 0 20px; font-size: 22px; }
+form, section { display: flex; flex-direction: column; gap: 14px; }
+.campo { display: flex; flex-direction: column; gap: 6px; }
+label { font-weight: 500; }
+input { min-height: 44px; padding: 10px 12px; border: 1px solid var(--borda); border-radius: 8px; background: transparent; color: var(--texto); font: inherit; }
+input:focus-visible, button:focus-visible { outline: 2px solid var(--anel); outline-offset: 2px; }
+button { min-height: 44px; padding: 0 16px; border-radius: 8px; font: inherit; cursor: pointer; }
+button.primario { border: none; background: var(--texto); color: var(--cartao); font-weight: 600; }
+button.secundario { border: 1px solid var(--borda); background: transparent; color: var(--texto); }
+button.texto { border: none; background: transparent; color: var(--texto-2); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+.erro { margin: 0; color: var(--perigo); }
+.aviso { margin: 0; color: var(--sucesso); }
+.mensagem { margin: 0; }
+.pedido { margin: 0; }
+.permissoes { margin: 0; padding-left: 20px; color: var(--texto-2); }
+.acoes { display: flex; justify-content: flex-end; gap: 12px; }
+main[aria-busy='true'] > *:not(h1) { visibility: hidden; }

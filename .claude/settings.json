@@ -1,0 +1,60 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-secrets.sh"
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-app-scope.sh"
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-migrations.sh"
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-tests.sh"
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-tool-schema.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|mcp__.*__(deploy_edge_function|apply_migration|create_deployment|request_promote|request_rollback|assign_alias|start_rolling_release|approve_rolling_release_stage|complete_rolling_release|create_project_env|edit_project_env|add_project_domain|verify_project_domain|update_project|create_project|create_git_project|pause_project|unpause_project|buy_domain|create_or_transfer_domain|create_record|update_record|replace_domain_dns_records|update_firewall_config|put_firewall_config|update_project_protection_bypass)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-production.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/remind-advisors.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-bash-drift.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "outputDirectory": "public",
+  "ignoreCommand": "git diff --quiet \"${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}\" HEAD -- .",
+  "rewrites": [
+    {
+      "source": "/mcp",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/.well-known/oauth-protected-resource",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/.well-known/oauth-protected-resource/mcp",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/.well-known/oauth-authorization-server",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/.well-known/openid-configuration",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/oauth/authorize",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/oauth/consent",
+      "destination": "/oauth/consent/index.html"
+    }
+  ]
+}

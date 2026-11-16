@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="robots" content="noindex" />
+    <title>Agenda Psi</title>
+    <link rel="stylesheet" href="../../site.css" />
+  </head>
+  <body>
+    <main class="cartao" aria-busy="true">
+      <h1 id="titulo"></h1>
+
+      <p id="mensagem" class="mensagem" role="status" hidden></p>
+
+      <form id="login" novalidate hidden>
+        <div class="campo">
+          <label for="email"></label>
+          <input id="email" type="email" autocomplete="username" inputmode="email" aria-describedby="erro-login" />
+        </div>
+        <div class="campo">
+          <label for="senha"></label>
+          <input id="senha" type="password" autocomplete="current-password" aria-describedby="erro-login" />
+        </div>
+        <p id="erro-login" class="erro" role="alert" hidden></p>
+        <p id="aviso-login" class="aviso" role="status" hidden></p>
+        <button type="submit" id="entrar" class="primario"></button>
+        <button type="button" id="esqueci" class="texto"></button>
+      </form>
+
+      <section id="consentimento" hidden>
+        <p id="pedido" class="pedido"></p>
+        <ul id="permissoes" class="permissoes"></ul>
+        <p id="erro-consentimento" class="erro" role="alert" hidden></p>
+        <div class="acoes">
+          <button type="button" id="negar" class="secundario"></button>
+          <button type="button" id="permitir" class="primario"></button>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
