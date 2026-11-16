@@ -70,7 +70,7 @@ function toolsListCom(capacidades?: Record<string, unknown>) {
   });
 }
 
-type ToolListada = { name: string; annotations?: { readOnlyHint?: boolean; destructiveHint?: boolean }; _meta?: { ui?: { visibility?: string[]; resourceUri?: string } } };
+type ToolListada = { name: string; title?: string; annotations?: { title?: string; readOnlyHint?: boolean; destructiveHint?: boolean }; _meta?: { ui?: { visibility?: string[]; resourceUri?: string } } };
 async function listar(capacidades?: Record<string, unknown>) {
   const r = await app.fetch(toolsListCom(capacidades));
   expect(r.status).toBe(200);
@@ -125,12 +125,16 @@ describe('tools/list conforme o cliente (13.1 e 13.4)', () => {
     expect(Object.keys(t).sort()).toEqual(ordenar([...LEITURAS, ...FORM_MODELO, ...FORM_APP, ...FALLBACKS]));
   });
 
-  it('o que apaga é marcado como destrutivo para o host (13.1); editar não', async () => {
+  it('toda ferramenta tem título e dica de leitura ou escrita (13.1, requisito do diretório)', async () => {
     const t = await listar();
-    const apagam = ['exclusao_sessao', 'exclusao_pagamento', 'exclusao_despesa', 'remocao_horario', 'troca_horario'];
-    for (const a of REGISTROS) {
-      for (const n of [`salvar_${a}`, `registrar_${a}`]) expect(t[n]?.annotations?.destructiveHint, n).toBe(apagam.includes(a));
+    for (const [nome, f] of Object.entries(t)) {
+      const a = (f as { title?: string; annotations?: { title?: string; readOnlyHint?: boolean; destructiveHint?: boolean } });
+      expect(a.title, nome).toBeTruthy();
+      expect(a.annotations?.title, nome).toBe(a.title);
+      const escreve = /^(salvar|registrar)_/.test(nome);
+      expect([a.annotations?.readOnlyHint, a.annotations?.destructiveHint], nome).toEqual([!escreve, escreve]);
     }
+    expect(t.abrir_formulario_despesa?.title).toBe('Registrar despesa');
   });
 });
 

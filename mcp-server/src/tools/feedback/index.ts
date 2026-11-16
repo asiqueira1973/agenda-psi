@@ -71,10 +71,10 @@ export async function salvarFeedback(args: z.infer<typeof entradaSalvar>, ctx: T
 }
 
 const DESCRICAO_ABRIR =
-  'Abre o formulário de feedback para a equipe do Agenda Psi (um problema, erro ou bug no app, uma sugestão de melhoria, ou um elogio), já preenchido com as palavras da pessoa. Não envia nada: a pessoa confere o texto e clica em Enviar. Use quando a pessoa reclamar de algo que não funciona, relatar um erro, sugerir uma melhoria ou elogiar o app. Não prometa prazo nem correção.';
+  'Abre o formulário de feedback para a equipe do Agenda Psi (um problema, erro ou bug no app, uma sugestão de melhoria, ou um elogio), já preenchido com as palavras da pessoa. Não envia nada: a pessoa confere o texto e clica em Enviar. Use quando a pessoa reclamar de algo que não funciona, relatar um erro, sugerir uma melhoria ou elogiar o app.';
 
 const DESCRICAO_FALLBACK =
-  'Envia um feedback para a equipe do Agenda Psi em duas chamadas, para clientes sem formulário. Na primeira (sem confirmar), devolve a prévia do texto e um token_previa; nada é enviado. Mostre o texto à pessoa. Nunca envie confirmar=true sem ela concordar. Não prometa prazo nem correção.';
+  'Envia um feedback para a equipe do Agenda Psi em duas chamadas, para clientes sem formulário. Na primeira (sem confirmar), devolve a prévia do texto e um token_previa; nada é enviado. Mostre o texto à pessoa. Nunca envie confirmar=true sem ela concordar.';
 
 const entradaFallback = entradaAbrir.extend({
   confirmar: z.boolean().optional().describe('true só na segunda chamada, depois de a pessoa concordar com a prévia.'),

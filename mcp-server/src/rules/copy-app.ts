@@ -138,7 +138,7 @@ export const textosNovosEpico5 = {
   conflito: (nomes: string[]) => `Este horário coincide com: ${nomes.join(', ')}.`,
   /** Para o modelo, no Cancelar (mesmo padrão aprovado na despesa). */
   formularioCancelado: (qual: string) => `A pessoa cancelou o formulário de ${qual}. Nada foi gravado.`,
-  /** Para o modelo, na abertura (mesmo padrão aprovado na despesa). */
+  /** Para o modelo, na abertura: só descreve o estado (16/11/2026, plans/diretorio.md 2.2). */
   formularioAberto: (qual: string) =>
-    `O formulário de ${qual} está aberto para a pessoa. Responda exatamente "Abri o formulário de ${qual}." e nada mais. Nada foi gravado: só grava quando a pessoa clicar em Salvar, e o formulário informa você quando isso acontecer.`,
+    `Formulário de ${qual} aberto para a pessoa conferir. Nada foi gravado: só grava quando ela clicar em Salvar, e o formulário avisa quando isso acontecer.`,
 } as const;

@@ -1,4 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/server';
+import { exigirAnotacoes } from './anotacoes.js';
 import type { ToolContext } from './context.js';
 import { registrarFallbackDespesa } from './expense/fallback.js';
 import { registrarAbrirFormularioDespesa } from './expense/open-form.js';
@@ -25,6 +26,8 @@ import { registrarBuscarPacientesOpcoes } from './shared/pacientes.js';
  *   pessoa nunca ficar sem caminho. Registrado em plans/epico-2.md.
  */
 export function registrarFerramentas(server: McpServer, ctx: ToolContext): void {
+  // Toda ferramenta sai com título e dica de leitura/escrita (requisito do diretório).
+  exigirAnotacoes(server);
   // As 9 leituras do agente (épico 4), para qualquer cliente, com ou sem UI.
   registrarLeituras(server, ctx);
 

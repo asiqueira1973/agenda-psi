@@ -161,7 +161,7 @@ const DESCRICAO_ABRIR =
   'Abre o formulário de cadastro de UM paciente novo, com o preço e, se a mesma frase pedir, os horários fixos na agenda semanal, já preenchido com o que a pessoa disse. Não grava nada: a pessoa confere e clica em Cadastrar paciente. Telefone e preço são obrigatórios no app: se a pessoa não disser, omita e o formulário pede. Para paciente já cadastrado, horário novo é abrir_formulario_horario.';
 
 const DESCRICAO_FALLBACK =
-  'Cadastra UM paciente novo (com preço e, se pedido, horários fixos) em duas chamadas, para clientes sem formulário. Na primeira (sem confirmar), devolve a prévia, os erros a corrigir e um token_previa; nada é gravado. Mostre a prévia à pessoa e peça o que faltar (telefone e preço são obrigatórios). Nunca envie confirmar=true sem ela concordar. Depois de cadastrado, não chame de novo para o mesmo paciente, mesmo que algum horário ou o preço tenham ficado de fora.';
+  'Cadastra UM paciente novo (com preço e, se pedido, horários fixos) em duas chamadas, para clientes sem formulário. Na primeira (sem confirmar), devolve a prévia, os erros a corrigir e um token_previa; nada é gravado. Mostre a prévia à pessoa e peça o que faltar (telefone e preço são obrigatórios). Nunca envie confirmar=true sem ela concordar. Cada confirmação cadastra um paciente novo: se o preço ou algum horário ficarem de fora, a resposta diz o que faltou, e repetir a chamada cadastraria o paciente de novo.';
 
 const entradaFallback = entradaAbrir.extend({
   confirmar: z.boolean().optional().describe('true só na segunda chamada, depois de a pessoa concordar com a prévia.'),

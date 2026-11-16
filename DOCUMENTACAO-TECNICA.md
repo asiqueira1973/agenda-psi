@@ -695,7 +695,7 @@ Paciente → sessões, pagamentos, preços (`precos_paciente`) e horários (`age
 Só app (o formulário chama, o modelo não vê): `salvar_*`, `buscar_pacientes_opcoes`, `listar_tipos_despesa`, `listar_agenda` e `listar_registros`.
 
 ### 7.5 Lógica das ferramentas
-- **Formulário primeiro (P2):** `abrir_formulario_*` não grava. Devolve o pré-preenchimento e responde ao modelo "Abri o formulário de X.". O `salvar_*` revalida tudo no servidor (P3) e grava como o hook do app grava (P4).
+- **Formulário primeiro (P2):** `abrir_formulario_*` não grava. Devolve o pré-preenchimento e diz ao modelo só o estado ("Formulário de X aberto para a pessoa conferir. Nada foi gravado…"), sem instruir como responder (requisito do diretório de conectores). O `salvar_*` revalida tudo no servidor (P3) e grava como o hook do app grava (P4).
 - **Fallback (13.4):** `registrar_*` só existe para clientes sem MCP Apps. A primeira chamada devolve a prévia e um `token_previa`: HMAC de sub + ação + dados normalizados + validade de 10 min. A segunda só grava se o HMAC conferir.
 - **Paciente pelo nome (11.14):** um casamento preenche. Ambíguo ou não encontrado deixa o seletor vazio, com o aviso do cartão do agente. Nunca escolhe sozinho.
 - **Várias linhas:** grava em ordem. Numa falha parcial, as gravadas saem da tela, e só o que faltou fica para tentar de novo; o sucesso final soma tudo.
@@ -719,3 +719,4 @@ Só app (o formulário chama, o modelo não vê): `salvar_*`, `buscar_pacientes_
 8. **Um formulário para as nove edições:** as nove ações apontam para o mesmo recurso `ui://agenda-psi/registro-<hash>.html`.
 9. **Saída do `salvar_*`:** além de `{ok, ids, resumo}` (13.3), a resposta traz `titulo` (o texto de sucesso do app). Na troca de horário, traz também `continuar` (o id do horário novo, depois de uma falha parcial).
 10. **Formulário HTML:** o teto é 300 KB, e não 150 KB (17), por decisão de 15/11/2026; só o `App` do ext-apps ocupa 234 KB.
+11. **Anotações (16/11/2026):** toda ferramenta tem `title` e dica (src/tools/anotacoes.ts). Os `abrir_formulario_*` são `readOnlyHint` (não gravam), e todo `salvar_*`/`registrar_*` é `destructiveHint`, porque o diretório pede a dica para tudo que modifica dados. A 13.1 previa `destructiveHint` só nas exclusões.

@@ -82,7 +82,9 @@ export const textosParaOModelo = {
   // campos vazios, e essa resposta ficava embaixo do "Despesa registrada." depois do Salvar.
   // Mais estrito (15/11/2026, aprovado): "uma frase curta" ainda gerava "só fica registrada
   // quando você clicar em Salvar", que soa errado embaixo do "Despesa registrada.".
-  formularioAberto: 'O formulário de despesa está aberto para a pessoa. Responda exatamente "Abri o formulário de despesa." e nada mais. Nada foi gravado: só grava quando a pessoa clicar em Salvar, e o formulário informa você quando isso acontecer.',
+  // 16/11/2026 (autorizado, plans/diretorio.md 2.2): o diretório de conectores rejeita
+  // ferramenta que diz ao Claude como se comportar; o texto agora só descreve o estado.
+  formularioAberto: 'Formulário de despesa aberto para a pessoa conferir. Nada foi gravado: só grava quando ela clicar em Salvar, e o formulário avisa quando isso acontecer.',
   formularioCancelado: 'A pessoa cancelou o formulário de despesa. Nada foi gravado.',
   previaPronta: 'Prévia pronta. Nada foi gravado. Mostre a prévia à pessoa e só confirme se ela concordar.',
   nadaGravadoComPendencias: 'Nada foi gravado. Resolva as pendências e os erros com a pessoa e chame de novo, sem confirmar.',

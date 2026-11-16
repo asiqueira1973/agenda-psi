@@ -39,7 +39,7 @@ export type Mudancas = { colunas: Record<string, unknown>; linhas: Array<{ campo
 export type DefDeRegistro<R> = {
   acao: string;
   modo: 'edicao' | 'exclusao';
-  /** "alteração de sessão": entra em "Abri o formulário de …". */
+  /** "alteração de sessão": entra em "Formulário de … aberto para a pessoa conferir." */
   qual: string;
   titulo: string;
   descricaoAbrir: string;
@@ -194,10 +194,10 @@ const camposDoFallback = {
 };
 
 /**
- * Dicas para o host (13.1): exclusão e troca de horário apagam um registro, então são
- * destrutivas; editar sobrescreve, mas não apaga. Nenhuma é idempotente para o host.
+ * Só a dica de idempotência; título, leitura e escrita vêm de src/tools/anotacoes.ts, que
+ * marca todo `salvar_*`/`registrar_*` como destrutivo (requisito do diretório).
  */
-const anotacoes = (def: DefDeRegistro<unknown>) => ({ destructiveHint: def.modo === 'exclusao' || def.acao === 'troca_horario', idempotentHint: false });
+const anotacoes = (_def: DefDeRegistro<unknown>) => ({ idempotentHint: false });
 
 /** Registra as ferramentas de uma ação conforme o cliente (13.4). */
 export function registrarAcaoDeRegistro<R>(server: McpServer, ctx: ToolContext, def: DefDeRegistro<R>): void {

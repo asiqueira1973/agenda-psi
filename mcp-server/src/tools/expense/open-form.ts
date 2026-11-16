@@ -17,7 +17,7 @@ import { MAX_DESCRICAO, type PreenchimentoDaDespesa, type TipoDespesa } from './
  * 9.2 explícita (fechar sem salvar não grava, e o modelo não pode afirmar que gravou).
  */
 export const DESCRICAO =
-  'Abre o formulário para registrar UMA despesa do consultório (dinheiro que saiu: aluguel, supervisão, impostos), já preenchido com o que a pessoa disse. Não grava nada: a pessoa confere e clica em Salvar. Se ela fechar o formulário sem salvar, nada foi registrado, e você não deve dizer que registrou. Depois do Salvar, o formulário informa o resumo e o id da despesa.';
+  'Abre o formulário para registrar UMA despesa do consultório (dinheiro que saiu: aluguel, supervisão, impostos), já preenchido com o que a pessoa disse. Não grava nada: a pessoa confere e clica em Salvar. Se ela fechar o formulário sem salvar, nada é registrado. Depois do Salvar, o formulário informa o resumo e o id da despesa.';
 
 /**
  * Entrada (13.3): espelha um item de `propor_despesas`, com tudo opcional. Sem
