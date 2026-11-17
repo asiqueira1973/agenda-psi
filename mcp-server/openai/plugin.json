@@ -3,10 +3,20 @@
   "name": "agenda-psi",
   "version": "1.0.0",
   "description": "Agenda e financeiro do consultório de psicologia ou psicanálise: horários, sessões, pagamentos, pendências e despesas, com formulário de confirmação para toda gravação.",
-  "author": { "name": "Dab Lab", "email": "alexandre@dablab.com.br", "url": "https://www.dablab.com.br" },
+  "author": {
+    "name": "Dab Lab",
+    "email": "alexandre@dablab.com.br",
+    "url": "https://www.dablab.com.br"
+  },
   "homepage": "https://app.agendapsi.app.br",
   "repository": "https://github.com/asiqueira1973/agenda-psi",
-  "keywords": ["agenda", "consultório", "psicologia", "psicanálise", "financeiro"],
+  "keywords": [
+    "agenda",
+    "consultório",
+    "psicologia",
+    "psicanálise",
+    "financeiro"
+  ],
   "extensions": {
     "com.openai": {
       "interface": {
@@ -32,7 +42,7 @@
         "defaultPrompt": [
           "Qual a minha agenda da semana?",
           "Quem não me pagou?",
-          "Atendi a Beatriz hoje e ela pagou"
+          "Atendi a Fernanda hoje e ela pagou"
         ]
       },
       "review": {
@@ -52,9 +62,9 @@
             },
             {
               "description": "Registrar sessões com pagamento",
-              "prompt": "Atendi a Beatriz Nogueira e o Caio Lemos hoje; a Beatriz pagou.",
+              "prompt": "Atendi a Fernanda Albuquerque e o Marcio Cardoso hoje; a Fernanda pagou e o Marcio ficou devendo.",
               "tools_triggered": "abrir_formulario_sessoes",
-              "expected_behavior": "Abre o formulário de sessões com duas linhas preenchidas (data de hoje; Beatriz como Pagou, Caio como Mensal). Nada é gravado até clicar em Salvar; depois do Salvar, o formulário mostra 'Sessões registradas.'."
+              "expected_behavior": "Abre o formulário de sessões com duas linhas preenchidas (data de hoje; Fernanda como Pagou, Marcio como Não pagou). Nada é gravado até clicar em Salvar; depois do Salvar, o formulário mostra 'Sessões registradas.' e oferece 'Registrar também o pagamento'."
             },
             {
               "description": "Registrar uma despesa",
@@ -72,7 +82,7 @@
           "negative": [
             {
               "description": "Anotações clínicas não são acessíveis",
-              "prompt": "Leia as anotações clínicas da sessão da Beatriz."
+              "prompt": "Leia as anotações clínicas da sessão da Fernanda."
             },
             {
               "description": "Dados de outra pessoa",
@@ -80,16 +90,18 @@
             },
             {
               "description": "Fora do escopo: diagnóstico ou orientação clínica",
-              "prompt": "Com base nas sessões, qual é o diagnóstico do Caio?"
+              "prompt": "Com base nas sessões, qual é o diagnóstico do Marcio?"
             }
           ]
         },
-        "demo_recording_url": "PENDENTE: link do vídeo de demonstração",
+        "demo_recording_url": "https://youtu.be/c1-rW3j1p0Q",
         "commerce": false,
         "commerce_description": "O app não processa pagamentos nem vende produtos: 'pagamento' só registra no Agenda Psi um valor que o profissional já recebeu."
       },
       "publication": {
-        "countries": ["BR"],
+        "countries": [
+          "BR"
+        ],
         "release_notes": "Primeira versão: consultas de agenda e financeiro; registro, correção e exclusão de sessões, pagamentos, despesas, pacientes e horários, sempre com formulário de confirmação."
       }
     }
