@@ -2,7 +2,7 @@
 
 *Versão em português abaixo.*
 
-Agenda Psi is a scheduling and cost-management app for independent psychologists in Brazil: weekly schedule, sessions held, payments, per-patient prices and practice expenses. It is **not** an electronic health record. The connector lets you query and update your own Agenda Psi data from a conversation.
+Agenda Psi is a scheduling and cost-management app for independent psychologists and psychoanalysts in Brazil: weekly schedule, sessions held, payments, per-patient prices and practice expenses. It is **not** an electronic health record. The connector lets you query and update your own Agenda Psi data from a conversation.
 
 ## Connect
 - **URL:** `https://app.agendapsi.app.br/mcp`
@@ -35,7 +35,7 @@ Agenda Psi is a scheduling and cost-management app for independent psychologists
 
 # Conector do Agenda Psi para Claude e ChatGPT
 
-O Agenda Psi é um app de gestão de agenda e custos para psicólogos autônomos: horários fixos, sessões, pagamentos, preços por paciente e despesas. Não é prontuário. Com o conector, você consulta e registra pela conversa.
+O Agenda Psi é um app de gestão de agenda e custos para psicólogos e psicanalistas autônomos: horários fixos, sessões, pagamentos, preços por paciente e despesas. Não é prontuário. Com o conector, você consulta e registra pela conversa.
 
 - **Endereço:** `https://app.agendapsi.app.br/mcp`.
 - **Como conectar:** no Claude, Configurações → Conectores → Adicionar conector personalizado. No ChatGPT, modo desenvolvedor. Depois, entre com o seu e-mail e senha do Agenda Psi e clique em Permitir.
