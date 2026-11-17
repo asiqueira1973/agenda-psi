@@ -133,6 +133,7 @@ describe('tools/list conforme o cliente (13.1 e 13.4)', () => {
       expect(a.annotations?.title, nome).toBe(a.title);
       const escreve = /^(salvar|registrar)_/.test(nome);
       expect([a.annotations?.readOnlyHint, a.annotations?.destructiveHint], nome).toEqual([!escreve, escreve]);
+      expect((a.annotations as { openWorldHint?: boolean } | undefined)?.openWorldHint, nome).toBe(false);
     }
     expect(t.abrir_formulario_despesa?.title).toBe('Registrar despesa');
   });

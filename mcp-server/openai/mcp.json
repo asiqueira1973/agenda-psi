@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "agenda-psi": {
+      "type": "streamable-http",
+      "url": "https://app.agendapsi.app.br/mcp"
+    }
+  }
+}

@@ -4,7 +4,9 @@ import type { McpServer } from '@modelcontextprotocol/server';
  * Título e dica de leitura/escrita de TODA ferramenta, num lugar só (13.1 e requisito do
  * Connectors Directory da Anthropic: "every tool includes a `title` and the applicable
  * `readOnlyHint` or `destructiveHint`"). As dicas decidem as permissões automáticas no
- * Claude: leitura roda sem confirmação; o que modifica ou apaga pede confirmação.
+ * Claude: leitura roda sem confirmação; o que modifica ou apaga pede confirmação. O
+ * diretório do ChatGPT exige também `openWorldHint` explícito: sempre `false`, porque toda
+ * ferramenta age só sobre a conta da própria pessoa.
  *
  * - leitura: as 9 consultas, as listas de opções e os `abrir_formulario_*` (que só montam o
  *   pré-preenchimento: não gravam nada, P2);
@@ -86,6 +88,8 @@ export function exigirAnotacoes(server: McpServer): void {
       title: a.title,
       readOnlyHint: !a.escrita,
       destructiveHint: a.escrita,
+      // Só a conta da própria pessoa, nunca a web aberta (exigido pelo diretório do ChatGPT).
+      openWorldHint: false,
     };
     return original(nome, { ...config, title: a.title, annotations }, cb);
   };

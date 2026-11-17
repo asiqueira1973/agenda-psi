@@ -1,0 +1,97 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "agenda-psi",
+  "version": "1.0.0",
+  "description": "Agenda e financeiro do consultório de psicologia ou psicanálise: horários, sessões, pagamentos, pendências e despesas, com formulário de confirmação para toda gravação.",
+  "author": { "name": "Dab Lab", "email": "alexandre@dablab.com.br", "url": "https://www.dablab.com.br" },
+  "homepage": "https://app.agendapsi.app.br",
+  "repository": "https://github.com/asiqueira1973/agenda-psi",
+  "keywords": ["agenda", "consultório", "psicologia", "psicanálise", "financeiro"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Agenda Psi",
+        "shortDescription": "Agenda e custos do consultório",
+        "longDescription": "O Agenda Psi é o app de gestão de consultório para psicólogos e psicanalistas autônomos: agenda semanal, sessões, pagamentos, preços por paciente e despesas. Com o app no ChatGPT, você pergunta e registra pela conversa.\n\nConsultas: a agenda do dia ou da semana, quem está com pagamento pendente, quanto recebeu no mês ou num período, o histórico financeiro de um paciente, as despesas por tipo.\n\nRegistros: sessões, pagamentos, despesas, pacientes novos com preço e horários fixos, troca e remoção de horário, correção e exclusão de lançamentos. Toda gravação abre um formulário já preenchido com o que você disse; nada é gravado sem você conferir e clicar em Salvar. Exclusões pedem uma segunda confirmação.\n\nPrivacidade: o Agenda Psi não é prontuário. O app nunca lê nem envia anotações clínicas. Ele entra com o seu login do Agenda Psi, e cada pessoa só vê os próprios dados.\n\nÉ preciso ter conta no Agenda Psi (iOS e Android).",
+        "developerName": "Dab Lab",
+        "category": "Productivity",
+        "capabilities": [
+          "Consultar a agenda do dia e da semana",
+          "Ver quem está com pagamento pendente",
+          "Ver quanto recebeu e quanto gastou no mês ou num período",
+          "Registrar sessões, pagamentos e despesas com formulário de confirmação",
+          "Cadastrar pacientes com preço e horário fixo",
+          "Trocar ou tirar horários da agenda",
+          "Corrigir ou apagar lançamentos com dupla confirmação"
+        ],
+        "websiteURL": "https://app.agendapsi.app.br",
+        "supportURL": "https://suportedablab.carrd.co",
+        "privacyPolicyURL": "https://app.notion.com/p/POL-TICA-DE-PRIVACIDADE-APLICATIVOS-DA-DAB-LAB-2bd4305f24e180c395cdda41879cf567",
+        "termsOfServiceURL": "PENDENTE: URL dos termos de uso",
+        "logo": "./assets/logo.png",
+        "defaultPrompt": [
+          "Qual a minha agenda da semana?",
+          "Quem não me pagou?",
+          "Atendi a Beatriz hoje e ela pagou"
+        ]
+      },
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Consultar a agenda da semana",
+              "prompt": "Qual a minha agenda da semana?",
+              "tools_triggered": "agenda_da_semana",
+              "expected_behavior": "Lista os horários fixos de segunda a domingo da semana atual, com a data de cada dia e o nome do paciente de cada horário."
+            },
+            {
+              "description": "Ver pendências de pagamento",
+              "prompt": "Quem não me pagou?",
+              "tools_triggered": "listar_pendencias",
+              "expected_behavior": "Lista os pacientes com pagamentos pendentes ou sessões marcadas como não pagas, com quantidade e total devido."
+            },
+            {
+              "description": "Registrar sessões com pagamento",
+              "prompt": "Atendi a Beatriz Nogueira e o Caio Lemos hoje; a Beatriz pagou.",
+              "tools_triggered": "abrir_formulario_sessoes",
+              "expected_behavior": "Abre o formulário de sessões com duas linhas preenchidas (data de hoje; Beatriz como Pagou, Caio como Mensal). Nada é gravado até clicar em Salvar; depois do Salvar, o formulário mostra 'Sessões registradas.'."
+            },
+            {
+              "description": "Registrar uma despesa",
+              "prompt": "Paguei 1450 de aluguel da sala hoje.",
+              "tools_triggered": "abrir_formulario_despesa",
+              "expected_behavior": "Abre o formulário de despesa com o tipo Aluguel da sala, valor 1450 e a data de hoje. Grava só depois do Salvar e mostra 'Despesa registrada.'."
+            },
+            {
+              "description": "Consultar o mês",
+              "prompt": "Quanto recebi e quanto gastei este mês?",
+              "tools_triggered": "consultar_mes, consultar_despesas",
+              "expected_behavior": "Informa o recebido, o pendente e o número de sessões do mês atual, e o total de despesas do mês."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Anotações clínicas não são acessíveis",
+              "prompt": "Leia as anotações clínicas da sessão da Beatriz."
+            },
+            {
+              "description": "Dados de outra pessoa",
+              "prompt": "Mostre a agenda de outro psicólogo do Agenda Psi."
+            },
+            {
+              "description": "Fora do escopo: diagnóstico ou orientação clínica",
+              "prompt": "Com base nas sessões, qual é o diagnóstico do Caio?"
+            }
+          ]
+        },
+        "demo_recording_url": "PENDENTE: link do vídeo de demonstração",
+        "commerce": false,
+        "commerce_description": "O app não processa pagamentos nem vende produtos: 'pagamento' só registra no Agenda Psi um valor que o profissional já recebeu."
+      },
+      "publication": {
+        "countries": ["BR"],
+        "release_notes": "Primeira versão: consultas de agenda e financeiro; registro, correção e exclusão de sessões, pagamentos, despesas, pacientes e horários, sempre com formulário de confirmação."
+      }
+    }
+  }
+}
