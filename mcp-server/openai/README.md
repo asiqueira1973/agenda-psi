@@ -3,7 +3,7 @@
 Pacote que o painel da OpenAI pede: `plugin.json` + `mcp.json` + `assets/`, enviado como ZIP em platform.openai.com/plugins, opção "With MCP". O servidor é o mesmo do Claude (`https://app.agendapsi.app.br/mcp`). As ferramentas e o fluxo de login a OpenAI lê direto do servidor.
 
 ## Antes de gerar o ZIP
-1. **Termos de uso:** troque `termsOfServiceURL` em `plugin.json` pela URL pública dos termos. A OpenAI exige as quatro URLs (site, suporte, privacidade e termos).
+1. **Termos de uso:** o EULA padrão da Apple, o mesmo da ficha da App Store (`docs/lojas/app-store-connect-5.0.0.md`). Se o revisor recusar por ser um termo da Apple, a alternativa é publicar em `app.agendapsi.app.br/termos` os Termos de Uso que já aparecem dentro do app.
 2. **Vídeo de demonstração:** grave os 5 casos positivos numa conta de teste com dados fictícios. Publique como "não listado" no YouTube, ou num link que o revisor consiga abrir sem login, e ponha o link em `demo_recording_url`.
 3. **Conta de demonstração:** login e senha de uma conta com dados fictícios. Entram **no painel**, num campo seguro, **nunca** neste arquivo. Não pode ter verificação em duas etapas.
 
