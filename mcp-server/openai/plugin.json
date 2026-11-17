@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "agenda-psi",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Agenda e financeiro do consultório de psicologia ou psicanálise: horários, sessões, pagamentos, pendências e despesas, com formulário de confirmação para toda gravação.",
   "author": {
     "name": "Dab Lab",
