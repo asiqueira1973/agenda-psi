@@ -36,7 +36,7 @@
         ],
         "websiteURL": "https://app.agendapsi.app.br",
         "supportURL": "https://suportedablab.carrd.co",
-        "privacyPolicyURL": "https://app.notion.com/p/POL-TICA-DE-PRIVACIDADE-APLICATIVOS-DA-DAB-LAB-2bd4305f24e180c395cdda41879cf567",
+        "privacyPolicyURL": "https://app.agendapsi.app.br/privacidade",
         "termsOfServiceURL": "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
         "logo": "./assets/logo.png",
         "defaultPrompt": [
