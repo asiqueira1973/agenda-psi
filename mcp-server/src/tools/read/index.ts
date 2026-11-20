@@ -1,5 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/server';
 import type * as z from 'zod';
+import { enviarEvento } from '../../analytics.js';
+import { eventosDoConector } from '../../events.js';
 import { executar, type ResultadoDeLeitura, type ToolContext } from '../context.js';
 import { agendaDaSemana, agendaDoDia, entradaDia, entradaSemana } from './agenda.js';
 import { consultarDespesas, entrada as entradaDespesas } from './consultar-despesas.js';
@@ -45,13 +47,29 @@ export const LEITURAS: Leitura[] = [
 /**
  * Registra as 9 leituras (13.1 e 13.2): visíveis ao modelo, `readOnlyHint`, descrição do
  * agente e `executar`, que converte `{ erro }` em `isError` e loga sem PII (18).
+ *
+ * Leitura que deu certo emite `agenda_psi_mcp_consulta` com `tela: mcp_<leitura>`
+ * (divergência 12), sem argumento nem resultado no evento. As listas internas dos
+ * formulários (pacientes, tipos de despesa, agenda) não passam por aqui e não contam.
  */
 export function registrarLeituras(server: McpServer, ctx: ToolContext): void {
   for (const l of LEITURAS) {
     server.registerTool(
       l.nome,
       { description: descricoes[l.nome], inputSchema: l.entrada, annotations: { readOnlyHint: true }, _meta: { ui: { visibility: ['model'] } } },
-      (args: unknown) => executar(l.nome, ctx, () => l.executar(args, ctx)),
+      async (args: unknown) => {
+        const r = await executar(l.nome, ctx, () => l.executar(args, ctx));
+        if (!r.isError) {
+          await enviarEvento(ctx.config, {
+            nome: eventosDoConector.consultaFeita,
+            id: '',
+            distinctId: ctx.email,
+            tela: `mcp_${l.nome}`,
+            descricao: 'consulta feita',
+          });
+        }
+        return r;
+      },
     );
   }
 }

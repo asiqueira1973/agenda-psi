@@ -2,7 +2,10 @@ import { requireBearerAuth, type McpHttpHandler } from '@modelcontextprotocol/se
 import { ESCOPO_PEDIDO, protectedResourceMetadata, protectedResourceMetadataUrl } from './auth/metadata.js';
 import { metadataDeAutorizacao, redirecionarAuthorize } from './auth/authorize-proxy.js';
 import { criarVerificador, type ClaimsReader } from './auth/verify-token.js';
+import { clienteDoInitialize, enviarEvento, idDeConexao } from './analytics.js';
+import type { IdentidadeDoToken } from './auth/verify-token.js';
 import { suporteAUi } from './client-capabilities.js';
+import { eventosDoConector } from './events.js';
 import type { Config } from './config.js';
 import { criarHandlerMcp } from './handler.js';
 import { criarClienteAnonimo } from './supabase.js';
@@ -84,6 +87,19 @@ export function criarApp(config: Config, deps: Dependencias = {}) {
         // mesmo objeto vai ao SDK como `parsedBody`, sem segunda leitura.
         const corpo = request.method === 'POST' ? await request.clone().json().catch(() => undefined) : undefined;
         const authInfo = { ...auth, extra: { ...auth.extra, ui: suporteAUi(corpo) } };
+        // Evento de conexão (divergência 12): só no `initialize` com token válido, com id
+        // estável por pessoa e cliente. Nunca falha a resposta (enviarEvento não lança).
+        const cliente = clienteDoInitialize(corpo);
+        const identidade = auth.extra as IdentidadeDoToken | undefined;
+        if (cliente && identidade?.sub) {
+          await enviarEvento(config, {
+            nome: eventosDoConector.conectorConectado,
+            id: idDeConexao(identidade.sub, cliente),
+            distinctId: identidade.email,
+            tela: `mcp_${cliente}`,
+            descricao: 'conector conectado',
+          });
+        }
         return mcp.fetch(request, corpo === undefined ? { authInfo } : { authInfo, parsedBody: corpo });
       }
 

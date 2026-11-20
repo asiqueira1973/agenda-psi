@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import type { Config } from './config.js';
 import type { NomeDeEvento } from './events.js';
 
@@ -58,4 +58,30 @@ export async function enviarEvento(
   } catch {
     // Silêncio proposital, como no app: falha de analytics não vira erro nem retentativa.
   }
+}
+
+/** Cliente MCP reconhecido pelo nome que ele informa no `initialize` (`clientInfo.name`). */
+export type ClienteMcp = 'claude' | 'chatgpt' | 'outro';
+
+/**
+ * Classifica o cliente pelo `clientInfo.name` (divergência 12). Só o rótulo sai do
+ * servidor, nunca o nome cru, que é texto livre do cliente.
+ */
+export function clienteDoInitialize(corpo: unknown): ClienteMcp | null {
+  const msg = Array.isArray(corpo) ? corpo[0] : corpo;
+  const m = msg as { method?: unknown; params?: { clientInfo?: { name?: unknown } } } | undefined;
+  if (m?.method !== 'initialize') return null;
+  const nome = typeof m.params?.clientInfo?.name === 'string' ? m.params.clientInfo.name.toLowerCase() : '';
+  if (nome.includes('claude') || nome.includes('anthropic')) return 'claude';
+  if (nome.includes('openai') || nome.includes('chatgpt')) return 'chatgpt';
+  return 'outro';
+}
+
+/**
+ * Id estável do evento de conexão: hash de pessoa + cliente. Como o Visão do Produto
+ * deduplica pelo id, cada pessoa conta uma vez por cliente, e não uma vez por conversa.
+ * O `sub` entra no hash e não sai em claro.
+ */
+export function idDeConexao(sub: string, cliente: ClienteMcp): string {
+  return createHash('sha256').update(`mcp_conectado:${sub}:${cliente}`).digest('hex').slice(0, 32);
 }

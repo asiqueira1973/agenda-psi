@@ -620,6 +620,7 @@ Toda mudança posterior atualiza essa seção no mesmo commit.
 - O campo `tela` leva `mcp_<acao>` (ex.: `mcp_despesa`), para separar a origem sem partir a série.
 - Mesmas propriedades fechadas do app: **sem nome de paciente, valor, observação ou texto digitado**.
 - Falha do analytics nunca falha a gravação.
+- Eventos só do conector (20/11/2026, divergência 12 do DOCUMENTACAO-TECNICA): `agenda_psi_mcp_conectado` no `initialize` (um por pessoa e cliente) e `agenda_psi_mcp_consulta` em cada leitura que dá certo, com `tela: mcp_<leitura>`.
 
 ## 22. Estratégia de teste
 
